@@ -505,7 +505,7 @@
     <string name="gesture_data_please_switch_keyboard">%s-এ পরিবর্তন করুন</string>
     <string name="gesture_data_active">সক্রিয় সংগ্রহ</string>
     <string name="gesture_data_share_limit">আকারের সীমা অতিক্রম এড়াতে, কেবল প্রথম %s শব্দ রপ্তানি করা হবে</string>
-    <string name="gesture_data_promotion_message">হ্যালো!\n আপনি অঙ্গুলিহেলন টাইপিং লাইব্রেরি ইনস্টল করেছেন, তাই সম্পূর্ণ উন্মুক্ত অঙ্গুলিহেলন টাইপিং লাইব্রেরি তৈরির HeliBoard প্রকল্পে আপনার আগ্রহ থাকতে পারে। অঙ্গুলিহেলন তথ্য প্রদান করে আপনি সাহায্য করতে পারেন। আরও তথ্যের জন্য অঙ্গুলিহেলন তথ্য সংগ্রহ স্ক্রিন পরিদর্শন করুন।</string>
+    <string name="gesture_data_promotion_message">হ্যালো!\n আপনি অঙ্গুলিহেলন টাইপিং লাইব্রেরি ইনস্টল করেছেন, তাই সম্পূর্ণ উন্মুক্ত অঙ্গুলিহেলন টাইপিং লাইব্রেরি তৈরির Lafz প্রকল্পে আপনার আগ্রহ থাকতে পারে। অঙ্গুলিহেলন তথ্য প্রদান করে আপনি সাহায্য করতে পারেন। আরও তথ্যের জন্য অঙ্গুলিহেলন তথ্য সংগ্রহ স্ক্রিন পরিদর্শন করুন।</string>
     <string name="gesture_data_reminder_message">হ্যালো!\n আপনি আগে অঙ্গুলিহেলন তথ্য সংগ্রহ ব্যবহার করেছিলেন, কিন্তু বেশ কিছুদিন ধরে কোনো তথ্য যোগ করেননি। আপনি কি আবার অবদান রাখতে চান?</string>
     <string name="gesture_data_take_me_there">সেখানে নিয়ে যান</string>
     <string name="background_gesture_data_links">নেপথ্য সংগ্রহ সম্পর্কিত তথ্য:</string>

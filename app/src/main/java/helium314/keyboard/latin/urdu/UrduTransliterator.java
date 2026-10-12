@@ -35,10 +35,10 @@ public final class UrduTransliterator {
     }
 
     // tunables (set from offline evaluation, see tools/urdu)
-    public double channelWeight = 1.0;
+    public double channelWeight = 1.4;
     public double observedBonus = 1.0;
     public double completionPenalty = 1.2; // per skipped trailing Urdu letter (ln units)
-    public double bigramWeight = 0.7;
+    public double bigramWeight = 0.5;
 
     private static final int MAXN = 24, MAXM = 40;
 
@@ -271,6 +271,30 @@ public final class UrduTransliterator {
             if (topScore[i] == Double.NEGATIVE_INFINITY) break;
             out.add(new Candidate(words[topWord[i]], topScore[i], topComp[i]));
         }
+        return out;
+    }
+
+    /** Most likely next Urdu words after [prev] (or at sentence start), from the bigram table. */
+    public List<String> nextWords(String prev, boolean atStart, int max) {
+        final ArrayList<String> out = new ArrayList<>();
+        int key = -2;
+        if (atStart) key = -1;
+        else if (prev != null) { final Integer p = wordId.get(prev); if (p != null) key = p; }
+        if (key == -2) return out;
+        final int bg = bigramIndex(key);
+        if (bg < 0) return out;
+        final int[] nx = bigramNext[bg]; final byte[] q = bigramQ[bg];
+        final int[] best = new int[Math.max(max, 1)];
+        final int[] bq = new int[best.length];
+        Arrays.fill(bq, Integer.MAX_VALUE);
+        for (int i = 0; i < nx.length; i++) {
+            final int v = q[i] & 0xff;
+            if (v >= bq[best.length - 1]) continue;
+            int pos = best.length - 1;
+            while (pos > 0 && bq[pos - 1] > v) { bq[pos] = bq[pos - 1]; best[pos] = best[pos - 1]; pos--; }
+            bq[pos] = v; best[pos] = nx[i];
+        }
+        for (int i = 0; i < best.length && bq[i] != Integer.MAX_VALUE; i++) out.add(words[best[i]]);
         return out;
     }
 }

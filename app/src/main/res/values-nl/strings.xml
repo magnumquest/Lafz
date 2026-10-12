@@ -105,8 +105,8 @@
     <string name="more_keys_strip_description">Meer toetsen</string>
     <string name="number_row_summary">Cijferregel altijd weergeven</string>
     <string name="delete_swipe_summary">Veeg vanaf de delete-toets om grotere stukken tekst in één keer te selecteren en verwijderen</string>
-    <string name="spell_checker_service_name">HeliBoard-spellingcontrole</string>
-    <string name="android_spell_checker_settings">HeliBoard-spellingcontrole-instellingen</string>
+    <string name="spell_checker_service_name">Lafz-spellingcontrole</string>
+    <string name="android_spell_checker_settings">Lafz-spellingcontrole-instellingen</string>
     <string name="number_row">Cijferregel</string>
     <string name="incognito">Incognito-modus afdwingen</string>
     <string name="show_emoji_key">Emojitoets</string>
@@ -124,7 +124,7 @@
     <string name="prefs_long_press_keyboard_to_change_lang">Invoermethode schakelen met spatietoets</string>
     <string name="key_borders">Toetsranden</string>
     <string name="autospace_after_punctuation_summary">Automatisch spatie invoegen na interpunctie en het typen van een nieuw woord</string>
-    <string name="ime_settings">HeliBoard-instellingen</string>
+    <string name="ime_settings">Lafz-instellingen</string>
     <string name="settings_category_input">Invoer</string>
     <string name="settings_category_additional_keys">Extra toetsen</string>
     <string name="undo">"Ongedaan maken"</string>
@@ -489,7 +489,7 @@
     <string name="gesture_data_delete_dialog_submitted">%s ingediende woorden verwijderen</string>
     <string name="gesture_data_many_not_shared_words">U heeft meer dan %s woorden die nog kunnen worden ingediend</string>
     <string name="gesture_data_email_body">BELANGRIJK:\n\n Hallo!\n Ter herinnering: deze gegevens worden publiekelijk gedeeld onder de CC BY-SA 4.0-licentie en u wordt niet vermeld als auteur om uw privacy te beschermen.\n\n Bedankt voor het delen van de rechten op uw gegevens met ons. We zullen het goed gebruiken!\n\n Houd er rekening mee dat het wijzigen van de formulering van deze kennisgeving niets verandert aan wat we met uw gegevens zullen doen. Dit is geen contract dat moet worden gewijzigd, het is slechts een vriendelijke herinnering!\n Als u ons samen met uw gegevens een bericht wilt sturen, schrijf dit dan hier onder de regel.\n -----------------------------</string>
-    <string name="gesture_data_promotion_message">Hallo!\n Aangezien u de bibliotheek voor het typen met gebaren hebt geïnstalleerd, bent u mogelijk geïnteresseerd in het project van HeliBoard voor het maken van een volledig open bibliotheek voor het typen met gebaren. U kunt helpen door gebarengegevens in te leveren. Ga voor meer informatie naar het scherm voor het verzamelen van gebarengegevens.</string>
+    <string name="gesture_data_promotion_message">Hallo!\n Aangezien u de bibliotheek voor het typen met gebaren hebt geïnstalleerd, bent u mogelijk geïnteresseerd in het project van Lafz voor het maken van een volledig open bibliotheek voor het typen met gebaren. U kunt helpen door gebarengegevens in te leveren. Ga voor meer informatie naar het scherm voor het verzamelen van gebarengegevens.</string>
     <string name="gesture_data_reminder_message">Hallo!\n U maakte eerder gebruik van de gebarengegevensverzameling, maar voegde al een tijdje geen gegevens toe. Wilt u weer bijdragen?</string>
     <string name="gesture_data_take_me_there">Doe maar</string>
     <string name="gesture_data_links">Informatie over actieve gegegevensverzameling:</string>

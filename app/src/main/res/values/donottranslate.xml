@@ -9,6 +9,7 @@
     <!-- Subtype locale whose name should be displayed in Locale.ROOT. -->
     <string-array name="subtype_locale_displayed_in_root_locale">
         <item>hi-Latn</item>
+        <item>ur-Latn</item>
         <item>mns</item>
         <item>dru</item>
         <item>xdq</item>
@@ -70,7 +71,7 @@
     <!-- Description for Hebrew 2 subtype. -->
     <string name="subtype_hebrew_1452_2" translatable="false">%s (1452-2)</string>
 
-    <string name="english_ime_name" translatable="false">HeliBoard</string>
+    <string name="english_ime_name" translatable="false">Lafz</string>
     <!-- App slogan-->
     <string name="app_slogan" translatable="false">100% FOSS keyboard, based on AOSP.</string>
 
