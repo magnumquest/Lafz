@@ -152,28 +152,30 @@ private constructor(val themeId: Int, @JvmField val mStyleId: Int) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) DynamicColors(context, themeStyle, hasBorders, backgroundImage)
                     else getThemeColors(THEME_LIGHT, themeStyle, context, prefs, isNight)
                 }
+                // Gboard-like palette (light)
                 THEME_LIGHT -> DefaultColors(
                     themeStyle,
                     hasBorders,
-                    ContextCompat.getColor(context, R.color.gesture_trail_color_lxx_light),
-                    ContextCompat.getColor(context, R.color.keyboard_background_lxx_light_border),
-                    ContextCompat.getColor(context, R.color.key_background_normal_lxx_light_border),
-                    ContextCompat.getColor(context, R.color.key_background_functional_lxx_light_border),
-                    ContextCompat.getColor(context, R.color.key_background_normal_lxx_light_border),
-                    ContextCompat.getColor(context, R.color.key_text_color_lxx_light),
-                    ContextCompat.getColor(context, R.color.key_hint_letter_color_lxx_light),
+                    "#1A73E8".toColorInt(), // accent, gesture trail
+                    "#E8EAED".toColorInt(), // keyboard background
+                    "#FFFFFF".toColorInt(), // letter keys
+                    "#C9CDD4".toColorInt(), // functional keys
+                    "#FFFFFF".toColorInt(), // space bar
+                    "#202124".toColorInt(), // key text
+                    "#5F6368".toColorInt(), // hint text
                     keyboardBackground = backgroundImage
                 )
+                // Gboard-like palette (dark)
                 THEME_DARK -> DefaultColors(
                     themeStyle,
                     hasBorders,
-                    ContextCompat.getColor(context, R.color.gesture_trail_color_lxx_dark),
-                    "#263238".toColorInt(),
-                    "#364248".toColorInt(),
-                    "#2d393f".toColorInt(),
-                    "#364248".toColorInt(),
-                    ContextCompat.getColor(context, R.color.key_text_color_lxx_dark),
-                    ContextCompat.getColor(context, R.color.key_hint_letter_color_lxx_dark),
+                    "#8AB4F8".toColorInt(),
+                    "#202124".toColorInt(),
+                    "#3C4043".toColorInt(),
+                    "#2D2F33".toColorInt(),
+                    "#3C4043".toColorInt(),
+                    "#E8EAED".toColorInt(),
+                    "#9AA0A6".toColorInt(),
                     keyboardBackground = backgroundImage
                 )
                 THEME_HOLO_WHITE -> DefaultColors(

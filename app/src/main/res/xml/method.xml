@@ -492,6 +492,16 @@
         android:imeSubtypeExtraValue="AsciiCapable,EmojiCapable"
         android:isAsciiCapable="true"
     />
+    <!-- Roman (QWERTY) typing that is transliterated to Urdu script, see latin/urdu -->
+    <subtype android:icon="@drawable/ic_ime_switcher"
+        android:label="@string/subtype_ur_Latn"
+        android:subtypeId="0x75726c74"
+        android:imeSubtypeLocale="ur_ZZ"
+        android:languageTag="ur-Latn"
+        android:imeSubtypeMode="keyboard"
+        android:imeSubtypeExtraValue="AsciiCapable,EmojiCapable"
+        android:isAsciiCapable="true"
+    />
     <subtype android:icon="@drawable/ic_ime_switcher"
         android:label="@string/subtype_generic"
         android:subtypeId="0x35b7526a"

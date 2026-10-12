@@ -98,8 +98,8 @@
     <string name="enable_clipboard_history">Povoliť históriu schránky</string>
     <string name="prefs_force_incognito_mode_summary">Vypnúť učenie nových slov</string>
     <string name="more_keys_strip_description">Viac kláves</string>
-    <string name="spell_checker_service_name">Kontrola pravopisu v HeliBoard</string>
-    <string name="android_spell_checker_settings">Nastavenia kontroly pravopisu v HeliBoard</string>
+    <string name="spell_checker_service_name">Kontrola pravopisu v Lafz</string>
+    <string name="android_spell_checker_settings">Nastavenia kontroly pravopisu v Lafz</string>
     <string name="show_emoji_key">Emoji klávesa</string>
     <string name="incognito">Vynútiť režim inkognito</string>
     <string name="settings_category_input">Vstup</string>
@@ -510,7 +510,7 @@
     <string name="gesture_data_delete_dialog_submitted">Odstrániť %s zadaných slov</string>
     <string name="gesture_data_many_not_shared_words">Máte viac ako %s slov, ktoré čakajú na odoslanie</string>
     <string name="gesture_data_email_body">DÔLEŽITÉ:\n\n Ahoj!\nPripomíname, že tieto údaje budú verejne zdieľané pod licenciou CC BY-SA 4.0 a vy nebudete uvedení ako autori, aby sme chránili vaše súkromie.\n\n Ďakujeme, že ste s nami zdieľali práva k vašim údajom. Využijeme ich na dobrú vec!\n\n Upozorňujeme, že zmena znenia tohto oznámenia nemení to, čo budeme s vašimi údajmi robiť. Nejedná sa o zmluvu, ktorú je možné meniť, je to len priateľská pripomienka!\n Ak nám chcete spolu s údajmi poslať správu, napíšte ju pod túto čiaru.\n ---------------------------------------------</string>
-    <string name="gesture_data_promotion_message">Ahoj!\n Keďže si nainštaloval knižnicu pre písanie pomocou gest, možno ťa zaujíma projekt HeliBoard zameraný na vytvorenie úplne otvorenej knižnice pre písanie pomocou gest. Môžeš pomôcť tým, že prispieš údajmi o gestách. Viac informácií nájdeš na obrazovke zberu údajov o gestách.</string>
+    <string name="gesture_data_promotion_message">Ahoj!\n Keďže si nainštaloval knižnicu pre písanie pomocou gest, možno ťa zaujíma projekt Lafz zameraný na vytvorenie úplne otvorenej knižnice pre písanie pomocou gest. Môžeš pomôcť tým, že prispieš údajmi o gestách. Viac informácií nájdeš na obrazovke zberu údajov o gestách.</string>
     <string name="gesture_data_reminder_message">Ahoj!\n Predtým si zbieral údaje o gestách, ale už dosť dlho si žiadne údaje nepridal. Chceš opäť prispievať?</string>
     <string name="gesture_data_take_me_there">Vezmi ma tam</string>
     <string name="background_gesture_data_links">Informácie o zhromažďovaní údajov na pozadí:</string>

@@ -27,6 +27,7 @@ import helium314.keyboard.latin.utils.BackgroundGatheringCache
 import helium314.keyboard.latin.utils.SuggestionResults
 import helium314.keyboard.latin.utils.WordData
 import helium314.keyboard.latin.utils.useBackgroundGathering
+import helium314.keyboard.latin.urdu.UrduTransliteration
 import java.util.Locale
 import kotlin.math.max
 import kotlin.math.min
@@ -74,6 +75,9 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
                       settingsValuesForSuggestion: SettingsValuesForSuggestion, inputStyleIfNotPrediction: Int,
                       isCorrectionEnabled: Boolean, sequenceNumber: Int): SuggestedWords {
         val typedWordString = wordComposer.typedWord
+        if (UrduTransliteration.isActive(mDictionaryFacilitator.mainLocale)) {
+            getUrduTransliterationSuggestions(wordComposer, ngramContext, inputStyleIfNotPrediction, sequenceNumber)?.let { return it }
+        }
         val resultsArePredictions = !wordComposer.isComposingWord
         val suggestionResults = if (typedWordString.isEmpty())
                 getNextWordSuggestions(ngramContext, keyboard, inputStyleIfNotPrediction, settingsValuesForSuggestion)
@@ -153,6 +157,47 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
         return SuggestedWords(suggestionsList, suggestionResults.mRawSuggestions, typedWordInfo,
             isTypedWordValid, hasAutoCorrection || correctToCapitalizedWord, false, inputStyle, sequenceNumber)
     }
+
+    /**
+     * Roman -> Urdu: the typed Roman text stays in the composing region, the strip shows Urdu candidates and
+     * the best one is auto-committed on space / punctuation (see [helium314.keyboard.latin.urdu.UrduTransliterator]).
+     * Returns null if the model is not loaded yet, in which case regular suggestions are used.
+     */
+    private fun getUrduTransliterationSuggestions(wordComposer: WordComposer, ngramContext: NgramContext,
+                                                  inputStyleIfNotPrediction: Int, sequenceNumber: Int): SuggestedWords? {
+        val engine = UrduTransliteration.get(Settings.getCurrentContext()) ?: return null
+        val typed = wordComposer.typedWord
+        val prevInfo = if (ngramContext.prevWordCount > 0) ngramContext.getNthPrevWord(1) else null
+        val atStart = ngramContext.isBeginningOfSentenceContext || prevInfo == null
+        val prev = if (atStart) null else prevInfo.toString()
+        val source = urduDictionary
+        val list = ArrayList<SuggestedWordInfo>()
+        if (typed.isEmpty()) { // next-word prediction
+            engine.nextWords(prev, atStart, 6).forEachIndexed { i, w ->
+                list.add(SuggestedWordInfo(w, "", 1000 - i, SuggestedWordInfo.KIND_PREDICTION, source,
+                    SuggestedWordInfo.NOT_AN_INDEX, SuggestedWordInfo.NOT_A_CONFIDENCE))
+            }
+            return SuggestedWords(list, null, null, false, false, false,
+                if (atStart) SuggestedWords.INPUT_STYLE_BEGINNING_OF_SENTENCE_PREDICTION else SuggestedWords.INPUT_STYLE_PREDICTION,
+                sequenceNumber)
+        }
+        val typedInfo = SuggestedWordInfo(typed, "", SuggestedWordInfo.MAX_SCORE, SuggestedWordInfo.KIND_TYPED,
+            Dictionary.DICTIONARY_USER_TYPED, SuggestedWordInfo.NOT_AN_INDEX, SuggestedWordInfo.NOT_A_CONFIDENCE)
+        list.add(typedInfo)
+        val candidates = engine.suggest(typed, prev, atStart, 6)
+        candidates.forEachIndexed { i, c ->
+            list.add(SuggestedWordInfo(c.urdu, "", 1000 - i,
+                if (c.completion) SuggestedWordInfo.KIND_COMPLETION else SuggestedWordInfo.KIND_CORRECTION,
+                source, SuggestedWordInfo.NOT_AN_INDEX, SuggestedWordInfo.NOT_A_CONFIDENCE))
+        }
+        // auto-commit the best Urdu word when space / punctuation is typed; a trailing completion is also committed,
+        // as the user would otherwise end up with Latin text in an Urdu sentence
+        val willAutoCorrect = candidates.isNotEmpty() && isCorrectionEnabledForUrdu
+        return SuggestedWords(list, null, typedInfo, false, willAutoCorrect, false, inputStyleIfNotPrediction, sequenceNumber)
+    }
+
+    private val urduDictionary = Dictionary.PhonyDictionary("urdu_translit")
+    private val isCorrectionEnabledForUrdu = true
 
     // returns [allowsToBeAutoCorrected, hasAutoCorrection]
     // public for testing
