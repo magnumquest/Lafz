@@ -6,7 +6,7 @@ public class Eval {
     for (int i = 2; i + 1 < a.length; i += 2) {
       double v = Double.parseDouble(a[i + 1]);
       switch (a[i]) { case "cw": t.channelWeight = v; break; case "ob": t.observedBonus = v; break;
-        case "cp": t.completionPenalty = v; break; case "bw": t.bigramWeight = v; break; }
+        case "cp": t.completionPenalty = v; break; case "bw": t.bigramWeight = v; break; case "gap": t.maxScoreGap = v; break; case "mlc": t.minLogChannel = v; break; }
     }
     int limit = a.length > 1 ? Integer.parseInt(a[1]) : 2000;
     long tot = 0, oov = 0, h1 = 0, h3 = 0, h5 = 0; long t0 = System.nanoTime(); long calls = 0;

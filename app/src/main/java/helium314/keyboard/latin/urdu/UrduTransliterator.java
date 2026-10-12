@@ -39,6 +39,12 @@ public final class UrduTransliterator {
     public double observedBonus = 1.0;
     public double completionPenalty = 1.2; // per skipped trailing Urdu letter (ln units)
     public double bigramWeight = 0.5;
+    /** candidates whose ln channel probability is below this are junk (nothing like what was typed) and are not shown */
+    public double minLogChannel = -18;
+    /** candidates scoring this much (ln) worse than the best one are not shown */
+    public double maxScoreGap = 8;
+    /** word completions are only offered for words at least this frequent (ln unigram) */
+    public double minCompletionUni = -12.5;
 
     private static final int MAXN = 24, MAXM = 40;
 
@@ -54,7 +60,8 @@ public final class UrduTransliterator {
     private Chan[] chans;                           // [idx * 3 + pos]  pos: 0 initial, 1 medial, 2 final
     private String[] words;
     private char[][] wordChars;
-    private int[][] wordCharIdx;
+    private int[][] wordCharIdx;   // channel alphabet index per letter (spaces of multi-word entries removed)
+    private byte[][] wordPos;      // 0 token-initial, 1 medial, 2 token-final
     private float[] uniLn;
     private String[][] variants;
     private float[][] variantP;
@@ -102,14 +109,28 @@ public final class UrduTransliterator {
         t.uniLn = new float[nWords];
         t.variants = new String[nWords][];
         t.variantP = new float[nWords][];
+        t.wordPos = new byte[nWords][];
         for (int i = 0; i < nWords; i++) {
             final int len = in.readUnsignedByte();
             final char[] w = new char[len];
-            final int[] ix = new int[len];
-            for (int j = 0; j < len; j++) { w[j] = in.readChar(); ix[j] = w[j] < t.charIdx.length ? t.charIdx[w[j]] : 0; }
+            for (int j = 0; j < len; j++) w[j] = in.readChar();
             t.words[i] = new String(w);
             t.wordChars[i] = w;
+            int dp = 0;
+            for (char c : w) if (c != ' ') dp++;
+            final int[] ix = new int[dp];
+            final byte[] pos = new byte[dp];
+            int k = 0;
+            for (int j = 0; j < len; j++) {
+                if (w[j] == ' ') continue;
+                ix[k] = w[j] < t.charIdx.length ? t.charIdx[w[j]] : 0;
+                final boolean first = j == 0 || w[j - 1] == ' ';
+                final boolean last = j == len - 1 || w[j + 1] == ' ';
+                pos[k] = (byte) (first ? 0 : last ? 2 : 1);
+                k++;
+            }
             t.wordCharIdx[i] = ix;
+            t.wordPos[i] = pos;
             t.uniLn[i] = in.readFloat();
             final int nv = in.readUnsignedByte();
             t.variants[i] = new String[nv];
@@ -153,7 +174,8 @@ public final class UrduTransliterator {
         for (int i = 0; i < 26; i++) lists.add(new ArrayList<>());
         for (int w = 0; w < words.length; w++) {
             final boolean[] seen = new boolean[26];
-            firstLetters(wordCharIdx[w], 0, seen, 0);
+            firstLetters(wordCharIdx[w], wordPos[w], 0, seen, 0);
+            for (String v : variants[w]) { final int l = v.charAt(0) - 'a'; if (l >= 0 && l < 26) seen[l] = true; }
             for (int l = 0; l < 26; l++) if (seen[l]) lists.get(l).add(w);
         }
         for (int l = 0; l < 26; l++) {
@@ -162,17 +184,22 @@ public final class UrduTransliterator {
         }
     }
 
-    private void firstLetters(int[] ix, int i, boolean[] seen, int depth) {
+    private void firstLetters(int[] ix, byte[] pos, int i, boolean[] seen, int depth) {
         if (i >= ix.length || depth > 3 || ix[i] == 0) return;
-        final Chan c = chans[ix[i] * 3 + (i == 0 ? 0 : i == ix.length - 1 ? 2 : 1)];
+        final Chan c = chans[ix[i] * 3 + pos[i]];
         if (c == null) return;
         for (int k = 0; k < c.chunks.length; k++) {
-            if (c.len[k] == 0) firstLetters(ix, i + 1, seen, depth + 1);
+            if (c.len[k] == 0) firstLetters(ix, pos, i + 1, seen, depth + 1);
             else { final int l = c.chunks[k][0] - 'a'; if (l >= 0 && l < 26) seen[l] = true; }
         }
     }
 
     public boolean isKnownWord(String urdu) { return wordId.containsKey(urdu); }
+    /** ln unigram probability of a dictionary word, or -Infinity if unknown */
+    public double unigramLn(String urdu) {
+        final Integer i = wordId.get(urdu);
+        return i == null ? Double.NEGATIVE_INFINITY : uniLn[i];
+    }
     public int vocabularySize() { return words.length; }
 
     private int bigramIndex(int w1) {
@@ -209,7 +236,7 @@ public final class UrduTransliterator {
         int prevKey = -2;
         if (atStart) { prevKey = -1; bg = bigramIndex(-1); }
         else if (prev != null) {
-            final Integer p = wordId.get(prev);
+            final Integer p = wordId.get(prev.substring(prev.lastIndexOf(' ') + 1)); // context is the last word of a phrase
             if (p != null) { prevKey = p; bg = bigramIndex(p); }
         }
         final String rs = sb.toString();
@@ -228,7 +255,7 @@ public final class UrduTransliterator {
             A[0][0] = 1.0;
             boolean ok = true;
             for (int i = 0; i < n && ok; i++) {
-                final Chan c = ix[i] == 0 ? null : chans[ix[i] * 3 + (i == 0 ? 0 : i == n - 1 ? 2 : 1)];
+                final Chan c = ix[i] == 0 ? null : chans[ix[i] * 3 + wordPos[w][i]];
                 if (c == null) { ok = false; break; }
                 final double[] row = A[i], nxt = A[i + 1];
                 for (int j = 0; j <= m; j++) {
@@ -258,6 +285,9 @@ public final class UrduTransliterator {
                 if (vs[v].equals(rs)) { chan += observedBonus * variantP[w][v]; comp = false; break; }
             }
             if (chan <= 0) continue;
+            final double lnChan = Math.log(chan);
+            if (lnChan < minLogChannel) continue;                       // nothing like what was typed
+            if (comp && uniLn[w] < minCompletionUni) continue;          // don't complete to rare words
             final double score = lmLn(w, prevKey, bg) + channelWeight * Math.log(chan);
             if (score > topScore[cap - 1]) {
                 int pos = cap - 1;
@@ -268,7 +298,7 @@ public final class UrduTransliterator {
             }
         }
         for (int i = 0; i < cap; i++) {
-            if (topScore[i] == Double.NEGATIVE_INFINITY) break;
+            if (topScore[i] == Double.NEGATIVE_INFINITY || topScore[i] < topScore[0] - maxScoreGap) break;
             out.add(new Candidate(words[topWord[i]], topScore[i], topComp[i]));
         }
         return out;
@@ -279,7 +309,7 @@ public final class UrduTransliterator {
         final ArrayList<String> out = new ArrayList<>();
         int key = -2;
         if (atStart) key = -1;
-        else if (prev != null) { final Integer p = wordId.get(prev); if (p != null) key = p; }
+        else if (prev != null) { final Integer p = wordId.get(prev.substring(prev.lastIndexOf(' ') + 1)); if (p != null) key = p; }
         if (key == -2) return out;
         final int bg = bigramIndex(key);
         if (bg < 0) return out;

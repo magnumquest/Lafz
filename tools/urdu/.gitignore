@@ -3,3 +3,8 @@ eval.tsv
 eval/out/
 *.log
 __pycache__/
+eng_guesses.tsv
+loanwords_raw.tsv
+mined_pairs.pkl
+mined_pairs.tsv
+mined_ok.tsv
