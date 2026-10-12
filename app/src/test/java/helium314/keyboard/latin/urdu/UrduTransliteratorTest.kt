@@ -34,4 +34,24 @@ class UrduTransliteratorTest {
     @Test fun nextWordPrediction() {
         assertTrue(engine.nextWords("میں", false, 5).isNotEmpty())
     }
+
+    @Test fun futureTenseVerbsAreDictionaryPhrases() {
+        assertEquals("میں کل آؤں گا", sentence("mein kal aonga"))
+        assertEquals("جاؤں گا", sentence("jaunga"))
+        assertTrue(engine.suggest("aonga", null, true, 5).any { it.urdu == "آؤں گی" })
+    }
+
+    @Test fun englishLoanwordsGetUrduSpelling() {
+        assertEquals("کمپیوٹر", sentence("computer"))
+        assertEquals("میسج", sentence("message"))
+        assertEquals("لیپ ٹاپ", sentence("laptop"))
+        assertEquals("ڈاکٹر", sentence("doctor"))
+    }
+
+    @Test fun neverSuggestsOutOfDictionaryWords() {
+        assertTrue(engine.suggest("xyzqw", null, true, 5).isEmpty())
+        for (w in listOf("karunga", "mein", "kaise", "computer", "ka")) {
+            engine.suggest(w, null, true, 6).forEach { assertTrue(engine.isKnownWord(it.urdu), "$w -> ${it.urdu}") }
+        }
+    }
 }

@@ -4,9 +4,14 @@ import sys, json, pickle, struct, math, collections
 sys.path.insert(0, '.')
 from common import *
 out = sys.argv[1]; ship = '--ship' in sys.argv
+import os
+extra = json.load(open('extra.json')) if '--extra' in sys.argv and os.path.exists('extra.json') else {'words': {}, 'variants': {}}
 lm = pickle.load(open('lm.pkl', 'rb')); ch = json.load(open('channel.json'))
-vocab = lm['vocab']; wid = {w: i for i, w in enumerate(vocab)}
+vocab = list(lm['vocab']); wid = {w: i for i, w in enumerate(vocab)}
 tot = sum(lm['uni'].values())
+extra_uni = {}
+for w, c in extra['words'].items():
+    if w not in wid: wid[w] = len(vocab); vocab.append(w); extra_uni[w] = c
 var = collections.defaultdict(collections.Counter)
 for sp in (['train', 'dev', 'test'] if ship else ['train']):
     for u, r, a in lexicon(sp):
@@ -24,12 +29,15 @@ for k, d in ch.items():
 i32(len(vocab))
 for i, w in enumerate(vocab):
     d = w.encode('utf-16-be'); b.append(len(d) // 2); b.extend(d)
-    f32(math.log(lm['uni'][w] / tot))
+    f32(math.log((lm['uni'].get(w) or extra_uni[w]) / tot))
     v = var.get(i) or collections.Counter()
     top = v.most_common(8); T = sum(v.values())
-    b.append(len(top))
-    for r, a in top:
-        s(r); b.append(max(1, min(255, round(255 * a / T))))
+    outv = [(r, max(1, min(255, round(255 * a / T)))) for r, a in top]
+    for e, wgt in extra['variants'].get(w, {}).items():
+        if all(e != r for r, _ in outv) and e.isascii() and e.replace('-', '').isalpha():
+            outv.append((e.replace('-', ''), max(1, round(255 * wgt))))
+    b.append(len(outv))
+    for r, q in outv: s(r); b.append(q)
 # bigrams grouped by w1 (index 0 = <s>, words shifted by +1)
 by = collections.defaultdict(list)
 tot1 = collections.Counter()

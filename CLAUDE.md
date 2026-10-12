@@ -20,9 +20,16 @@ model decoded through a noisy-channel transliteration model, on-device. We do th
   alignments (forward algorithm). Learned by EM from human-written romanizations (Google **Dakshina** dataset, CC BY-SA 4.0). Words people were seen
   romanizing also get a bonus for those exact spellings.
 * LM: unigram + pruned bigram over 8.8M tokens of Urdu Wikipedia (Dakshina native-script text), 60k-word vocabulary.
+* **Dictionary-only output** (owner requirement, like Gboard): every candidate is a dictionary entry; weak candidates are cut (`minLogChannel`, `maxScoreGap`,
+  no completions to rare words), gibberish returns nothing. The typed Roman text is never drawn in the strip (index 0 is omitted by `omitTypedWord` for typing).
+* **Multi-word entries**: ~1,200 generated future-tense verb phrases (`aonga` → آؤں گا / آؤں گی, `karunga` → کروں گا …) from ~150 seed + attested infinitives. Entries may
+  contain a space; the channel model runs over the letters without it. Prev-word context for the next word is the last token of a phrase.
+* **English loanwords** (`computer` → کمپیوٹر, `message` → میسج, `laptop` → لیپ ٹاپ): English spellings are extra "observed variants" of Urdu dictionary entries, from
+  (a) hand-curated `tools/urdu/loanwords_curated.tsv` (~230, **edit this to add words**), (b) `"اردو (english)"` pairs mined from Wikipedia and confirmed by the decoder,
+  (c) decoder-voted CMUdict phonetic guesses for common English words (wordfreq). See `tools/urdu/README.md` step 2.
 * Prefix completions while typing (`ka` → کا, کالج…), next-word prediction from bigrams, auto-commit of best Urdu word on space.
 * Held-out accuracy (Dakshina romanized sentences, eval sentences removed from LM training, previous word = engine's own prediction):
-  **top-1 89.5 %, top-3 93.5 %**, ~3 ms/query on a desktop JVM (mobile will be slower, still fine; unmeasured). Caveat: Wikipedia register.
+  **top-1 89.6 %, top-3 93.4 %**, ~3 ms/query on a desktop JVM (mobile will be slower, still fine; unmeasured). Caveat: Wikipedia register.
   Casual chat is likely lower. Known example: `yaar kya haal hai` → `…حال ہی` because "حال ہی" ("recently") is a very common Wikipedia bigram.
 * Other research notes: Roman-Urdu-Parl (6.37M sentence pairs) + m2m100 transformer reaches Char-BLEU ~97 but is far too big for a keyboard
   (arXiv 2503.21530); seq2seq paper arXiv 1712.02959. Could be used offline to *generate training data* for the lexicon/LM, not shipped.
@@ -63,7 +70,7 @@ loaded yet (first keystroke after start), it falls back to normal suggestions wh
 3. **Punctuation**: map `.`→`۔`, `?`→`؟`, `,`→`،` when composing/committing in `ur-Latn` (Gboard does this). Hook near `commitCurrentAutoCorrection` / separator handling in `InputLogic`.
 4. **Quality**
    * Domain gap: LM is Wikipedia-only. Add conversational data (Dakshina romanized sentences are only 9.7k; consider licensed chat/subtitle corpora, or a user-opt-in *on-device* learning of committed words/bigrams).
-   * OOV: only 60k words (98 % token coverage on Dakshina eval). Add fallback for names / unseen words (reverse-decode the channel model: roman chunk → Urdu letters), and multi-word verb forms (`aonga` should become `آؤں گا`: consider a split model or add compound entries).
+   * OOV: only 60k words (98 % token coverage on Dakshina eval) plus extras. Names / unseen words currently show nothing (by design: dictionary-only). More verb forms are worth adding (past `kardiya`, `hogaya`, continuous `kar raha`, imperatives `karo`, `kardo`), plus a bigger curated loanword list and common chat words/slang (`yaar`, `bhai`, `acha`…): all go through `tools/urdu/build_extra.py`.
    * Roman `h`-aspirates, `ain`/`hamza` handled implicitly by the channel model; check hard cases (`kh`, `gh`, `ch`, nasal ں).
    * Re-tune weights in `UrduTransliterator` (channelWeight 1.4, observedBonus 1.0, bigramWeight 0.5, completionPenalty 1.2) with `tools/urdu/eval/Eval.java`.
    * Mobile perf: measure `suggest()` latency on a mid-range phone; first-letter buckets already prune ~90 %. Move heavy work off the UI thread if needed (HeliBoard already calls Suggest from a background handler).
