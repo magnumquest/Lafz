@@ -52,6 +52,18 @@ When `DictionaryFacilitator.mainLocale == ur-Latn`, `Suggest` returns `[typed ro
 `commitCurrentAutoCorrection` path commits `urdu1` on space/punctuation. Typed Roman stays in the composing region (like Gboard). If the model is not
 loaded yet (first keystroke after start), it falls back to normal suggestions while loading on a background thread.
 
+## Religious honorifics & terms (owner request)
+English (any Latin typing), Roman→Urdu typing and Urdu-script typing all get honorific suggestions from `latin/urdu/ReligiousShortcuts.java`
+(data: `app/src/main/assets/honorifics/honorifics.tsv`, loader `Honorifics.kt`, hook `Suggest.addHonorificSuggestions`):
+* `Rasul` → `Rasulullah ﷺ` / `Rasulullah Sallallahu Alaihi Wasallam`; `Isa` → `Isa Alaihis Salaam`; `Umar` → `Umar Radiallahu Anhu`; Urdu output `عمر رضی اللہ عنہ`.
+* After a committed name, next-word prediction offers the right suffix (`Umar ␣` → `Radiallahu Anhu`; `Aisha ␣` → `Radiallahu Anha`; Prophet → `Alaihis Salaam`).
+* Abbreviations `ra/rz`, `as`, `saw`, `rh` expand according to the previous name's type (M/F/D/P/Q/H/W in the TSV). `as`/`saw` need a matching previous name so ordinary English is never touched.
+* Phrases/terms: bismillah, assalamu alaikum, inshallah, mashallah, subhanallah, alhamdulillah, jazakallah, ameen, Quran, Hadith, namaz/prayer names, Eid/Ramadan greetings…
+* Spelling-insensitive matching (`fold`: doubled letters collapsed, y=i, u=o): `salallahu`/`sallallahu`, `rasool`/`rasul`, `eesa`/`isa`. Latin prefix match needs ≥4 letters (short prefixes fired on ordinary words), Urdu ≥3.
+* Placement: honorifics are inserted at strip slot 1 (centre) when there is no auto-correction, slot 3 when there is, so they never become the auto-correct target; in Urdu mode slot 2.
+* **Please have a religious-knowledge owner review `honorifics.tsv`** (spellings, which honorific for whom, and the Urdu text). Add/modify by editing the TSV only. Long phrases may need strip text-scaling checks on device.
+* TODO: a Settings toggle ("Religious honorific suggestions") — not added yet; learning: committed phrases enter user history like any word.
+
 ## Rebrand details
 * applicationId `app.lafz.keyboard` (was `helium314.keyboard`), versionName `0.1.0`, APK name `Lafz_*.apk`. Kotlin/Java **package names are unchanged**
   (`helium314.keyboard.*`, namespace `helium314.keyboard.latin`) to keep merges from upstream possible. Provider authorities changed to `app.lafz.keyboard.*`.

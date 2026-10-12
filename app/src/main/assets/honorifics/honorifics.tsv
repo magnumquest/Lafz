@@ -1,0 +1,161 @@
+# kind	type	triggers	latin	urdu
+# N: person/entity, honorific generated from type (H Muhammad, P prophet/angel, Q female prophet, M/F/D companions, W scholar)
+# X: explicit phrases, "|" separated alternatives; triggers are lower-case latin or Urdu script
+N	H	muhammad,mohammad,muhammed,mohammed,mohd,محمد	Muhammad	محمد
+N	H	rasul,rasool,rasulullah,rasoolullah,rasulallah,rasoolallah,rasulullahi,رسول,رسولاللہ	Rasulullah	رسول اللہ
+N	H	nabi,nabikareem,nabipak,nabiakram,نبی	Nabi Kareem	نبی کریم
+N	H	huzoor,hazoor,huzur,حضور	Huzoor	حضور
+N	H	mustafa,مصطفیٰ,مصطفی	Mustafa	مصطفیٰ
+N	P	adam,آدم	Adam	آدم
+N	P	idris,idrees,ادریس	Idris	ادریس
+N	P	nuh,nooh,noah,نوح	Nuh	نوح
+N	P	hud,hood,ہود	Hud	ہود
+N	P	salih,saleh,صالح	Salih	صالح
+N	P	ibrahim,ibraheem,abraham,ابراہیم	Ibrahim	ابراہیم
+N	P	lut,loot,لوط	Lut	لوط
+N	P	ismail,ismaeel,ismael,اسماعیل	Ismail	اسماعیل
+N	P	ishaq,ishaque,اسحاق	Ishaq	اسحاق
+N	P	yaqub,yaqoob,yakub,یعقوب	Yaqub	یعقوب
+N	P	yusuf,yousuf,yousaf,joseph,یوسف	Yusuf	یوسف
+N	P	ayyub,ayub,ayyoob,ایوب	Ayyub	ایوب
+N	P	shuaib,shuayb,shoaib,شعیب	Shuaib	شعیب
+N	P	musa,moosa,moses,موسیٰ,موسی	Musa	موسیٰ
+N	P	harun,haroon,aaron,ہارون	Harun	ہارون
+N	P	dawud,dawood,daud,david,داؤد,داود	Dawud	داؤد
+N	P	sulaiman,suleman,sulaimaan,solomon,سلیمان	Sulaiman	سلیمان
+N	P	ilyas,elias,الیاس	Ilyas	الیاس
+N	P	alyasa,yasa,الیسع	Alyasa	الیسع
+N	P	yunus,younus,jonah,یونس	Yunus	یونس
+N	P	zakariya,zakaria,zakariyya,زکریا	Zakariya	زکریا
+N	P	yahya,yahyah,یحییٰ,یحیی	Yahya	یحییٰ
+N	P	isa,eesa,esa,jesus,عیسیٰ,عیسی	Isa	عیسیٰ
+N	P	dhulkifl,zulkifl,ذوالکفل	Dhul-Kifl	ذوالکفل
+N	P	jibreel,jibril,jibrail,gabriel,جبرائیل,جبریل	Jibreel	جبرائیل
+N	P	mikaeel,mikail,mikael,میکائیل	Mikaeel	میکائیل
+N	P	israfeel,israfil,اسرافیل	Israfeel	اسرافیل
+N	Q	maryam,mariam,mary,مریم	Maryam	مریم
+N	Q	hawwa,hawa,eve,حوا	Hawwa	حوا
+N	Q	sarah,sara,سارہ	Sarah	سارہ
+N	Q	hajra,hajar,hagar,ہاجرہ	Hajra	ہاجرہ
+N	Q	asiya,asiyah,آسیہ	Asiya	آسیہ
+N	M	abubakr,abubakar,siddiq,siddique,صدیق,ابوبکر	Abu Bakr	ابو بکر
+N	M	bakr,bakar,بکر	Bakr	بکر
+N	M	umar,omar,farooq,farooqi,عمر,فاروق	Umar	عمر
+N	M	uthman,usman,osman,ghani,عثمان	Uthman	عثمان
+N	M	ali,aly,علی	Ali	علی
+N	M	talha,طلحہ	Talha	طلحہ
+N	M	zubair,zubayr,زبیر	Zubair	زبیر
+N	M	saad,سعد	Saad	سعد
+N	M	abdurrahman,abdulrahman,عبدالرحمن	Abdur Rahman	عبد الرحمن
+N	M	ubaidah,ubaida,ubaydah,عبیدہ	Abu Ubaidah	ابو عبیدہ
+N	M	hamza,hamzah,حمزہ	Hamza	حمزہ
+N	M	abbas,عباس	Abbas	عباس
+N	M	bilal,بلال	Bilal	بلال
+N	M	khalid,khaled,خالد	Khalid	خالد
+N	M	hurairah,huraira,hurayrah,ہریرہ	Abu Hurairah	ابو ہریرہ
+N	M	anas,انس	Anas	انس
+N	M	salman,سلمان	Salman Farsi	سلمان فارسی
+N	M	muadh,muaz,معاذ	Muadh	معاذ
+N	M	ammar,عمار	Ammar	عمار
+N	M	musab,mus'ab,مصعب	Musab	مصعب
+N	M	jafar,jaafar,جعفر	Jafar	جعفر
+N	M	zaid,zayd,زید	Zaid	زید
+N	M	usama,osama,اسامہ	Usama	اسامہ
+N	M	muawiya,muawiyah,معاویہ	Muawiya	معاویہ
+N	M	hudhaifa,huzaifa,hudhayfah,حذیفہ	Hudhaifa	حذیفہ
+N	M	hasan,hassan,حسن	Hasan	حسن
+N	M	husain,hussain,husayn,حسین	Husain	حسین
+N	M	masood,masud,mas'ud,مسعود	Abdullah ibn Masud	عبداللہ بن مسعود
+N	M	ansari,انصاری	Abu Ayyub Ansari	ابو ایوب انصاری
+N	D	ibnabbas,ابنعباس	Ibn Abbas	ابن عباس
+N	D	ibnumar,ibnomar,ابنعمر	Ibn Umar	ابن عمر
+N	F	aisha,ayesha,aaisha,ayisha,عائشہ,عایشہ	Aisha	عائشہ
+N	F	khadija,khadijah,khadeeja,خدیجہ	Khadija	خدیجہ
+N	F	fatima,fatimah,فاطمہ	Fatima	فاطمہ
+N	F	hafsa,hafsah,حفصہ	Hafsa	حفصہ
+N	F	zainab,zaynab,زینب	Zainab	زینب
+N	F	ummsalama,salama,salamah,ummesalma,سلمہ	Umm Salama	ام سلمہ
+N	F	ruqayyah,ruqaiya,رقیہ	Ruqayyah	رقیہ
+N	F	safiyyah,safiya,صفیہ	Safiyyah	صفیہ
+N	F	juwayriyah,juwairiyah,جویریہ	Juwayriyah	جویریہ
+N	F	maymunah,maimuna,میمونہ	Maymunah	میمونہ
+N	F	sawdah,sauda,سودہ	Sawdah	سودہ
+N	F	sumayyah,sumaiya,سمیہ	Sumayyah	سمیہ
+N	F	asma,اسماء	Asma	اسماء
+N	W	hanifa,hanifah,ابوحنیفہ,حنیفہ	Imam Abu Hanifa	امام ابو حنیفہ
+N	W	shafi,shafii,shafei,شافعی	Imam Shafi'i	امام شافعی
+N	W	hanbal,hambal,حنبل	Imam Ahmad bin Hanbal	امام احمد بن حنبل
+N	W	bukhari,بخاری	Imam Bukhari	امام بخاری
+N	W	tirmidhi,tirmizi,ترمذی	Imam Tirmidhi	امام ترمذی
+N	W	nawawi,nawawy,نووی	Imam Nawawi	امام نووی
+N	W	ghazali,غزالی	Imam Ghazali	امام غزالی
+N	W	jilani,gilani,jeelani,جیلانی,گیلانی	Abdul Qadir Jilani	عبد القادر جیلانی
+N	W	rumi,رومی	Maulana Rumi	مولانا رومی
+N	W	kathir,کثیر	Ibn Kathir	ابن کثیر
+N	W	taymiyyah,taimiyyah,تیمیہ	Ibn Taymiyyah	ابن تیمیہ
+N	W	iqbal,اقبال	Allama Iqbal	علامہ اقبال
+X		ali,علی	Ali Karamallahu Wajhahu	علی کرم اللہ وجہہ
+X		hasnain,حسنین	Hasan wa Husain Radiallahu Anhuma	حسن و حسین رضی اللہ عنہما
+X		ahlebait,ahlulbayt,ahlebayt,اہلبیت	Ahl-e-Bayt Alaihimus Salaam|Ahl al-Bayt	اہل بیت علیہم السلام|اہل بیت
+X		sahaba,sahabah,companions,صحابہ	Sahaba Radiallahu Anhum|Sahaba Karam Radiallahu Anhum	صحابہ رضی اللہ عنہم|صحابہ کرام رضی اللہ عنہم
+X		sallallahu,sallallah,salallahu,salallah,sallalahu,salalahu,sallallahualaihiwasallam,pbuh,sws,صلی	Sallallahu Alaihi Wasallam|ﷺ|Sallallahu Alaihi Wa Aalihi Wasallam	ﷺ|صلی اللہ علیہ وآلہ وسلم|صلی اللہ علیہ وسلم
+X		alaihi,alayhi,alaihis,alayhis,alaihissalam,alaihisalam,alaihisalaam,alaihissalaam,علیہ	Alaihis Salaam|Alayhis Salam|(AS)	علیہ السلام
+X		alaiha,alayha,alaihas,alayhas,alaihassalam,علیہا	Alaihas Salaam|Alayhas Salam	علیہا السلام
+X		radi,radhi,radiallahu,radiyallahu,radiallah,radiyallah,radiallahuanhu,رضی	Radiallahu Anhu|Radiallahu Anha|Radiallahu Anhuma|Radiallahu Anhum	رضی اللہ عنہ|رضی اللہ عنہا|رضی اللہ عنہما|رضی اللہ عنہم
+X		rahimahullah,rahmatullah,rahmatullahi,rahimahumullah,rahmat,رحمہ,رحمۃ	Rahimahullah|Rahmatullahi Alaihi|Rahmatullahi Alaiha|Rahimahumullah	رحمہ اللہ|رحمۃ اللہ علیہ|رحمۃ اللہ علیہا|رحمہم اللہ
+X		swt,subhanahu,subhanahuwataala,jalla,سبحانہ	Subhanahu Wa Ta'ala|SWT|Azza Wa Jal|Jalla Jalaluhu	سبحانہ و تعالیٰ|عز و جل|جل جلالہ
+X		allah,allahu,اللہ	Allah Subhanahu Wa Ta'ala|Allah Ta'ala|Allah Azza Wa Jal	اللہ سبحانہ و تعالیٰ|اللہ تعالیٰ|اللہ عز و جل
+X		bismillah,bismilah,بسم	Bismillah ir-Rahman ir-Raheem|Bismillah|Bismillahi Tawakkaltu Alallah	بسم اللہ الرحمن الرحیم|بسم اللہ|بسم اللہ توکلت علی اللہ
+X		assalam,assalamu,assalamualaikum,assalamoalaikum,salam,salaam,asalam,aoa,السلام	Assalamu Alaikum|Assalamu Alaikum Wa Rahmatullahi Wa Barakatuh|Salam	السلام علیکم|السلام علیکم ورحمۃ اللہ وبرکاتہ|سلام
+X		walaikum,waalaikum,walekum,waleikum,walaikumassalam,walaikumsalam,وعلیکم	Wa Alaikum Assalam|Wa Alaikum Assalam Wa Rahmatullahi Wa Barakatuh	وعلیکم السلام|وعلیکم السلام ورحمۃ اللہ وبرکاتہ
+X		inshallah,inshaallah,insha,inshalla,انشاء	InshaAllah|In Sha Allah|InshaAllah Ta'ala	ان شاء اللہ|انشاء اللہ|ان شاء اللہ تعالیٰ
+X		mashallah,mashaallah,mashalla,ماشاء	MashaAllah|Masha Allah|MashaAllah Tabarakallah	ماشاء اللہ|ما شاء اللہ|ماشاء اللہ تبارک اللہ
+X		subhanallah,subhanalla,subhan,سبحان	SubhanAllah|Subhan Allah|SubhanAllahi Wa Bihamdihi	سبحان اللہ|سبحان اللہ وبحمدہ
+X		alhamdulillah,alhamdulilah,alhamdu,hamdulillah,الحمد	Alhamdulillah|Alhamdulillahi Rabbil Alamin|Alhamdulillah Ala Kulli Hal	الحمد للہ|الحمد للہ رب العالمین|الحمد للہ علیٰ کل حال
+X		astaghfirullah,astagfirullah,astaghfirulla,استغفر	Astaghfirullah|Astaghfirullah Al-Azeem|Astaghfirullaha Wa Atubu Ilayh	استغفر اللہ|استغفر اللہ العظیم|استغفر اللہ ربی من کل ذنب
+X		jazakallah,jazakallahu,jazak,jazakumullah,جزاک	JazakAllahu Khairan|JazakAllah Khair|Jazakumullahu Khairan	جزاک اللہ خیراً|جزاک اللہ|جزاکم اللہ خیراً
+X		barakallah,barakallahu,barakallahufeek,بارک	BarakAllahu Feek|BarakAllahu Lakum|BarakAllahu Laka	بارک اللہ فیک|بارک اللہ لکم|بارک اللہ لک
+X		innalillah,innalillahi,انا	Inna Lillahi Wa Inna Ilayhi Raji'un	انا للہ و انا الیہ راجعون
+X		allahuakbar,takbeer,takbir,اللہاکبر	Allahu Akbar|Allahu Akbar Kabira	اللہ اکبر
+X		lailaha,kalima,kalma,کلمہ	La Ilaha Illallah|La Ilaha Illallah Muhammadur Rasulullah ﷺ	لا الٰہ الا اللہ|لا الٰہ الا اللہ محمد رسول اللہ ﷺ
+X		ameen,amin,aameen,آمین	Ameen|Ameen Ya Rabbal Alameen|Ameen Thumma Ameen	آمین|آمین یا رب العالمین|آمین ثم آمین
+X		fiamanillah,allahhafiz,khudahafiz	Fi Amanillah|Allah Hafiz	فی امان اللہ|اللہ حافظ
+X		yaallah,yarab,یااللہ	Ya Allah|Ya Rabb	یا اللہ|یا رب
+X		eid,eidmubarak,عید	Eid Mubarak|Eid-ul-Fitr Mubarak|Eid-ul-Adha Mubarak	عید مبارک|عید الفطر مبارک|عید الاضحیٰ مبارک
+X		ramadan,ramzan,ramazan,رمضان,رمزان	Ramadan Mubarak|Ramadan Kareem	رمضان مبارک|رمضان کریم
+X		jumma,jumah,jummah,jumuah,جمعہ	Jumu'ah Mubarak|Jummah Mubarak	جمعہ مبارک
+X		marhoom,marhum,مرحوم	Marhoom|Marhooma|Allah Maghfirat Farmaye	مرحوم|مرحومہ|اللہ مغفرت فرمائے
+X		quran,quraan,koran,قرآن,قران	Quran Majeed|Quran Kareem|Holy Quran|Al-Quran	قرآن مجید|قرآن کریم|قرآن پاک
+X		hadith,hadees,hadis,حدیث	Hadith|Hadith Mubarak|Sahih Bukhari|Sahih Muslim	حدیث|حدیث مبارکہ|صحیح بخاری|صحیح مسلم
+X		sunnah,sunnat,sunnath,سنت	Sunnah|Sunnat	سنت|سنّت
+X		namaz,salah,salat,salaat,نماز,صلوٰۃ	Namaz|Salah|Salat	نماز|صلوٰۃ
+X		fajr,fajar,فجر	Fajr	فجر
+X		zuhr,dhuhr,zohar,ظہر	Zuhr|Dhuhr	ظہر
+X		asr,عصر	Asr	عصر
+X		maghrib,magrib,مغرب	Maghrib	مغرب
+X		isha,esha,ishaa,عشاء	Isha	عشاء
+X		tahajjud,tahajud,تہجد	Tahajjud	تہجد
+X		jannah,jannat,janat,جنت	Jannah|Jannat-ul-Firdaus	جنت|جنت الفردوس
+X		jahannam,dozakh,jahanum,جہنم,دوزخ	Jahannam|Dozakh	جہنم|دوزخ
+X		dua,duaa,dooa,دعا	Dua|Duain	دعا|دعائیں
+X		dhikr,zikr,zikar,ذکر	Dhikr|Zikr	ذکر
+X		tasbeeh,tasbih,tasbeh,تسبیح	Tasbeeh	تسبیح
+X		wudu,wuzu,wazu,وضو	Wudu|Wazu	وضو
+X		hajj,haj,حج	Hajj	حج
+X		umrah,umra,عمرہ	Umrah	عمرہ
+X		zakat,zakaat,زکوٰۃ,زکات	Zakat|Zakaat	زکوٰۃ
+X		sadaqah,sadqa,sadaqa,صدقہ	Sadaqah|Sadqa	صدقہ
+X		sabr,sabar,صبر	Sabr	صبر
+X		taqwa,taqwah,تقویٰ,تقوی	Taqwa	تقویٰ
+X		iman,eman,ایمان	Iman	ایمان
+X		islam,اسلام	Islam|Islamic	اسلام|اسلامی
+X		muslim,musalman,مسلمان	Muslim|Musalman	مسلم|مسلمان
+X		masjid,mosque,مسجد	Masjid|Masjid-e-Nabawi|Masjid al-Haram	مسجد|مسجد نبوی|مسجد الحرام
+X		kaaba,kabah,kaba,کعبہ	Kaaba|Khana Kaaba	کعبہ|خانہ کعبہ
+X		madina,medina,مدینہ	Madinah Munawwarah|Madina	مدینہ منورہ|مدینہ
+X		makkah,mecca,mekka,مکہ	Makkah Mukarramah|Makkah	مکہ مکرمہ|مکہ
+X		shaban,shaaban,شعبان	Sha'ban	شعبان
+X		muharram,محرم	Muharram	محرم
+X		shabeqadr,laylatulqadr,shabqadr,شبقدر	Laylat al-Qadr|Shab-e-Qadr	لیلۃ القدر|شب قدر
+X		shabebarat,shabbarat,شبرات	Shab-e-Barat	شب برات
+X		milad,mawlid,میلاد	Eid Milad-un-Nabi ﷺ|Milad-un-Nabi	عید میلاد النبی ﷺ|میلاد النبی
