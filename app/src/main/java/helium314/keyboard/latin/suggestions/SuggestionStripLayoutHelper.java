@@ -45,6 +45,7 @@ import helium314.keyboard.latin.SuggestedWords.SuggestedWordInfo;
 import helium314.keyboard.latin.common.ColorType;
 import helium314.keyboard.latin.common.Colors;
 import helium314.keyboard.latin.settings.Settings;
+import helium314.keyboard.latin.urdu.UrduTransliteration;
 import helium314.keyboard.latin.settings.SettingsValues;
 import helium314.keyboard.latin.utils.ResourceUtils;
 import helium314.keyboard.latin.utils.ViewLayoutUtils;
@@ -56,12 +57,15 @@ final class SuggestionStripLayoutHelper {
     private static final float DEFAULT_CENTER_SUGGESTION_PERCENTILE = 0.40f;
     private static final int DEFAULT_MAX_MORE_SUGGESTIONS_ROW = 2;
     private static final int PUNCTUATIONS_IN_STRIP = 5;
+    private static final int MAX_URDU_SUGGESTIONS_IN_STRIP = 6;
     private static final float MIN_TEXT_XSCALE = 0.70f;
 
     public final int mPadding;
     public final int mDividerWidth;
     public final int mSuggestionsStripHeight;
-    private final int mSuggestionsCountInStrip;
+    private final int mBaseSuggestionsCountInStrip;
+    // may be larger than the base count in Urdu mode, see chooseCountInStrip
+    private int mSuggestionsCountInStrip;
     public final int mMoreSuggestionsRowHeight;
     private int mMaxMoreSuggestionsRow;
     public final float mMinMoreSuggestionsWidth;
@@ -81,8 +85,8 @@ final class SuggestionStripLayoutHelper {
     private final int mColorSuggested;
     private final float mAlphaObsoleted;
     private final float mCenterSuggestionWeight;
-    private final int mCenterPositionInStrip;
-    private final int mTypedWordPositionWhenAutocorrect;
+    private int mCenterPositionInStrip;
+    private int mTypedWordPositionWhenAutocorrect;
     private final Drawable mMoreSuggestionsHint;
     private static final String MORE_SUGGESTIONS_HINT = "…";
 
@@ -125,9 +129,10 @@ final class SuggestionStripLayoutHelper {
         mColorSuggested = colors.get(ColorType.SUGGESTED_WORD);
         final int colorMoreSuggestionsHint = colors.get(ColorType.MORE_SUGGESTIONS_HINT);
 
-        mSuggestionsCountInStrip = a.getInt(
+        mBaseSuggestionsCountInStrip = a.getInt(
                 R.styleable.SuggestionStripView_suggestionsCountInStrip,
                 DEFAULT_SUGGESTIONS_COUNT_IN_STRIP);
+        mSuggestionsCountInStrip = mBaseSuggestionsCountInStrip;
         mCenterSuggestionWeight = ResourceUtils.getFraction(a,
                 R.styleable.SuggestionStripView_centerSuggestionPercentile,
                 DEFAULT_CENTER_SUGGESTION_PERCENTILE);
@@ -333,6 +338,7 @@ final class SuggestionStripLayoutHelper {
                     (PunctuationSuggestions)suggestedWords, stripView);
         }
 
+        chooseCountInStrip(suggestedWords, stripView.getWidth());
         final int wordCountToShow = suggestedWords.getWordCountToShow();
         final int startIndexOfMoreSuggestions = setupWordViewsAndReturnStartIndexOfMoreSuggestions(
                 suggestedWords, mSuggestionsCountInStrip);
@@ -440,6 +446,39 @@ final class SuggestionStripLayoutHelper {
         ViewLayoutUtils.placeViewAt(debugInfoView, x - infoWidth, 0, infoWidth, debugInfoView.getMeasuredHeight());
     }
 
+    /**
+     * Gboard-like strip for Roman -> Urdu typing: show as many suggestions as fit (up to
+     * {@link #MAX_URDU_SUGGESTIONS_IN_STRIP}), with equal width, instead of always 3.
+     */
+    private void chooseCountInStrip(final SuggestedWords suggestedWords, final int stripWidth) {
+        int count = mBaseSuggestionsCountInStrip;
+        if (UrduTransliteration.isActive(Settings.getValues().mLocale) && stripWidth > 0
+                && !mWordViews.isEmpty()) {
+            final boolean omitTyped = shouldOmitTypedWord(suggestedWords.mInputStyle,
+                    Settings.getValues().mGestureFloatingPreviewTextEnabled, true);
+            final int first = omitTyped ? 1 : 0;
+            final int available = suggestedWords.size() - first;
+            final TextPaint paint = mWordViews.get(0).getPaint();
+            final float oldScaleX = paint.getTextScaleX();
+            paint.setTextScaleX(1.0f);
+            for (int n = Math.min(MAX_URDU_SUGGESTIONS_IN_STRIP, available); n > count; n--) {
+                final int slot = (stripWidth - mPadding * n - mDividerWidth * (n - 1)) / n;
+                boolean fits = true;
+                for (int i = 0; i < n && fits; i++) {
+                    fits = getTextWidth(suggestedWords.getLabel(first + i), paint) <= slot;
+                }
+                if (fits) {
+                    count = n;
+                    break;
+                }
+            }
+            paint.setTextScaleX(oldScaleX);
+        }
+        mSuggestionsCountInStrip = count;
+        mCenterPositionInStrip = count / 2;
+        mTypedWordPositionWhenAutocorrect = mCenterPositionInStrip - 1;
+    }
+
     private int getSuggestionWidth(final int positionInStrip, final int maxWidth) {
         final int paddings = mPadding * mSuggestionsCountInStrip;
         final int dividers = mDividerWidth * (mSuggestionsCountInStrip - 1);
@@ -448,6 +487,9 @@ final class SuggestionStripLayoutHelper {
     }
 
     private float getSuggestionWeight(final int positionInStrip) {
+        if (mSuggestionsCountInStrip > mBaseSuggestionsCountInStrip) {
+            return 1.0f / mSuggestionsCountInStrip;
+        }
         if (positionInStrip == mCenterPositionInStrip) {
             return mCenterSuggestionWeight;
         }
