@@ -456,21 +456,24 @@ final class SuggestionStripLayoutHelper {
                     Settings.getValues().mGestureFloatingPreviewTextEnabled, true);
             final int first = omitTyped ? 1 : 0;
             final int available = suggestedWords.size() - first;
-            final TextPaint paint = mWordViews.get(0).getPaint();
-            final float oldScaleX = paint.getTextScaleX();
-            paint.setTextScaleX(1.0f);
-            for (int n = Math.min(MAX_URDU_SUGGESTIONS_IN_STRIP, available); n > count; n--) {
-                final int slot = (stripWidth - mPadding * n - mDividerWidth * (n - 1)) / n;
-                boolean fits = true;
-                for (int i = 0; i < n && fits; i++) {
-                    fits = getTextWidth(suggestedWords.getLabel(first + i), paint) <= slot;
-                }
-                if (fits) {
-                    count = n;
-                    break;
+            final int maxN = Math.min(MAX_URDU_SUGGESTIONS_IN_STRIP, available);
+            if (maxN > count) { // measure each label once (this runs on the UI thread for every suggestion update)
+                final TextPaint paint = mWordViews.get(0).getPaint();
+                final float oldScaleX = paint.getTextScaleX();
+                paint.setTextScaleX(1.0f);
+                final int[] widths = new int[maxN];
+                for (int i = 0; i < maxN; i++) widths[i] = getTextWidth(suggestedWords.getLabel(first + i), paint);
+                paint.setTextScaleX(oldScaleX);
+                for (int n = maxN; n > count; n--) {
+                    final int slot = (stripWidth - mPadding * n - mDividerWidth * (n - 1)) / n;
+                    boolean fits = true;
+                    for (int i = 0; i < n && fits; i++) fits = widths[i] <= slot;
+                    if (fits) {
+                        count = n;
+                        break;
+                    }
                 }
             }
-            paint.setTextScaleX(oldScaleX);
         }
         mSuggestionsCountInStrip = count;
         mCenterPositionInStrip = count / 2;

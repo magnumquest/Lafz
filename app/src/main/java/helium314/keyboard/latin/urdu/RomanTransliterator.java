@@ -53,9 +53,25 @@ public final class RomanTransliterator {
 
     private static final class Chan {
         final char[][] chunks; final double[] p; final int[] len;
+        /** chunk indices (original order) that can match when the next typed symbol has the given slot: empty chunks + chunks starting with it */
+        final int[][] cand = new int[SLOTS][];
+        /** empty chunks only: the only ones that can match at the end of the typed text */
+        final int[] emptyIdx;
         Chan(char[][] chunks, double[] p) {
             this.chunks = chunks; this.p = p; len = new int[chunks.length];
             for (int i = 0; i < chunks.length; i++) len[i] = chunks[i].length;
+            for (int s = 0; s < SLOTS; s++) {
+                int n = 0;
+                for (int k = 0; k < chunks.length; k++) if (len[k] == 0 || slot(chunks[k][0]) == s) n++;
+                cand[s] = new int[n];
+                n = 0;
+                for (int k = 0; k < chunks.length; k++) if (len[k] == 0 || slot(chunks[k][0]) == s) cand[s][n++] = k;
+            }
+            int e = 0;
+            for (int k = 0; k < chunks.length; k++) if (len[k] == 0) e++;
+            emptyIdx = new int[e];
+            e = 0;
+            for (int k = 0; k < chunks.length; k++) if (len[k] == 0) emptyIdx[e++] = k;
         }
     }
 
@@ -253,6 +269,8 @@ public final class RomanTransliterator {
             if (p != null) { prevKey = p; bg = bigramIndex(p); }
         }
         final String rs = sb.toString();
+        final int[] rSlot = new int[m];
+        for (int j = 0; j < m; j++) rSlot[j] = slot(r[j]);
         final double[][] A = new double[MAXN + 1][m + 1];
         // keep a bounded best-list
         final int cap = Math.max(max, 1);
@@ -277,7 +295,9 @@ public final class RomanTransliterator {
                 for (int j = 0; j <= m; j++) {
                     final double a = row[j];
                     if (a == 0.0) continue;
-                    for (int k = 0; k < c.chunks.length; k++) {
+                    final int[] ks = j < m ? c.cand[rSlot[j]] : c.emptyIdx;   // only chunks that can match here (same order as before)
+                    for (int kk = 0; kk < ks.length; kk++) {
+                        final int k = ks[kk];
                         final int l = c.len[k];
                         if (j + l > m) continue;
                         final char[] ch = c.chunks[k];

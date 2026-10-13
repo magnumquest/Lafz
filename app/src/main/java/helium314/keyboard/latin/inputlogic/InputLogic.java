@@ -1297,8 +1297,9 @@ public final class InputLogic {
         if (codePoint == '?') return script.getQuestionMark();
         if (codePoint != '.' && codePoint != ',') return codePoint;
         if (codePoint == '.' && script.getFullStop() == null) return codePoint;
-        final CharSequence before = mConnection.getTextBeforeCursor(1, 0);
-        if (before != null && before.length() == 1 && Character.isDigit(before.charAt(0))) return codePoint;
+        // cached text, no round trip to the app (this runs on the UI thread for every . and , keystroke)
+        final int before = mConnection.getCodePointBeforeCursor();
+        if (before != Constants.NOT_A_CODE && Character.isDigit(before)) return codePoint;
         return codePoint == '.' ? script.getFullStop() : script.getComma();
     }
 

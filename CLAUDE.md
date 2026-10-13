@@ -38,10 +38,11 @@ model decoded through a noisy-channel transliteration model, on-device. We do th
 | What | Where |
 |---|---|
 | Engine (pure Java, no Android deps) | `app/src/main/java/helium314/keyboard/latin/urdu/RomanTransliterator.java` |
-| Lazy asset loader + `isActive(locale)` | `.../latin/urdu/UrduTransliteration.kt` |
-| Hook into suggestions (branch at top of `getSuggestedWordsForNonBatchInput`) | `.../latin/Suggest.kt` → `getUrduTransliterationSuggestions` |
+| Language registry + lazy model loader (`RomanScript.URDU` / `ARABIC`, punctuation, honorific script) | `.../latin/urdu/RomanScript.kt` |
+| Hook into suggestions (branch at top of `getSuggestedWordsForNonBatchInput`) | `.../latin/Suggest.kt` → `getRomanScriptSuggestions` |
 | Model asset (3.5 MB, binary "UTRL" v1) | `app/src/main/assets/urdu/urdu_translit.bin` |
 | Data/model pipeline + eval harness | `tools/urdu/` (see its README) |
+| Arabic (abc → عربي) model asset + pipeline | `app/src/main/assets/arabic/arabic_translit.bin`, `tools/arabic/` (README: data, build, held-out results). Subtype `ar-Latn` id 0x61726c74, Arabizi digits are word characters via `res/values-b+ar+Latn/` |
 | Unit test (needs the asset) | `app/src/test/java/helium314/keyboard/latin/urdu/RomanTransliteratorTest.kt` |
 | Subtype `ur-Latn` | `res/xml/method.xml` (id 0x75726c74), `strings.xml` `subtype_ur_Latn`, `LocaleUtils.kt`, `donottranslate.xml` |
 | Icon generator | `tools/make_icon.py` (writes vectors + PNGs; preview in `art/lafz/`) |
@@ -102,3 +103,9 @@ Binary format is defined by `export_model.py` and read by `RomanTransliterator.l
 * **Git workflow (owner preference): commit directly to `main`; do not create new branches** unless the owner asks for one for a risky change. Repo is `magnumquest/Lafz`; `upstream` remote = HeliBoard.
 * Never commit the signing key (`~/.android/lafz-release.jks`) or personal screenshots (they contain private chats).
 * `tools/urdu/eval/Try.java` prints candidates for phrases: `java -Dstdout.encoding=UTF-8 -cp eval/out Try model.bin "mein kal aonga"`.
+
+## Arabic (abc → عربي) — added after the Urdu work
+* Same engine/file format as Urdu, scripture-focused: Qur'an + Hadith text (unigram 65 %, bigrams) + real Arabizi chat pairs (digits 3 7 5 6 8 9 2). Details, build steps and held-out numbers: `tools/arabic/README.md`.
+* Honorifics have an Arabic column (6th) in `honorifics.tsv` (`ReligiousShortcuts.ARABIC`); it was written by the assistant — **needs review by a religious-knowledge person**.
+* The data bundle (`lafz_arabic_data.zip`) has unclear/restrictive licences (Tanzil verbatim-only, scraped hadith): **the repo must stay private**; never commit the raw bundle (only derived `channel_trained.json` and the model).
+* Keyboard lag finding: suggestion updates run `performUpdateSuggestionStripSync` on the UI thread and *wait* for the background decoder (also on space via `commitCurrentAutoCorrection`), so decoder time (Arabic ~8 ms desktop, several times that on a phone) is felt as typing lag. Done: chunk indexing in the decoder (−25 %, bit-identical output), no IPC for `.`/`,` mapping, strip width measured once, model preloaded at subtype start. A DP cutoff was tried and reverted (no speedup). Next step if lag remains: make the strip update non-blocking for roman-script locales (needs on-device testing: stale results must be dropped and space must still use a fresh result).
