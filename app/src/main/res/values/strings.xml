@@ -168,6 +168,10 @@
     <string name="center_suggestion_text_to_enter_summary">On pressing space or punctuation, the middle suggestion will be entered</string>
     <!-- Option to enable using next word suggestions. After the user types a space, with this option on, the keyboard will try to predict the next word. -->
     <string name="bigram_prediction">Next-word suggestions</string>
+    <!-- Title for the switch that shows Urdu or Arabic script in the text field while Roman letters are typed. -->
+    <string name="live_transliteration_title">Live transliteration while typing</string>
+    <!-- Summary for "live_transliteration_title": Urdu / Arabic layouts. -->
+    <string name="live_transliteration_summary">In the Urdu and Arabic layouts, show the native script in the text while you type Roman letters</string>
     <!-- Description for "next word suggestion" option. This displays suggestions even when there is no input, based on the previous word. -->
     <string name="bigram_prediction_summary">Use the previous word in making suggestions</string>
     <!-- Option to enable using punctuation suggestions. -->
@@ -539,6 +543,8 @@ language, hence "No language". -->
     <string name="layout_symbols" tools:keep="@string/layout_symbols">Symbols</string>
     <!-- Name for symbols layout for arabic language -->
     <string name="layout_symbols_arabic" tools:keep="@string/layout_symbols_arabic">Symbols (Arabic)</string>
+    <string name="layout_symbols_ar_latn" tools:keep="@string/layout_symbols_ar_latn">Symbols (Arabic, Roman typing)</string>
+    <string name="layout_symbols_ur_latn" tools:keep="@string/layout_symbols_ur_latn">Symbols (Urdu, Roman typing)</string>
     <!-- Name for more symbols layout (when pressing shift) -->
     <string name="layout_symbols_shifted" tools:keep="@string/layout_symbols_shifted">More symbols</string>
     <!-- Name for phone layout -->

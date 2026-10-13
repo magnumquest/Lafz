@@ -34,11 +34,25 @@ object LayoutParser {
 
     fun clearCache() = layoutCache.clear()
 
+    /**
+     * Symbol page of the Roman-script transliteration subtypes (ur-Latn, ar-Latn): native digits and punctuation.
+     * Chosen here, not in the subtype's extra values, so that the subtype identity stays the one of the resource.
+     */
+    private fun nativeSymbolsLayoutName(layoutType: LayoutType, params: KeyboardParams): String? {
+        if (layoutType != LayoutType.SYMBOLS) return null
+        return when (params.mId.locale.toLanguageTag()) {
+            "ur-Latn" -> "symbols_ur_latn"
+            "ar-Latn" -> "symbols_ar_latn"
+            else -> null
+        }
+    }
+
     fun parseLayout(layoutType: LayoutType, params: KeyboardParams, context: Context): MutableList<MutableList<KeyData>> {
         if (layoutType == LayoutType.FUNCTIONAL && !params.mId.element.takesFunctionalKeys)
             return mutableListOf(mutableListOf()) // no functional keys
         val layoutName = if (layoutType == LayoutType.MAIN) params.mId.subtype.mainLayoutName
-            else params.mId.subtype.layouts[layoutType] ?: Settings.readDefaultLayoutName(layoutType, context.prefs())
+            else params.mId.subtype.layouts[layoutType] ?: nativeSymbolsLayoutName(layoutType, params)
+                ?: Settings.readDefaultLayoutName(layoutType, context.prefs())
         return layoutCache.getOrPut(layoutType.name + layoutName) {
             createCacheLambda(layoutType, layoutName, context)
         }(params).apply {
