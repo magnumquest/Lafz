@@ -9,7 +9,7 @@ lexicons such as a Dakshina-style Arabic collection). Do NOT generate the file f
 
 Same algorithm as tools/urdu/train_channel.py, but with a prior instead of a hand-made seed, digits/apostrophe as symbols and
 chunks of up to 4 symbols."""
-import sys, re, json, collections
+import sys, re, json, collections, os, multiprocessing
 
 MAXC = 4
 PRIOR = json.load(open('channel.json', encoding='utf-8'))
@@ -77,24 +77,33 @@ def normalize(th, floor):
 
 def main():
     path = sys.argv[1]; iters = int(sys.argv[2]) if len(sys.argv) > 2 else 5
-    byw = collections.defaultdict(list)
+    # columns: arabic, roman, count (optional), group weight (optional, default 1: each distinct word of the group counts this much),
+    # group name (optional): lets a small set of real spellings outweigh a big set of generated ones
+    groups = collections.defaultdict(list)
+    gw = {}
     for line in open(path, encoding='utf-8'):
         p = line.rstrip('\n').split('\t')
         if len(p) < 2 or line.startswith('#'): continue
         u, r = norm_ar(p[0].strip()), p[1].strip().lower()
         if re.fullmatch(r"[a-z0-9']+", r) and 1 <= len(u) <= 14 and len(r) <= 20 and ' ' not in u:
-            byw[u].append((r, float(p[2]) if len(p) > 2 else 1.0))
+            g = p[4] if len(p) > 4 else ''
+            gw[(u, g)] = float(p[3]) if len(p) > 3 else 1.0
+            groups[(u, g)].append((r, float(p[2]) if len(p) > 2 else 1.0))
     pairs = []
-    for u, rs in byw.items():
+    for key, rs in groups.items():
         tot = sum(a for _, a in rs)
-        for r, a in rs: pairs.append((u, r, a / tot))
-    print('pairs', len(pairs), 'words', len(byw))
+        for r, a in rs: pairs.append((key[0], r, gw[key] * a / tot))
+    print('pairs', len(pairs), 'word groups', len(groups), flush=True)
     th = normalize({k: dict(v) for k, v in PRIOR.items()}, 0)
+    workers = int(os.environ.get('WORKERS', '4'))
+    chunks = [pairs[i::workers] for i in range(workers)]
     for it in range(iters):
+        with multiprocessing.Pool(workers) as pool:
+            parts = pool.starmap(e_step, [(th, c) for c in chunks])
         acc = collections.defaultdict(lambda: collections.defaultdict(float))
-        for u, r, w in pairs:
-            if all(u[i] + pos_of(i, len(u)) in th for i in range(len(u))):
-                fb(th, u, r, 1e-4, acc, w)
+        for part in parts:
+            for k, d in part.items():
+                for c, v in d.items(): acc[k][c] += v
         new = {k: dict(v) for k, v in acc.items()}
         for k, d in th.items():          # letters/positions never seen in the data keep their prior
             if k not in new: new[k] = d
@@ -103,4 +112,12 @@ def main():
     json.dump(th, open('channel_trained.json', 'w', encoding='utf-8'), ensure_ascii=False)
     print('wrote channel_trained.json')
 
-main()
+def e_step(th, pairs):
+    acc = collections.defaultdict(lambda: collections.defaultdict(float))
+    for u, r, w in pairs:
+        if all(u[i] + pos_of(i, len(u)) in th for i in range(len(u))):
+            fb(th, u, r, 1e-4, acc, w)
+    return {k: dict(v) for k, v in acc.items()}
+
+if __name__ == '__main__':
+    main()
