@@ -146,7 +146,7 @@ sealed interface KeyData : AbstractKeyData {
 
         private fun getStringInLocale(id: Int, params: KeyboardParams): String {
             // todo: hi-Latn strings instead of this workaround?
-            val locale = if (params.mId.locale.toLanguageTag().let { it == "hi-Latn" || it == "ur-Latn" }) "en_IN".constructLocale()
+            val locale = if (params.mId.locale.toLanguageTag().let { it == "hi-Latn" || it == "ur-Latn" || it == "ar-Latn" }) "en_IN".constructLocale()
             else params.mId.locale
             return Settings.getInstance().getInLocale(id, locale)
         }

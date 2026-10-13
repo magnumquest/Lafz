@@ -150,14 +150,15 @@ private fun getSortedSubtypes(context: Context): List<InputMethodSubtype> {
     fun isDefaultSubtype(subtype: InputMethodSubtype): Boolean =
         defaultAdditionalSubtypes.any { it.first == subtype.locale().language && it.second == subtype.extraValue }
 
-    // pinned order: English (US), Urdu (abc -> اردو), Arabic, then everything else as before
+    // pinned order: English (US), Urdu (abc -> اردو), Arabic, Arabic (abc -> عربي), then everything else as before
     fun pinnedRank(subtype: InputMethodSubtype): Int {
         val locale = subtype.locale()
         return when {
             locale.toLanguageTag() == "en-US" -> 0
             locale.toLanguageTag() == "ur-Latn" -> 1
+            locale.toLanguageTag() == "ar-Latn" -> 3
             locale.language == "ar" -> 2
-            else -> 3
+            else -> 4
         }
     }
 

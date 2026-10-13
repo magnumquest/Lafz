@@ -1,0 +1,284 @@
+# arabic<TAB>comma separated Roman spellings people really write (Arabizi / Franco-Arab), one entry per line.
+# Words not in the frequency list are added to the dictionary. Spellings are used as "observed" variants (bonus in the decoder).
+# Lines starting with # are comments. Edit this file to teach the keyboard words and spellings; then run build_model.py.
+# --- religious / greetings (fused phrases are single dictionary entries, like the Urdu verb phrases)
+السلام عليكم	assalamualaikum,assalamualaykum,assalamoalaikum,salamualaikum,aslm,aoa,salamalaykum,assalamoalykom,alsalamualaykum
+وعليكم السلام	walaikumsalam,waalaikumassalam,walaykumassalam,wa3alaykomelsalam,wa3alikumsalam
+السلام عليكم ورحمة الله وبركاته	assalamualaikumwarahmatullahi
+ان شاء الله	inshallah,inshaallah,insha2allah,inshalla,enshaallah,enshallah,inshalah,incha2allah,inshallh,nshallah,inchallah,inshaalla
+إن شاء الله	inshallah,inshaallah,insha2allah,inchallah
+ما شاء الله	mashallah,mashaallah,masha2allah,mashalla,machallah,mashalah
+الحمد لله	alhamdulillah,alhamdulilah,alhamdolillah,al7amdulillah,alhamdillah,hamdulillah,el7amdulillah,alhamdlillah,elhamdulillah
+جزاك الله خيرا	jazakallahukhairan,jazakallahkhair,jazakallah,jazakumullah
+جزاكم الله خيرا	jazakumullahukhairan,jazakumullah
+بارك الله فيك	barakallahufik,barakallahufeek,barakallahfik,barakallah
+سبحان الله	subhanallah,subhanalla,sobhanallah,sub7anallah,subhanalah
+الله اكبر	allahuakbar,allahuakber,allahakbar
+لا اله الا الله	lailahaillallah,laelahaillallah
+بسم الله	bismillah,bismilah,bismillahi,besmellah
+بسم الله الرحمن الرحيم	bismillahirrahmanirrahim,bismillahirrahmanirraheem
+استغفر الله	astaghfirullah,astaghfirulla,astagfirullah,astaghfurallah
+ان لله وانا اليه راجعون	innalillahiwainnailayhirajioon,innalillahiwainnailayhirajiun
+والله	wallah,wallahi,wellah,wala,wlh,waallah,wallahy,walah,walahi
+يا الله	yaallah,yalah
+يا رب	yarab,yarabb,yarb
+الله	allah,alah,allaah,alla
+الله يعطيك العافية	allahyaatikalafia,allahyoutikalafiya,allahya3tikalafya
+يعطيك العافية	yaatikalafia,ya3tikal3afya,yo3tikel3afya,yaatikelaafia
+عيد مبارك	eidmubarak,3eedmubarak,eidmbarak,3idmubarak,eedmubarak,3eidmobarak
+رمضان كريم	ramadankareem,ramadankarim
+رمضان	ramadan,ramadhan,ramadaan,ramathan,ramazan,ramdan,ramadhaan
+مبروك	mabrouk,mabrook,mabruk,mbrook,mabrok,mbruk,mabrouuk,mabrouq
+صباح الخير	sabahalkhair,sabahelkheir,sabahalkheir,sabahel5eer,sabahalkhayr,sabaho
+مساء الخير	masaalkhair,masaelkheir,masaalkheir,masa2elkhair,masaa2el5er
+صباح النور	sabahelnoor,sabahannour,sabahalnour,sabahennour
+مساء النور	masaelnoor,masaannour,masaalnour,masaennour
+تصبح على خير	tisbahala5air,tosbah3alakhair,tisbah3alakheir
+قرآن	quran,qur2an,koran,2uran,qoran,2oran,quraan,qur'an
+قرآن كريم	qurankareem,qurankarim
+مسجد	masjid,masgid,masjed,masged
+صلاة	salah,salat,salaat,9ala,sala,9alah
+جمعة	jumaa,jumu3a,gom3a,jom3a,jumah,jum3a,gomaa,jum3ah
+جمعة مباركة	jumaamubaraka,jumu3amubaraka,gom3amobaraka
+مرحبا	marhaba,mar7aba,mrhba,marhabaa,mrhb,mar7ba,merhba
+اهلا	ahlan,ahla,ahlen,2ahlan,ahlaan,ahlin
+اهلا وسهلا	ahlanwasahlan,ahlanwsahlan
+أهلا	ahlan,ahla,2ahlan,ahlen
+هلا	hala,halla,hla,hala2,7ala
+شكرا	shukran,shokran,shukraan,choukran,shkran,shukrn,shoukran,shukren,shkrn,chokran,shokrn
+عفوا	afwan,3afwan,afwaan,3afwn,afuan
+من فضلك	minfadlak,menfadlak,menfadlik,minfadlik
+لو سمحت	lawsamaht,lawsama7t,lowsamaht,lawsmaht
+تفضل	tafaddal,tfaddal,tfadal,tfadl,tfdl
+آسف	asef,asif,asf,aasef,2asef,aasif,asfa
+اسف	asef,asif,asf,aasef,asfa
+معلش	ma3lesh,malesh,ma3lsh,maalesh,maaleesh,m3lsh,malish
+سلام	salam,salaam,slam,salaama
+مع السلامة	maasalama,ma3assalama,m3assalama,maasalamah,m3asalama
+باي	bye,bai,bay,baay
+هاي	hi,hai,hay,haay,hii,hayy
+اوكي	ok,okay,oky,okey,oki,okie,okk,okayy
+أوكي	ok,okay,oky
+تمام	tamam,tamaam,tmam,tmm,tamamm
+طيب	tayyib,tayeb,tayb,tyb,6ayeb,6ayyib,tayib,tyeb,6ayb,tayyeb
+ماشي	mashi,mashy,mashe,mashee,mashii
+خلاص	khalas,khalaas,5alas,kalas,khalass,5alaas,xalas,khlas,5las
+يلا	yalla,yala,yalah,yallah,yaalla,yalaa,ylla
+يالله	yallah,yalla,yalah
+يا	ya,yaa,yah
+حبيبي	habibi,7abibi,habibe,7bibi,hbibi,habibii,7abeebi,habeebi,hbeebi,7abiby,habiby,habibie,hbb
+حبيبتي	habibti,7abibti,7bibti,habibty,habibaty,7abeebty,habeebty,7abibaty,hbibti,habebty
+حبيب قلبي	habibqalbi,7abib2albi,7abeeb2albi,habibalbi
+قلبي	albi,2albi,qalbi,albee,qalbe,2alby,galbi,qalby
+عمري	3omri,omri,3omry,3umri,3omrii,omry
+عيوني	3youni,3oyoni,oyoni,3ouyouni,3youny,3yuni,3eyooni
+روحي	ro7i,rohi,ru7i,rouhi,ro7y
+حياتي	hayati,7ayati,hayaty,7ayaty,7ayaati
+بحبك	bahebak,bhebak,ba7ebak,ba7ibak,bhebbak,ba7ebbak,b7ebak,uhibbuk,bhbk,bahebbak,ba7ebek,bahebek,ahebak,bhebk,ba7bak
+أحبك	uhibbuk,ahebbak,a7ebak,ohebbok,2ahebak,2uhibbuk,a7bak,ohibbak,ahebak,a7ebbak,2a7ebak,ohebak,uhibuk
+احبك	uhibbuk,ahebbak,a7ebak,ohebbok,ahebak,a7bak,a7ebbak,ohibbak,uhibuk,ohebak
+وحشتني	wahashtini,wa7ashtini,wahashtny,wa7shtny,wehshtny,wahshteni,wa7ashtny,wa7ashteni,wa7shtni,wahshtny,wehshteni,w7shtny,wa7ashtni
+وحشتيني	wahashtini,wa7ashtini,wahashteeni,wa7shteeni
+وحشتك	wahashtak,wa7ashtak,wa7shtk,wehshtak,wahshtak,wahashtik,wa7shtik
+مشتاق	mushtaq,moshtaq,mushtaa2,mishtaq,mosta2,mshtaq,mshta2,moshta2,mushtaa
+كيف حالك	kayfhalak,kaifhalak,kifhalak,keefhalak,kif7alak,kayf7alak,kifhalik,kefhalek,kifhalek
+كيفك	kifak,kifik,keefak,kifek,kefak,kefk,kifk,keefik,kefek
+كيف	kayf,kaif,keif,kef,kif,keef,kaef,keyf,kayef,kyf
+حالك	halak,7alak,haalak,7alik,halik,7alk,halek,7alek
+اخبارك	akhbarak,a5barak,2akhbarak,akhbarik,a5barik,akhbark,a5barek,2a5barak
+شخبارك	shakhbarak,shu5barak,shkhbarak,shakhbarik,shakhbark,shu5barik,shkhbarik,shakhbarek,shakhbaarak
+شلونك	shlonak,shlownak,shloonak,shlonik,shlonk,shlonek,shlownik,shloonik,shlwnk
+شلونكم	shlonkom,shloonkom,shlonkum
+ازيك	ezayak,ezzayak,ezayyak,izzayak,ezayek,ezzayyak,ezzay,izzayik,ezayk,ezayyik,ezzayik,ezeyak,ezayik,izayak
+ازيكم	ezzayokom,ezayokom,ezzayukum
+ايه	eih,eh,eeh,2eh,ayh,eyh,aeh,eah,2eih
+إيه	eih,eh,2eh
+دي	di,dee,dy,dii
+ده	da,dah,deh,dh
+دا	da,daa,dah
+دول	dool,dol,dwl,doul
+ليه	leh,leeh,leih,lih,leah,lyh,liih
+لية	leh,leeh,leih
+فين	fein,fen,fayn,feen,fyn,fenn,fiin
+امتى	imta,emta,2emta,imtaa,emtaa,emtay,imtay
+مين	meen,min,mean,mn,miin,myn
+كام	kam,kaam,kamm
+عايز	3ayez,3ayz,aayez,3ayiz,ayez,3ayzz,aayiz
+عايزة	3ayza,aayza,3ayzah,3ayzaa,ayza,3ayzeh
+عاوز	3awez,3awz,awez,3awiz,awiz,3aweez
+عاوزة	3awza,awza,3awzah
+مش	mesh,mish,msh,mush,mch
+مفيش	mafeesh,mafish,mafesh,mafieesh,mafiish,mafisch,mafiesh
+مافي	mafi,mafee,mafe,mafy,mafii
+فيه	fih,feeh,fiih,fieh,feh,feih
+عشان	3ashan,ashan,3shan,3sahn,3ashaan,3asahn
+علشان	3alashan,3ashan,alashan,3lashan
+بس	bas,bass,bs,baas,bss
+كمان	kaman,kman,kamaan,kamman,kmaan
+برضه	bardo,bardu,bardoh,bardah,brdu,bardow
+برضو	bardo,bardu,bardow
+شوية	shwaya,shwayya,shwy,shwayyah,shwaia,shwayah,shweya,shwaiya
+شوي	shway,shwai,shwey,shwy,shwayy
+حاجة	7aga,haga,hagga,7aaga,hagah,hagaa,7agga,haja,7aja,hajah
+حاجه	haga,7aga
+كده	keda,kda,kedah,kdh,kedda,kidda,kida
+كدا	keda,kda,kida,kidah
+كدة	keda,kda,kedah
+دلوقتي	dilwa2ty,delwa2ty,dilwa2ti,dilwati,delwaty,delwa2ti,delwakty,dlw2ty,dilwa2te,delwa2te
+دلوقت	dilwa2t,delwa2t,delwa2et
+النهارده	elnaharda,innaharda,enaharda
+بكرة	bokra,bukra,bokrah,bkra,bukrah,bokraa,bukraa
+بكره	bokra,bukra,bokrah,bkra
+امبارح	embare7,imbare7,embarah,imbarih,embareh,embarih
+الليلة	elleila,illayla,allayla,illeila,ellayla,elleilah,elleilaa
+كويس	kwayes,kwaies,kwayyis,kuwayyis,kwys,kuwayes,kwayis,kuwayis,kwaiyes,kwayyes,kwaess
+كويسة	kwayesa,kwaysa,kwayesah,kwayysa
+حلو	7elw,helw,7ilw,helo,7elo,helwa,helou,7ilu,7elou,7lw
+حلوة	7elwa,helwa,7ilwa,helwah,7elwah
+جميل	gameel,gamil,jameel,jamil,gameal,gamel,jamiil,jmil,gamiil
+جميلة	gamila,gameela,jamila,jamilah,jameela,gamilah,gameelah
+جدا	giddan,jiddan,gedan,gdn,giddn,jidan,jiddn
+قوي	awy,awi,awwi,awwy,awey,2awy,2awi,qawi,qawy
+اوي	awy,awi,awwi,awwy,awey,awii
+خالص	khales,5ales,khalis,5alis,khalees,kales
+ممكن	momken,mumkin,mmkn,momkn,mumken,momkin,mmken,mumkn
+اكيد	akeed,akid,2akeed,akiid,2akid
+طبعا	tab3an,6ab3an,tab3ann,tabaan
+ايوه	aywa,aiwa,aywah,ayowa,eywa,2eywa,aywaa,eiwa,2aywa,ayw,ayoa
+أيوه	aywa,eywa,2aywa
+أيوا	aywa,eywa,2eywa
+ايوة	aywa,aiwa,eywa,aywah
+لا	la,laa,lah,la2,lla
+لأ	la2,la,laa,laa2,la'
+نعم	na3am,naam,nam,na3m,na3em,nem,naem
+اه	ah,aah,a7,aa,2ah
+آه	ah,aah,2ah
+اها	aha,aaha,2aha,ahaa
+لسه	lesa,lessa,lissa,lsa,lesah,lissah,lessah
+لسا	lessa,lesa,lissa
+تعال	ta3al,ta3aal,t3al,ta3a,ta3alla,ta3aa
+تعالى	ta3ala,ta3al,ta3aala,t3ala
+تعالي	ta3ali,t3ali
+روح	ro7,roh,ru7,rooh,roo7,rouh,ruh
+خد	khod,5od,5ud,khud,khodd
+خذ	khuth,khudh,5od,khodh,khud
+قول	oul,2ool,qool,ool,2ol,qul,qol,gool
+قل	qul,2ool,2ol,qol
+شوف	shoof,shuf,shouf,shof
+شوفي	shoofi,shufi,shofi,shoufi
+سيبك	seebak,sibak
+اسمع	esma3,ismaa,isma3,2esma3,esma,asma3,2isma3,esmaa,ismaa3
+اسمعي	esma3i,isma3i,esmaai
+شو	shu,shou,sho,shoo,shw,chou,shoow
+هلق	halla2,hala2,halaq,hallaq,hlq,halaaq
+هلأ	hala2,halla2,hallaq,halaa2
+منيح	mnih,mni7,mnee7,mniih,mniha,mneeh
+منيحة	mnihe,mni7a,mnee7a
+بدي	bidi,baddi,bdi,biddi,baddy,bddi,biddy,bdy,bidy
+بدك	biddak,baddak,bdk,biddik,baddek,biddek,badak,bidak
+بدنا	biddna,baddna,bdna,bidna
+ليش	leish,leesh,lesh,lysh,laish,lish,laysh
+هيك	heik,hek,haik,hayk,heek,heyk,hiik
+هاد	had,haad,hed
+هادا	hada,hadha,haada
+هذا	hatha,hadha,hada,hazha,haza,hazaa,hathaa,haada,hadaa
+هذه	hathihi,hadhihi,hathi,hadhi,hadi,hathy,hadhy,hathee,hathe
+هذي	hathi,hadhi,hadi,hathy,hazi,hadhee,hathee,hathe,haathi
+ذلك	thalik,dhalik,zalik,thaalika,thalek,thalika,dhaalik,zalika,thaalik,dhalika
+وش	wesh,wish,wsh,wich,wiish
+ايش	eish,aish,aysh,esh,eesh,eysh,ysh,ish
+إيش	eish,aish,esh,aysh
+شنو	shino,shnu,shnoo,shnow,shnou,shnw,shinu
+شنهو	shinu,shnu
+زين	zain,zayn,zeen,zyn,zein,zeyn,zyin
+هلا والله	halawallah,halawalla
+وايد	wayed,wayid,wayd,wayyed,wayyid
+مرة	marra,mara,mrra,marrah,mrah,mrh,marah
+ابي	abi,abee,abe,aby,2abi,aabi,aabe,abii,2abee
+ابغى	abgha,abga,ab8a,2abgha,abgah,abgaa,2ab8a
+تبي	tibi,tabi,tebi,tbi,tibee,tibii,tbee,tabee,tibe
+يبي	yibi,yabi,yebi,ybi,yibee,yabee,ybee,yebe,yibii
+واش	wash,wach,wesh,waach,wasch
+بزاف	bzaf,bzzaf,bezzaf,bzaaf,bezaf
+ديال	dyal,dial,diyal,d'yal,dyial,dyaal
+كيفاش	kifash,kifach,kifache,kifaash,kifech
+دابا	daba,dabba,dba,dabaa,daaba,dbaa,dabah
+بصح	bsa7,bsah,bessah,bss7,bessah7,bssah,bessa7,bassa7
+شكون	shkoun,chkoun,shkun,chkon,shkon,shkoon
+غادي	ghadi,8adi,ghady,ghadee,gadi
+كمبيوتر	computer,kombyuter,kompyoter,kombiuter,kompyuter,kombyoter,kombyootar,kompiuter,kombuter,komputer
+موبايل	mobile,mobail,mubayl,mobayl,mobil,mobaile,mubail,mobayel
+جوال	jawwal,jawal,gawal,jawwaal,jwal,gawwal
+هاتف	hatif,hatef,hateef,hatifa,hatf
+تلفون	telephone,telefon,telifon,telephon,telefoon,telifone,telifoon,telifun,telefone,telefoun
+واتساب	whatsapp,watsapp,whatsap,watsab,wtsp,watsap,whatsup,whatsab,wts,wtsap
+فيسبوك	facebook,fb,fesbook,faceboook,facebok,fesbuk,fasbook,fasebook,facbook
+انستغرام	instagram,insta,instagrm,instgram
+انستجرام	instagram,insta,instgram
+تويتر	twitter,twiter,tweeter,tawiter
+يوتيوب	youtube,utub,ytube,youtub,yutub,ytb,utube,youtubb,yotube
+جوجل	google,goggle,jogel,googel,gogle,jojel,googl,jogl
+انترنت	internet,intarnet,enternet,intarnat,interenet,internt,inernet
+واي فاي	wifi,waifai,wayfay,wayfai,wifee,waifay,wifii
+ايميل	email,emil,imail,imeil,imayl,eemail,emayl,emeil,emael
+رسالة	resala,risala,risalah,resalah,rsala,rsalah,resaala,risaala,resalaa,rissala
+رسائل	rasa2el,rasael,rassael,rasaail,rsael,rasa2l,rassa2el,rasaa2el
+فيديو	video,fidyo,vidyo,fedio,fidio,vedio,fidiu,fidyou,vidio
+صورة	sora,9ora,suura,9wra,soura,sorah,9orah,9oura,swra,sooraa,9ura,soora,swrh
+صور	sowar,9owar,suwar,sewar,9uwar,swar,9war,9ewar
+سيلفي	selfie,selfi,silfi,selfy,selfee,silfy
+لابتوب	laptop,labtop,laptob,labtob,labtoub,laptoub
+شاحن	shahen,sha7en,shahin,sha7in,shaahen,shahn,sha7n,shaa7en
+بطارية	battariya,bataria,bateria,batarya,battaria,bataryah,batareya,batareyah,bataryaa,btaria,bateriyah
+كاميرا	camera,kamera,kamira,kamara,cameraa,kamra,kameera,kamerah,kaamira
+سيارة	sayara,sayyara,sayarah,sayyarah,sayaara,sayarat,sayaraa,sayyaara
+تاكسي	taxi,taksi,takasi,taxy,taksee,taxee,taxii,tacksi
+مطار	matar,mataar,ma6ar,ma6aar,mtar
+مدرسة	madrasa,madrasah,madrassa,madrasseh,madrese,madrasaa,madrassah,mdrsa
+جامعة	jami3a,gam3a,jame3a,gamea,jamia,gam3ah,jami3ah,jamea,jam3a,gamaa
+مستشفى	mustashfa,mostashfa,mostashfy,mostashfay,mstashfa
+مطعم	mat3am,ma6'am,matam,ma6am,ma6a3m
+قهوة	qahwa,ahwa,2ahwa,kahwa,2ahwah,qahwah,2a7wa,2ahwaa,gahwa,ahwah,qahwaa,gahwah
+شاي	shay,shai,chai,chay,shaay,shaiy,chaay,shy
+ماء	maa2,mai,moya,maa,moyyah,mayy,maay,mayya,may,maya,mayyah
+مي	mai,mayy,may,maay,mei
+اكل	akl,2akl,akel,akil,aakl,2akel
+أكل	akl,2akl,2akel
+طعام	ta3am,ta3aam,6a3am,6a3aam,ta3m,6a3m
+فلوس	felous,flous,fulus,floos,flos,fuloos,flus
+مال	mal,maal
+مصر	masr,misr,mesr,masre
+السعودية	alsa3udiyya,alsaudia,elsa3odia,alsaudiya,alsa3odeya,saudia,elsaudia,elsaudeya,saudiyya,saudiya,alsa3udiya
+سوريا	suriya,soria,surya,souria,suria,sorya,souriya,soriya,sooriya
+لبنان	lubnan,lebnan,libnan,lebnaan,lubnaan,lbnan
+العراق	al3iraq,el3iraq,aliraq,3iraq,al3eraq,el3erak,al3irak,eliraq,iraq,3eraq
+الكويت	alkuwait,elkuwait,elkuwayt,alkuwayt,elkwait,alkwait,alkwayt,kuwait,kwait,koweit
+دبي	dubai,dubay,dubayy,dbi,dubaii
+الاردن	alurdun,elordon,alordon,al2ordon,el2ordon,alordun,alurdon,al2urdun,elardon
+فلسطين	filastin,falastin,falasteen,felesteen,filisteen,filasteen,falastine,filastine
+الجزائر	aljazair,eljazayer,aljazayer,eljazair,aljazaer,aljazaayer,jazayer
+المغرب	almaghrib,elmaghreb,almaghreb,elmaghrib,maghreb,almagrib,magrib
+تونس	tunis,tounes,tunes,tounis,tuunis,toonis
+ليبيا	libya,libia,libiya,leebya,libiyaa
+السودان	alsudan,elsudan,alsoudan,sudan,elsoudan,elsodan,alsodan,alsudaan,sudaan
+اليمن	alyaman,elyemen,alyemen,elyaman,yemen,alyamn
+قطر	qatar,2atar,gatar,qatr,gatr,2atr
+عمان	oman,3oman,3umaan,3uman,3omaan
+البحرين	albahrain,elbahrain,albahrayn,elbahreen,albahrein,elbahrein,bahrain,albahreen
+واحد	wahid,wa7ed,wahed,wa7id
+اثنين	ithnein,etnein,ithnayn,itnain,etneen,etnayn,ithnain,etnain,itnayn,itneen
+اتنين	itnein,etnein,etnayn,itnain,etneen,etnain,itnayn,itneen
+ثلاثة	thalatha,talata,thalaatha,talatah,talaata,thalaathah
+تلاتة	talata,talaata,talatah
+اربعة	arba3a,arba3ah,arbaa,2arba3a
+خمسة	khamsa,5amsa,khamsah,kamsa,5amsah,khamsaa
+عشرة	ashara,3ashara,3ashra,3asharah,ashra
+مية	meya,miya,mia,meyya,miyah,meyyah,miyya,mi'a,meyah
+ألف	alf,2alf
+ساعة	sa3a,sa3ah,saa3a,saa3ah
+دقيقة	da2i2a,deqiqa,da2ee2a,daqiqa,de2i2a,daqeeqa,de2ee2a,deqeeqa,da2e2a
+يوم	yom,yawm,youm,yoom,yum,yowm
+اسبوع	esbou3,usbu3,osbou3,esbo3,usboo3,osboo3,usbou3,esbu3,asbu3
+شهر	shahr,shehr
+سنة	sana,sanah,senna,sanaa
+عام	3am,aam,3aam

@@ -1,8 +1,8 @@
-import helium314.keyboard.latin.urdu.UrduTransliterator;
+import helium314.keyboard.latin.urdu.RomanTransliterator;
 import java.io.*; import java.nio.file.*; import java.util.*;
 public class Eval {
   public static void main(String[] a) throws Exception {
-    UrduTransliterator t = UrduTransliterator.load(new FileInputStream(a[0]));
+    RomanTransliterator t = RomanTransliterator.load(new FileInputStream(a[0]));
     for (int i = 2; i + 1 < a.length; i += 2) {
       double v = Double.parseDouble(a[i + 1]);
       switch (a[i]) { case "cw": t.channelWeight = v; break; case "ob": t.observedBonus = v; break;
@@ -19,9 +19,9 @@ public class Eval {
         tot++;
         boolean known = t.isKnownWord(u[i]);
         if (!known) oov++;
-        List<UrduTransliterator.Candidate> c = t.suggest(r[i], prev, start, 5); calls++;
-        for (int k = 0; k < c.size(); k++) if (c.get(k).urdu.equals(u[i])) { if (k < 1) h1++; if (k < 3) h3++; h5++; break; }
-        prev = c.isEmpty() ? null : c.get(0).urdu; start = false;
+        List<RomanTransliterator.Candidate> c = t.suggest(r[i], prev, start, 5); calls++;
+        for (int k = 0; k < c.size(); k++) if (c.get(k).text.equals(u[i])) { if (k < 1) h1++; if (k < 3) h3++; h5++; break; }
+        prev = c.isEmpty() ? null : c.get(0).text; start = false;
       }
     }
     double ms = (System.nanoTime() - t0) / 1e6 / calls;

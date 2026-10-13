@@ -29,7 +29,7 @@ import helium314.keyboard.latin.utils.WordData
 import helium314.keyboard.latin.utils.useBackgroundGathering
 import helium314.keyboard.latin.urdu.Honorifics
 import helium314.keyboard.latin.urdu.ReligiousShortcuts
-import helium314.keyboard.latin.urdu.UrduTransliteration
+import helium314.keyboard.latin.urdu.RomanScript
 import java.util.Locale
 import kotlin.math.max
 import kotlin.math.min
@@ -77,8 +77,8 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
                       settingsValuesForSuggestion: SettingsValuesForSuggestion, inputStyleIfNotPrediction: Int,
                       isCorrectionEnabled: Boolean, sequenceNumber: Int): SuggestedWords {
         val typedWordString = wordComposer.typedWord
-        if (UrduTransliteration.isActive(mDictionaryFacilitator.mainLocale)) {
-            getUrduTransliterationSuggestions(wordComposer, ngramContext, inputStyleIfNotPrediction, sequenceNumber)?.let { return it }
+        RomanScript.of(mDictionaryFacilitator.mainLocale)?.let { script ->
+            getRomanScriptSuggestions(script, wordComposer, ngramContext, inputStyleIfNotPrediction, sequenceNumber)?.let { return it }
         }
         val resultsArePredictions = !wordComposer.isComposingWord
         val suggestionResults = if (typedWordString.isEmpty())
@@ -158,20 +158,20 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
         // religious honorifics, e.g. Rasul -> "Rasulullah ﷺ", "Umar " -> "Radiallahu Anhu". With auto-correction the first
         // two slots are taken (correction and typed word), so honorifics must never become the auto-correction target
         addHonorificSuggestions(suggestionsList, typedWordString, ngramContext, resultsArePredictions,
-            if (resultsArePredictions) 0 else if (hasAutoCorrection || correctToCapitalizedWord) 3 else 1, false)
+            if (resultsArePredictions) 0 else if (hasAutoCorrection || correctToCapitalizedWord) 3 else 1, null)
         val isTypedWordValid = firstOccurrenceOfTypedWordInSuggestions > -1 || (!resultsArePredictions && !allowsToBeAutoCorrected)
         return SuggestedWords(suggestionsList, suggestionResults.mRawSuggestions, typedWordInfo,
             isTypedWordValid, hasAutoCorrection || correctToCapitalizedWord, false, inputStyle, sequenceNumber)
     }
 
     /**
-     * Roman -> Urdu: the typed Roman text stays in the composing region, the strip shows Urdu candidates and
-     * the best one is auto-committed on space / punctuation (see [helium314.keyboard.latin.urdu.UrduTransliterator]).
+     * Roman -> Urdu / Arabic: the typed Roman text stays in the composing region, the strip shows native-script candidates
+     * and the best one is auto-committed on space / punctuation (see [helium314.keyboard.latin.urdu.RomanTransliterator]).
      * Returns null if the model is not loaded yet, in which case regular suggestions are used.
      */
-    private fun getUrduTransliterationSuggestions(wordComposer: WordComposer, ngramContext: NgramContext,
-                                                  inputStyleIfNotPrediction: Int, sequenceNumber: Int): SuggestedWords? {
-        val engine = UrduTransliteration.get(Settings.getCurrentContext()) ?: return null
+    private fun getRomanScriptSuggestions(script: RomanScript, wordComposer: WordComposer, ngramContext: NgramContext,
+                                          inputStyleIfNotPrediction: Int, sequenceNumber: Int): SuggestedWords? {
+        val engine = script.engine(Settings.getCurrentContext()) ?: return null
         val typed = wordComposer.typedWord
         val prevInfo = if (ngramContext.prevWordCount > 0) ngramContext.getNthPrevWord(1) else null
         val atStart = ngramContext.isBeginningOfSentenceContext || prevInfo == null
@@ -183,24 +183,26 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
                 list.add(SuggestedWordInfo(w, "", 1000 - i, SuggestedWordInfo.KIND_PREDICTION, source,
                     SuggestedWordInfo.NOT_AN_INDEX, SuggestedWordInfo.NOT_A_CONFIDENCE))
             }
-            addHonorificSuggestions(list, typed, ngramContext, true, 0, true)
+            addHonorificSuggestions(list, typed, ngramContext, true, 0, script.honorificScript)
             return SuggestedWords(list, null, null, false, false, false,
                 if (atStart) SuggestedWords.INPUT_STYLE_BEGINNING_OF_SENTENCE_PREDICTION else SuggestedWords.INPUT_STYLE_PREDICTION,
                 sequenceNumber)
         }
+        // numbers (digits are also Arabizi letters, so they are word characters in Arabic mode) are never transliterated
+        if (typed.all { it.isDigit() || it == '\'' }) return null
         val typedInfo = SuggestedWordInfo(typed, "", SuggestedWordInfo.MAX_SCORE, SuggestedWordInfo.KIND_TYPED,
             Dictionary.DICTIONARY_USER_TYPED, SuggestedWordInfo.NOT_AN_INDEX, SuggestedWordInfo.NOT_A_CONFIDENCE)
         list.add(typedInfo)
         val candidates = engine.suggest(typed, prev, atStart, 6)
         candidates.forEachIndexed { i, c ->
-            list.add(SuggestedWordInfo(c.urdu, "", 1000 - i,
+            list.add(SuggestedWordInfo(c.text, "", 1000 - i,
                 if (c.completion) SuggestedWordInfo.KIND_COMPLETION else SuggestedWordInfo.KIND_CORRECTION,
                 source, SuggestedWordInfo.NOT_AN_INDEX, SuggestedWordInfo.NOT_A_CONFIDENCE))
         }
         // auto-commit the best Urdu word when space / punctuation is typed; a trailing completion is also committed,
         // as the user would otherwise end up with Latin text in an Urdu sentence
         val willAutoCorrect = candidates.isNotEmpty() && isCorrectionEnabledForUrdu
-        addHonorificSuggestions(list, typed, ngramContext, false, if (willAutoCorrect) 2 else 1, true)
+        addHonorificSuggestions(list, typed, ngramContext, false, if (willAutoCorrect) 2 else 1, script.honorificScript)
         // keep the typed Roman spelling available as a tappable choice (English words in an Urdu sentence, e.g. "United Nations")
         if (candidates.isNotEmpty()) {
             val romanChoice = SuggestedWordInfo(typed, "", 500, SuggestedWordInfo.KIND_CORRECTION, source,
@@ -212,18 +214,22 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
 
     private val honorificsDictionary = Dictionary.PhonyDictionary("honorifics")
 
-    /** adds honorific / religious term suggestions at [insertIndex]; [forceUrdu] for Roman->Urdu typing */
+    /**
+     * adds honorific / religious term suggestions at [insertIndex]; [forcedScript] (a [ReligiousShortcuts] script) is set for
+     * Roman->Urdu / Roman->Arabic typing, otherwise the output script follows the typed text (Latin stays Latin, Arabic-block
+     * text is Arabic in an Arabic keyboard and Urdu otherwise)
+     */
     private fun addHonorificSuggestions(list: ArrayList<SuggestedWordInfo>, typed: String, ngramContext: NgramContext,
-                                        isPrediction: Boolean, insertIndex: Int, forceUrdu: Boolean) {
+                                        isPrediction: Boolean, insertIndex: Int, forcedScript: Int?) {
         val shortcuts = Honorifics.get(Settings.getCurrentContext()) ?: return
         val prev = if (ngramContext.prevWordCount > 0 && !ngramContext.isBeginningOfSentenceContext)
             ngramContext.getNthPrevWord(1)?.toString()?.takeIf { it.isNotEmpty() } else null
         val forms = if (isPrediction) {
             if (prev == null) return
-            shortcuts.afterWord(prev, forceUrdu || ReligiousShortcuts.isUrduScript(prev), 2)
+            shortcuts.afterWord(prev, forcedScript ?: scriptOf(prev), 2)
         } else {
             if (typed.isEmpty()) return
-            shortcuts.suggest(typed, prev, forceUrdu || ReligiousShortcuts.isUrduScript(typed), if (insertIndex <= 1) 3 else 2)
+            shortcuts.suggest(typed, prev, forcedScript ?: scriptOf(typed), if (insertIndex <= 1) 3 else 2)
         }
         var index = insertIndex.coerceAtMost(list.size)
         for (form in forms) {
@@ -234,7 +240,10 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
         }
     }
 
-    private val urduDictionary = Dictionary.PhonyDictionary("urdu_translit")
+    private fun scriptOf(text: String) =
+        RomanScript.honorificScript(mDictionaryFacilitator.mainLocale, ReligiousShortcuts.isUrduScript(text))
+
+    private val urduDictionary = Dictionary.PhonyDictionary("roman_script_translit")
     private val isCorrectionEnabledForUrdu = true
 
     // returns [allowsToBeAutoCorrected, hasAutoCorrection]
