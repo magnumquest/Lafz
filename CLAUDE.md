@@ -99,5 +99,6 @@ JDK for the eval harness. Training takes ~2 minutes. Shipping build: `python3 bu
 Binary format is defined by `export_model.py` and read by `UrduTransliterator.load` — change both together.
 
 ## Working notes
-* Develop on branch `claude/focused-planck-g2y1yi`; no PR has been opened.
+* **Git workflow (owner preference): commit directly to `main`; do not create new branches** unless the owner asks for one for a risky change. Repo is `magnumquest/Lafz`; `upstream` remote = HeliBoard.
+* Never commit the signing key (`~/.android/lafz-release.jks`) or personal screenshots (they contain private chats).
 * `tools/urdu/eval/Try.java` prints candidates for phrases: `java -Dstdout.encoding=UTF-8 -cp eval/out Try model.bin "mein kal aonga"`.

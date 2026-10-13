@@ -1,141 +1,91 @@
-# HeliBoard
-HeliBoard is a privacy-conscious and customizable open-source keyboard, based on AOSP / OpenBoard.
-Does not use internet permission, and thus is 100% offline.
+<p align="center">
+  <img src="art/lafz/icon_512.png" alt="Lafz icon" width="128">
+</p>
 
-[<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png" alt="Get it on F-Droid" height="80">](https://f-droid.org/packages/helium314.keyboard/)
-[<img src="https://user-images.githubusercontent.com/663460/26973090-f8fdc986-4d14-11e7-995a-e7c5e79ed925.png" alt="Get APK from GitHub" height="80">](https://github.com/HeliBorg/HeliBoard/releases/latest)
-[<img src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroid.png" alt="Get it on IzzyOnDroid" height="80">](https://apt.izzysoft.de/fdroid/index/apk/helium314.keyboard)
+<h1 align="center">Lafz &nbsp;·&nbsp; لفظ</h1>
 
-## Table of Contents
+<p align="center">
+  <b>An offline Android keyboard that turns Roman Urdu into Urdu script as you type.</b><br>
+  Type <code>mein kal aonga</code>, get <span dir="rtl">میں کل آؤں گا</span>.
+</p>
 
-- [Features](#features)
-- [Contributing](#contributing-)
-   * [Reporting Issues](#reporting-issues)
-   * [Translations](#translations)
-   * [To Community](#to-community)
-   * [Code Contribution](CONTRIBUTING.md)
-- [Links](#links)
-- [License](#license)
-- [Credits](#credits)
-  * [Funding](#funding)
+---
 
-# Features
-<ul>
-  <li>Add dictionaries for suggestions and spell check</li>
-  <ul>
-    <li>build your own, or get them  <a href="https://codeberg.org/Helium314/aosp-dictionaries#dictionaries">here</a> (quality may vary)</li>
-    <li>additional dictionaries for emojis or scientific symbols can be used to provide suggestions (similar to "emoji search")</li>
-    <li>note that for Korean layouts, suggestions only work using <a href="https://github.com/openboard-team/openboard/commit/83fca9533c03b9fecc009fc632577226bbd6301f">this dictionary</a>, the tools in the dictionary repository are not able to create working dictionaries</li>
-  </ul>
-  <li>Customize keyboard themes (style, colors and background image)</li>
-  <li>Emoji search (inline and separate, requires <a href="https://codeberg.org/Helium314/aosp-dictionaries">emoji dictionary</a>)</li>
-  <ul>
-    <li>can follow the system's day/night setting on Android 10+ (and on some versions of Android 9)</li>
-    <li>can follow dynamic colors for Android 12+</li>
-  </ul>
-  <li>Customize keyboard <a href="https://github.com/HeliBorg/HeliBoard/blob/main/layouts.md">layouts</a> (only available when disabling <i>use system languages</i>)</li>
-  <li>Customize special layouts, like symbols, number,  or functional key layout</li>
-  <li>Multilingual typing</li>
-  <li>Glide typing (<i>only with closed source library</i> ☹️)</li>
-  <ul>
-    <li>library not included in the app, as there is no compatible open source library available</li>
-    <li>can be extracted from GApps packages ("<i>swypelibs</i>"), or downloaded <a href="https://github.com/erkserkserks/openboard/tree/46fdf2b550035ca69299ce312fa158e7ade36967/app/src/main/jniLibs">here</a> (click on the file and then "raw" or the tiny download button)</li>
-  </ul>
-  <li>Clipboard history</li>
-  <li>One-handed mode</li>
-  <li>Split keyboard</li>
-  <li>Number pad</li>
-  <li>Backup and restore your settings and learned word / history data</li>
-</ul>
+## What it does
 
-For [FAQ](https://github.com/HeliBorg/HeliBoard/wiki/FAQ), [hidden features](https://github.com/HeliBorg/HeliBoard/wiki/9.-Hidden-features) and more information about the app and features, please visit the [wiki](https://github.com/HeliBorg/HeliBoard/wiki)
+Lafz is a fork of [HeliBoard](https://github.com/Helium314/HeliBoard) with a built-in **abc → اردو** transliteration engine.
+You type Urdu the way you text it, in Latin letters, and the keyboard shows real Urdu words in the suggestion strip and
+commits the best one when you press space.
 
-# Contributing ❤
+- **Not a fixed phonetic map.** Spelling is free: `kal`, `kl`, `kaal` all find کل. The engine scores dictionary words
+  against what you typed, using a language model plus a learned model of how people romanize Urdu.
+- **Dictionary-only output.** Every suggestion is a real Urdu word, so gibberish gives nothing instead of nonsense.
+- **Whole phrases.** `aonga` → آؤں گا / آؤں گی, `karunga` → کروں گا, and about 1,200 more future-tense verb phrases.
+- **English loanwords.** `computer` → کمپیوٹر, `message` → میسج, `laptop` → لیپ ٹاپ.
+- **Next-word prediction** and prefix completion while you type.
+- **Urdu punctuation.** `.` `?` `,` become `۔` `؟` `،`.
+- **Islamic honorifics and terms**, in English, Roman-Urdu and Urdu: `Umar` → Umar Radiallahu Anhu, `Rasul` → Rasulullah ﷺ,
+  bismillah, inshallah, jazakallah and more. (The list in `app/src/main/assets/honorifics/honorifics.tsv` is waiting for review by someone with religious knowledge.)
+- **English typing is unchanged**, and you can switch languages like any other keyboard.
+- **100% offline.** The app does not request the internet permission.
+- A Gboard-style look (rounded keys, light and dark themes).
 
-## Reporting Issues
+## How accurate is it?
 
-Whether you encountered a bug, or want to see a new feature in HeliBoard, you can contribute to the project by opening a new issue [here](https://github.com/HeliBorg/HeliBoard/issues). Your help is always welcome!
+On held-out romanized Urdu sentences from Google's Dakshina dataset: **89.6 % top-1** and **93.4 % top-3**,
+at about 3 ms per word on a desktop. Those sentences are Wikipedia-style text, so casual chat will score lower.
+It's a work in progress.
 
-Before opening a new issue, be sure to check the following:
- - **Does the issue already exist?** Make sure a similar issue has not been reported by browsing [existing issues](https://github.com/HeliBorg/HeliBoard/issues?q=). Please search open and closed issues. In case of feature requests you could also check the [FAQ](https://github.com/HeliBorg/HeliBoard/wiki/FAQ) and [hidden features](https://github.com/HeliBorg/HeliBoard/wiki/9.-Hidden-features).
- - **Is the issue still relevant?** Make sure your issue is not already fixed in the latest version of HeliBoard.
- - **Is it a single topic?** If you want to suggest multiple things, open multiple issues.
- - **Did you use the issue template?** It is important to make life of our kind contributors easier by avoiding issues that miss key information to their resolution.
- - **Is it written by a human?** Do not use LLMs or similar to generate issues. Having LLMs help with translation or similar is acceptable, but must be disclosed. See also [AI_USAGE.md](AI_USAGE.md)
-Note that issues that that ignore part of the issue template will likely get treated with very low priority, as often they are needlessly hard to read or understand (e.g. huge screenshots, not providing a proper description, or addressing multiple topics). Blatant violation of the guidelines may result in the issue getting closed.
+## Install
 
-If you're interested, you can read the following useful text about effective bug reporting (a bit longer read): https://www.chiark.greenend.org.uk/~sgtatham/bugs.html
+1. Download the latest `Lafz_*-release.apk` from [**Releases**](../../releases/latest) and open it on your phone
+   (allow "install unknown apps" if asked).
+2. Open Lafz and follow the prompts to enable it and select it as your keyboard.
+3. Go to **Settings → Languages & layouts**, add **Urdu (abc → اردو)**, and start typing.
 
-## Translations
-Translations can be added using [Weblate](https://translate.codeberg.org/projects/heliboard/). You will need an account to update translations and add languages. Add the language you want to translate to in Languages -> Manage translated languages in the top menu bar.
-Updating translations in a PR will not be accepted, as it may cause conflicts with Weblate translations.
+Requires Android 5.0 (API 21) or newer.
 
-Some notes on translations
-* when translating metadata, translating the changelogs is rather useless. It's available as it was requested by translators.
-* the `hidden_features_message` is horrible to translate with Weblate, and serves little benefit as it's just a copy of what's already in the wiki: https://github.com/HeliBorg/HeliBoard/wiki/9.-Hidden-features. It's been made available in the app on user request/contribution.
+## How it works
 
-## To Community
-There is the [discussions on GitHub](https://github.com/HeliBorg/HeliBoard/discussions), or if you prefer a more open network there is [Lemmy](https://lemmy.world/c/Heliboard).
-You can share your themes, layouts and dictionaries with other people:
-* Themes can be saved and loaded using the menu on top-right in the _adjust colors_ screen
-  * you can share custom colors in a separate [discussion section](https://github.com/HeliBorg/HeliBoard/discussions/categories/custom-colors)
-  * there are theme collections available at [Star-Trowa/heliboard-themes](https://github.com/Star-Trowa/heliboard-themes) and [PickleHik3/droid-tings](https://github.com/PickleHik3/droid-tings)
-* Custom keyboard layouts are text files whose content you can edit, copy and share
-  * this applies to main keyboard layouts and to special layouts adjustable in advanced settings
-  * see [layouts.md](layouts.md) for details
-  * you can share custom layouts in a separate [discussion section](https://github.com/HeliBorg/HeliBoard/discussions/categories/custom-layout)
-  * [Roccobot's Layout Maker](https://roccobot.github.io/HeliBoard-RLM/) is a browser-based editor for json layout files
-* Creating dictionaries is a little more work
-  * first you will need a wordlist in the format from [here](https://codeberg.org/Helium314/aosp-dictionaries/src/branch/main/wordlists/sample.combined) and in the repository readme
-    * you can load the wordlist dictionary directly in HeliBoard like you would load a dictionary, but other AOSP keyboard forks will likely need the .dict file
-  * then you need to compile the dictionary using [external tools](https://github.com/remi0s/aosp-dictionary-tools)
-    * when you want to add the dictionary to the [repository](https://codeberg.org/Helium314/aosp-dictionaries/), no need to compile to a .dict file
-  * the resulting file (and ideally the wordlist too) can be shared with other users
-  * note that there will not be any further dictionaries added to this app, but you can add dictionaries to the [dictionaries repository](https://codeberg.org/Helium314/aosp-dictionaries)
+The method follows Google's paper on [transliterated mobile keyboard input with weighted finite-state transducers](https://research.google/pubs/transliterated-mobile-keyboard-input-via-weighted-finite-state-transducers/)
+(Hellsten et al., 2017), using a small custom decoder instead of OpenFst:
 
-## Code Contribution
-See [Contribution Guidelines](CONTRIBUTING.md)
+```
+score(word) = ln P(word | previous word)  +  1.4 · ln P(roman | word)
+```
 
-# Links
-* Info
-  * [Wiki](https://github.com/HeliBorg/HeliBoard/wiki), including FAQ, help on customizing layouts, and gesture data gathering
-  * [Layout documentation](layouts.md) (more technical info regarding layout customization)
-  * [For creating custom dictionaries](https://codeberg.org/Helium314/aosp-dictionaries#wordlist-information) (see also top of the linked readme)
-* Community
-  * [Lemmy](https://lemmy.world/c/Heliboard)
-  * [Reddit](https://www.reddit.com/r/HeliBoard)
-  * GitHub [discussions](https://github.com/HeliBorg/HeliBoard/discussions)
-* Other
-  * [Translations](https://translate.codeberg.org/projects/heliboard/)
-  * [Dictionaries](https://codeberg.org/Helium314/aosp-dictionaries)
-  * [k3lp](https://codeberg.org/k3lp/k3lp) is a WIP library for keyboard layout parsing that will be implemented in HeliBoard when ready (created by [FlorisBoard](https://github.com/florisboard/florisboard/) maintainers)
-  * [swipe-o-scope](https://codeberg.org/eclexic/swipe-o-scope) for visualizing gesture data as created when using gesture data gathering
+- `P(roman | word)` is a character-alignment channel model learned by EM from human-written romanizations.
+- The language model is a unigram plus pruned bigram over 8.8M tokens of Urdu Wikipedia (60k-word vocabulary).
+- The whole model ships as a 3.5 MB asset and runs on the device.
 
-# License
+The engine is pure Java: `app/src/main/java/helium314/keyboard/latin/urdu/UrduTransliterator.java`.
+The data pipeline and evaluation tools are in [`tools/urdu/`](tools/urdu/README.md).
 
-HeliBoard (as a fork of OpenBoard) is licensed under GNU General Public License v3.0.
+## Build from source
 
- > Permissions of this strong copyleft license are conditioned on making available complete source code of licensed works and modifications, which include larger works using a licensed work, under the same license. Copyright and license notices must be preserved. Contributors provide an express grant of patent rights.
+You need JDK 17+ and the Android SDK (with NDK).
 
-See repo's [LICENSE](/LICENSE) file.
+```bash
+./gradlew assembleDebug                                   # debug APK
+./gradlew testDebugUnitTest --tests '*UrduTransliteratorTest*'   # engine tests
+tools/build-release.sh                                    # signed release APK in dist/
+```
 
-Since the app is based on Apache 2.0 licensed AOSP Keyboard, an [Apache 2.0](LICENSE-Apache-2.0) license file is provided.
-The icon is licensed under [Creative Commons BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). A [license file](LICENSE-CC-BY-SA-4.0) is also included.
+`tools/build-release.sh` creates a signing key at `~/.android/lafz-release.jks` on first run.
+Back that key up and never commit it: updates must be signed with the same key.
 
-# Credits
-- Icon by [Fabian OvrWrt](https://github.com/FabianOvrWrt) with contributions from [The Eclectic Dyslexic](https://github.com/the-eclectic-dyslexic)
-- [OpenBoard](https://github.com/openboard-team/openboard)
-- [AOSP Keyboard](https://android.googlesource.com/platform/packages/inputmethods/LatinIME/)
-- [LineageOS](https://review.lineageos.org/admin/repos/LineageOS/android_packages_inputmethods_LatinIME)
-- [Simple Keyboard](https://github.com/rkkr/simple-keyboard)
-- [Indic Keyboard](https://gitlab.com/indicproject/indic-keyboard)
-- [FlorisBoard](https://github.com/florisboard/florisboard/)
-- Our [contributors](https://github.com/HeliBorg/HeliBoard/graphs/contributors)
+## Roadmap
 
-## Funding
+- [ ] Better casual-chat accuracy (conversational training data, optional on-device learning)
+- [ ] More verb forms (past, continuous, imperative) and slang
+- [ ] Settings toggle for the honorific suggestions
+- [ ] Offline-first GIF search (the only feature that would ever need the internet)
 
-This project is funded through [NGI Mobifree Fund](https://nlnet.nl/mobifree), a fund established by [NLnet](https://nlnet.nl) with financial support from the European Commission's [Next Generation Internet](https://ngi.eu) program. Learn more at the [NLnet project page](https://nlnet.nl/project/GestureTyping).
+## License and credits
 
-[<img src="https://nlnet.nl/logo/banner.png" alt="NLnet foundation logo" width="20%" />](https://nlnet.nl)
+Lafz is licensed under the **GNU GPL v3.0**, like HeliBoard. See [LICENSE](LICENSE); the Apache 2.0 and CC BY-SA 4.0 notices for AOSP and the icon are in
+[LICENSE-Apache-2.0](LICENSE-Apache-2.0) and [LICENSE-CC-BY-SA-4.0](LICENSE-CC-BY-SA-4.0).
 
-Further the project benefits from donations provided by many users (thank you all!).
+- Built on [HeliBoard](https://github.com/Helium314/HeliBoard), itself based on OpenBoard and the Android Open Source Project keyboard. Thanks to their authors.
+- The transliteration model is trained on the [Dakshina dataset](https://github.com/google-research-datasets/dakshina) (Google, CC BY-SA 4.0).
+  The model file `urdu_translit.bin` is derived from it and carries the same license.
