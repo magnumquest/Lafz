@@ -201,6 +201,12 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
         // as the user would otherwise end up with Latin text in an Urdu sentence
         val willAutoCorrect = candidates.isNotEmpty() && isCorrectionEnabledForUrdu
         addHonorificSuggestions(list, typed, ngramContext, false, if (willAutoCorrect) 2 else 1, true)
+        // keep the typed Roman spelling available as a tappable choice (English words in an Urdu sentence, e.g. "United Nations")
+        if (candidates.isNotEmpty()) {
+            val romanChoice = SuggestedWordInfo(typed, "", 500, SuggestedWordInfo.KIND_CORRECTION, source,
+                SuggestedWordInfo.NOT_AN_INDEX, SuggestedWordInfo.NOT_A_CONFIDENCE)
+            list.add(3.coerceAtMost(list.size), romanChoice)
+        }
         return SuggestedWords(list, null, typedInfo, false, willAutoCorrect, false, inputStyleIfNotPrediction, sequenceNumber)
     }
 
