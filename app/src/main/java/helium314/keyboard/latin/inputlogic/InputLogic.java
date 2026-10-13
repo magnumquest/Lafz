@@ -1191,6 +1191,7 @@ public final class InputLogic {
                         : StringUtils.newSingleCodePointString(codePoint);
                 commitCurrentAutoCorrection(settingsValues, separator, handler);
                 inputTransaction.setDidAutoCorrect();
+                if (urduTransliteration && codePoint == Constants.CODE_SPACE) attachArabicProclitic();
             } else {
                 commitTyped(settingsValues, StringUtils.newSingleCodePointString(codePoint));
             }
@@ -1293,6 +1294,21 @@ public final class InputLogic {
     private static final int RLM = 0x200F;
 
     /** Native variant of ? . , ; a . or , directly after a digit stays as is (decimals, thousands separators). */
+    /** Arabic: "wa", "bi", "al", "fa"... are written attached to the next word, so the space after a committed one-word proclitic is removed again */
+    private void attachArabicProclitic() {
+        if (RomanScript.of(mDictionaryFacilitator.getMainLocale()) != RomanScript.ARABIC) return;
+        final CharSequence before = mConnection.getTextBeforeCursor(12, 0);
+        if (before == null || before.length() < 2 || before.charAt(before.length() - 1) != ' ') return;
+        int start = before.length() - 1;
+        while (start > 0 && before.charAt(start - 1) != ' ' && before.charAt(start - 1) != '\n' && before.charAt(start - 1) != '\u200f') start--;
+        switch (before.subSequence(start, before.length() - 1).toString()) {
+            case "و": case "ف": case "ب": case "ل": case "ك": case "ال": case "وال": case "فال": case "بال": case "لل": case "ولل": case "كال": case "وب": case "ول": case "وك":
+                mConnection.deleteTextBeforeCursor(1);
+                break;
+            default:
+        }
+    }
+
     private int toNativePunctuation(final RomanScript script, final int codePoint) {
         if (codePoint == '?') return script.getQuestionMark();
         if (codePoint != '.' && codePoint != ',') return codePoint;

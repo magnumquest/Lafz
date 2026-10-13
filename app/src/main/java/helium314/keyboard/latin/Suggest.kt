@@ -175,7 +175,9 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
         val typed = wordComposer.typedWord
         val prevInfo = if (ngramContext.prevWordCount > 0) ngramContext.getNthPrevWord(1) else null
         val atStart = ngramContext.isBeginningOfSentenceContext || prevInfo == null
-        val prev = if (atStart) null else prevInfo.toString()
+        // the last two committed words: the model has a trigram table, and a space-joined pair is parsed as two context words
+        val prev2 = if (atStart || ngramContext.prevWordCount < 2) null else ngramContext.getNthPrevWord(2)?.toString()?.takeIf { it.isNotEmpty() }
+        val prev = if (atStart) null else if (prev2 != null) "$prev2 $prevInfo" else prevInfo.toString()
         val source = urduDictionary
         val list = ArrayList<SuggestedWordInfo>()
         if (typed.isEmpty()) { // next-word prediction

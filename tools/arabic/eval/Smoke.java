@@ -2,13 +2,15 @@ import helium314.keyboard.latin.urdu.RomanTransliterator;
 import java.io.*; import java.nio.file.*; import java.util.*;
 /** java Smoke model.bin smoke.tsv [verbose] : top-1 / top-3 / top-6 on a roman<TAB>word list (no context), plus latency */
 public class Smoke {
+  /** key=value arguments set public tunables of the engine (channelWeight=1.4 bigramWeight=.5 triWeight=.5 segPenalty=3 ...) */
+  static void tune(RomanTransliterator t, String[] a, int from) throws Exception {
+    for (int i = from; i < a.length; i++) { String[] kv = a[i].split("="); if (kv.length != 2) continue;
+      java.lang.reflect.Field f = t.getClass().getField(kv[0]); if (f.getType() == int.class) f.setInt(t, Integer.parseInt(kv[1])); else f.setDouble(t, Double.parseDouble(kv[1])); }
+  }
+
   public static void main(String[] a) throws Exception {
     RomanTransliterator t = RomanTransliterator.load(new FileInputStream(a[0]));
-    for (int i = 3; i + 1 < a.length; i += 2) { // optional tunables: cw ob cp gap mlc
-      double v = Double.parseDouble(a[i + 1]);
-      switch (a[i]) { case "cw": t.channelWeight = v; break; case "ob": t.observedBonus = v; break; case "cp": t.completionPenalty = v; break;
-        case "gap": t.maxScoreGap = v; break; case "mlc": t.minLogChannel = v; break; }
-    }
+    tune(t, a, 2);
     int n = 0, h1 = 0, h3 = 0, h6 = 0, oov = 0; long t0 = System.nanoTime();
     for (String line : Files.readAllLines(Paths.get(a[1]))) {
       if (line.startsWith("#") || !line.contains("\t")) continue;
