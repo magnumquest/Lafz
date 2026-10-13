@@ -45,7 +45,6 @@ import helium314.keyboard.latin.SuggestedWords.SuggestedWordInfo;
 import helium314.keyboard.latin.common.ColorType;
 import helium314.keyboard.latin.common.Colors;
 import helium314.keyboard.latin.settings.Settings;
-import helium314.keyboard.latin.urdu.UrduTransliteration;
 import helium314.keyboard.latin.settings.SettingsValues;
 import helium314.keyboard.latin.utils.ResourceUtils;
 import helium314.keyboard.latin.utils.ViewLayoutUtils;
@@ -447,13 +446,12 @@ final class SuggestionStripLayoutHelper {
     }
 
     /**
-     * Gboard-like strip for Roman -> Urdu typing: show as many suggestions as fit (up to
+     * Gboard-like strip (all languages): show as many suggestions as fit (up to
      * {@link #MAX_URDU_SUGGESTIONS_IN_STRIP}), with equal width, instead of always 3.
      */
     private void chooseCountInStrip(final SuggestedWords suggestedWords, final int stripWidth) {
         int count = mBaseSuggestionsCountInStrip;
-        if (UrduTransliteration.isActive(Settings.getValues().mLocale) && stripWidth > 0
-                && !mWordViews.isEmpty()) {
+        if (stripWidth > 0 && !mWordViews.isEmpty()) {
             final boolean omitTyped = shouldOmitTypedWord(suggestedWords.mInputStyle,
                     Settings.getValues().mGestureFloatingPreviewTextEnabled, true);
             final int first = omitTyped ? 1 : 0;
