@@ -86,6 +86,7 @@ fun TextCorrectionScreen(
         if (suggestionsEnabled || autocorrectEnabled) Settings.PREF_INLINE_EMOJI_SEARCH else null,
         Settings.PREF_KEY_USE_PERSONALIZED_DICTS,
         Settings.PREF_BIGRAM_PREDICTIONS,
+        Settings.PREF_LIVE_TRANSLITERATION,
         Settings.PREF_SUGGEST_PUNCTUATION,
         if (prefs.getBoolean(Settings.PREF_SUGGEST_PUNCTUATION, Defaults.PREF_SUGGEST_PUNCTUATION))
             Settings.PREF_PUNCTUATION_SUGGESTIONS else null,
@@ -223,6 +224,11 @@ fun createCorrectionSettings(context: Context) = listOf(
         R.string.bigram_prediction, R.string.bigram_prediction_summary
     ) {
         SwitchPreference(it, Defaults.PREF_BIGRAM_PREDICTIONS) { KeyboardSwitcher.getInstance().setThemeNeedsReload() }
+    },
+    Setting(context, Settings.PREF_LIVE_TRANSLITERATION,
+        R.string.live_transliteration_title, R.string.live_transliteration_summary
+    ) {
+        SwitchPreference(it, Defaults.PREF_LIVE_TRANSLITERATION)
     },
     Setting(context, Settings.PREF_SUGGEST_PUNCTUATION, R.string.suggest_punctuation, R.string.suggest_punctuation_summary
     ) {

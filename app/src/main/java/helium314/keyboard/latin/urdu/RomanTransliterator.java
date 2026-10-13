@@ -317,7 +317,7 @@ public final class RomanTransliterator {
         int p1 = -2, p2 = -2;
         if (atStart) p1 = -1;
         else if (prev != null) {
-            final String[] tok = prev.trim().split(" +");      // a phrase entry ("إن شاء الله") or several words: only the last two count
+            final String[] tok = prev.replaceAll("[\u200e\u200f\u061c]", "").trim().split(" +");   // bidi marks stick to the first word of a paragraph      // a phrase entry ("إن شاء الله") or several words: only the last two count
             Integer a = tok.length > 0 ? wordId.get(tok[tok.length - 1]) : null;
             if (a != null) {
                 p1 = a;

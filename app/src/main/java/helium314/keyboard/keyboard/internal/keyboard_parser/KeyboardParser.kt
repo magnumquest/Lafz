@@ -306,14 +306,18 @@ class KeyboardParser(private val params: KeyboardParams, private val context: Co
         val row = LayoutParser.parseLayout(LayoutType.NUMBER_ROW, params, context).first()
         val localizedNumbers = params.mLocaleKeyboardInfos.localizedNumberKeys
         if (localizedNumbers?.size != 10) return row
-        if (Settings.getValues().mLocalizedNumberRow) {
+        // symbol page of Roman-script transliteration subtypes: native digits as the keys, the latin digit stays reachable as popup
+        val nativeSymbols = params.mId.element == KeyboardElement.SYMBOLS
+                && params.mId.locale.toLanguageTag() in NATIVE_DIGIT_SYMBOL_LOCALES
+        if (nativeSymbols || Settings.getValues().mLocalizedNumberRow) {
             // replace 0-9 with localized numbers, and move latin number into popup
             for (i in row.indices) {
                 val key = row[i]
                 val number = key.label.toIntOrNull() ?: continue
+                val popup = SimplePopups(listOf(key.label)).merge(key.popup)
                 when (number) {
-                    0 -> row[i] = key.copy(newLabel = localizedNumbers[9], newCode = KeyCode.UNSPECIFIED, newPopup = SimplePopups(listOf(key.label)).merge(key.popup))
-                    in 1..9 -> row[i] = key.copy(newLabel = localizedNumbers[number - 1], newCode = KeyCode.UNSPECIFIED, newPopup = SimplePopups(listOf(key.label)).merge(key.popup))
+                    0 -> row[i] = key.copy(newLabel = localizedNumbers[9], newCode = KeyCode.UNSPECIFIED, newPopup = popup)
+                    in 1..9 -> row[i] = key.copy(newLabel = localizedNumbers[number - 1], newCode = KeyCode.UNSPECIFIED, newPopup = popup)
                 }
             }
         } else {
@@ -338,6 +342,9 @@ class KeyboardParser(private val params: KeyboardParams, private val context: Co
     }
 
     companion object {
+        /** locales whose symbol page shows and inserts native digits (ar-Latn: Arabic-Indic, ur-Latn: Urdu/Persian forms) */
+        private val NATIVE_DIGIT_SYMBOL_LOCALES = setOf("ar-Latn", "ur-Latn")
+
         private const val TAG = "KeyboardParser"
     }
 

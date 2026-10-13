@@ -176,8 +176,11 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
         val prevInfo = if (ngramContext.prevWordCount > 0) ngramContext.getNthPrevWord(1) else null
         val atStart = ngramContext.isBeginningOfSentenceContext || prevInfo == null
         // the last two committed words: the model has a trigram table, and a space-joined pair is parsed as two context words
-        val prev2 = if (atStart || ngramContext.prevWordCount < 2) null else ngramContext.getNthPrevWord(2)?.toString()?.takeIf { it.isNotEmpty() }
-        val prev = if (atStart) null else if (prev2 != null) "$prev2 $prevInfo" else prevInfo.toString()
+        // a right-to-left mark is inserted at the start of each paragraph and sticks to the first word: not part of the word
+        fun String.noBidiMarks() = filter { it != '\u200f' && it != '\u200e' && it != '\u061c' }
+        val prev2 = if (atStart || ngramContext.prevWordCount < 2) null else ngramContext.getNthPrevWord(2)?.toString()?.noBidiMarks()?.takeIf { it.isNotEmpty() }
+        val prev1 = prevInfo?.toString()?.noBidiMarks()
+        val prev = if (atStart || prev1.isNullOrEmpty()) null else if (prev2 != null) "$prev2 $prev1" else prev1
         val source = urduDictionary
         val list = ArrayList<SuggestedWordInfo>()
         if (typed.isEmpty()) { // next-word prediction
@@ -195,22 +198,24 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
         val typedInfo = SuggestedWordInfo(typed, "", SuggestedWordInfo.MAX_SCORE, SuggestedWordInfo.KIND_TYPED,
             Dictionary.DICTIONARY_USER_TYPED, SuggestedWordInfo.NOT_AN_INDEX, SuggestedWordInfo.NOT_A_CONFIDENCE)
         list.add(typedInfo)
+        val perfStart = if (BuildConfig.DEBUG) System.nanoTime() else 0L
         val candidates = engine.suggest(typed, prev, atStart, 6)
+        if (BuildConfig.DEBUG) Log.d("LafzPerf", "decode ms=${"%.2f".format(Locale.ROOT, (System.nanoTime() - perfStart) / 1e6)} typed=${typed.length} script=${script.name} prev=[${prev}] atStart=$atStart count=${ngramContext.prevWordCount}")
         candidates.forEachIndexed { i, c ->
             list.add(SuggestedWordInfo(c.text, "", 1000 - i,
                 if (c.completion) SuggestedWordInfo.KIND_COMPLETION else SuggestedWordInfo.KIND_CORRECTION,
                 source, SuggestedWordInfo.NOT_AN_INDEX, SuggestedWordInfo.NOT_A_CONFIDENCE))
         }
         // auto-commit the best Urdu word when space / punctuation is typed; a trailing completion is also committed,
-        // as the user would otherwise end up with Latin text in an Urdu sentence
-        val willAutoCorrect = candidates.isNotEmpty() && isCorrectionEnabledForUrdu
+        // as the user would otherwise end up with Latin text in an Urdu sentence. Never for a resumed word (revert
+        // after an auto-commit), which stays in the Roman spelling as in HeliBoard.
+        val willAutoCorrect = candidates.isNotEmpty() && isCorrectionEnabledForUrdu && !wordComposer.isResumed
         addHonorificSuggestions(list, typed, ngramContext, false, if (willAutoCorrect) 2 else 1, script.honorificScript)
-        // keep the typed Roman spelling available as a tappable choice (English words in an Urdu sentence, e.g. "United Nations")
-        if (candidates.isNotEmpty()) {
-            val romanChoice = SuggestedWordInfo(typed, "", 500, SuggestedWordInfo.KIND_CORRECTION, source,
-                SuggestedWordInfo.NOT_AN_INDEX, SuggestedWordInfo.NOT_A_CONFIDENCE)
-            list.add(3.coerceAtMost(list.size), romanChoice)
-        }
+        // keep the typed Roman spelling available as a tappable choice (English words in an Urdu sentence, e.g. "United Nations"),
+        // also when the decoder has no candidate: then it is what gets committed
+        val romanChoice = SuggestedWordInfo(typed, "", 500, SuggestedWordInfo.KIND_CORRECTION, source,
+            SuggestedWordInfo.NOT_AN_INDEX, SuggestedWordInfo.NOT_A_CONFIDENCE)
+        list.add(3.coerceAtMost(list.size), romanChoice)
         return SuggestedWords(list, null, typedInfo, false, willAutoCorrect, false, inputStyleIfNotPrediction, sequenceNumber)
     }
 
@@ -245,7 +250,7 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
     private fun scriptOf(text: String) =
         RomanScript.honorificScript(mDictionaryFacilitator.mainLocale, ReligiousShortcuts.isUrduScript(text))
 
-    private val urduDictionary = Dictionary.PhonyDictionary("roman_script_translit")
+    private val urduDictionary = ROMAN_SCRIPT_SOURCE
     private val isCorrectionEnabledForUrdu = true
 
     // returns [allowsToBeAutoCorrected, hasAutoCorrection]
@@ -458,6 +463,10 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
 
     companion object {
         private val TAG: String = Suggest::class.java.simpleName
+
+        // Source of the Roman -> Urdu / Arabic decoder candidates (SuggestedWordInfo.mSourceDict). InputLogic uses it
+        // to pick the live-transliteration candidate, so honorifics and the typed Roman word are never picked.
+        @JvmField val ROMAN_SCRIPT_SOURCE = Dictionary.PhonyDictionary("roman_script_translit")
 
         // Session id for {@link #getSuggestedWords(WordComposer,String,ProximityInfo,boolean,int)}.
         // We are sharing the same ID between typing and gesture to save RAM footprint.

@@ -432,6 +432,11 @@ public final class WordComposer {
         return mIsResumed;
     }
 
+    /** The word is no longer only resumed: the user continued typing it. */
+    public void clearResumed() {
+        mIsResumed = false;
+    }
+
     // `type' should be one of the LastComposedWord.COMMIT_TYPE_* constants above.
     // committedWord should contain suggestion spans if applicable.
     public LastComposedWord commitWord(final int type, final CharSequence committedWord,
