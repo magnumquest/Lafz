@@ -495,6 +495,15 @@ public final class InputLogic {
         mWordBeingCorrectedByCursor = null;
         mJustRevertedACommit = false;
 
+        // Roman -> Urdu typing: ? . , enter the Urdu question mark, full stop and comma (like Gboard)
+        if (UrduTransliteration.isActive(settingsValues.mLocale)) {
+            final int urduPunctuation = toUrduPunctuation(event.getCodePoint());
+            if (urduPunctuation != event.getCodePoint()) {
+                event = Event.createSoftwareKeypressEvent(urduPunctuation, event.getKeyCode(), event.getMetaState(),
+                        event.getX(), event.getY(), event.isKeyRepeat());
+            }
+        }
+
         if (GestureDataGatheringKt.useBackgroundGathering && mConnection.hasSelection())
             BackgroundGatheringCache.INSTANCE.onEditSelection(mConnection.getSelectedText(0), mConnection.getTextBeforeCursor(40, 0), mConnection.getTextAfterCursor(40, 0));
         if (GestureDataGatheringKt.useBackgroundGathering && mWordComposer.isComposingWord() && mWordComposer.isCursorFrontOrMiddleOfComposingWord())
@@ -1280,6 +1289,15 @@ public final class InputLogic {
      */
     private static final int RLM = 0x200F;
 
+    /** Urdu variant of ? . , ; a . or , directly after a digit stays as is (decimals, thousands separators). */
+    private int toUrduPunctuation(final int codePoint) {
+        if (codePoint == '?') return '\u061F';
+        if (codePoint != '.' && codePoint != ',') return codePoint;
+        final CharSequence before = mConnection.getTextBeforeCursor(1, 0);
+        if (before != null && before.length() == 1 && Character.isDigit(before.charAt(0))) return codePoint;
+        return codePoint == '.' ? '\u06D4' : '\u060C';
+    }
+
     /**
      * In Urdu (abc -> اردو) mode, a right-to-left mark is put at the start of each paragraph, so text direction
      * (cursor side, alignment) is right-to-left from the first keystroke, also when the paragraph starts with an
@@ -1663,8 +1681,9 @@ public final class InputLogic {
         if (canBeFollowedByDoubleSpacePeriod(firstCodePoint)) {
             cancelDoubleSpacePeriodCountdown();
             mConnection.deleteTextBeforeCursor(1);
-            final String textToInsert = inputTransaction.getSettingsValues().mSpacingAndPunctuations
-                    .mSentenceSeparatorAndSpace;
+            final String textToInsert = UrduTransliteration.isActive(inputTransaction.getSettingsValues().mLocale)
+                    ? "\u06D4 "
+                    : inputTransaction.getSettingsValues().mSpacingAndPunctuations.mSentenceSeparatorAndSpace;
             mConnection.commitText(textToInsert, 1);
             inputTransaction.requireShiftUpdate(InputTransaction.SHIFT_UPDATE_NOW);
             inputTransaction.setRequiresUpdateSuggestions();
