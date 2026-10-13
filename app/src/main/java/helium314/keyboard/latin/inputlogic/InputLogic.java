@@ -41,7 +41,7 @@ import helium314.keyboard.latin.dictionary.DictionaryFactory;
 import helium314.keyboard.latin.LastComposedWord;
 import helium314.keyboard.latin.InputAttributes;
 import helium314.keyboard.latin.LatinIME;
-import helium314.keyboard.latin.urdu.UrduTransliteration;
+import helium314.keyboard.latin.urdu.RomanScript;
 import helium314.keyboard.latin.NgramContext;
 import helium314.keyboard.latin.RichInputConnection;
 import helium314.keyboard.latin.SingleDictionaryFacilitator;
@@ -495,9 +495,10 @@ public final class InputLogic {
         mWordBeingCorrectedByCursor = null;
         mJustRevertedACommit = false;
 
-        // Roman -> Urdu typing: ? . , enter the Urdu question mark, full stop and comma (like Gboard)
-        if (UrduTransliteration.isActive(settingsValues.mLocale)) {
-            final int urduPunctuation = toUrduPunctuation(event.getCodePoint());
+        // Roman -> Urdu / Arabic typing: ? , (and . for Urdu) enter the native question mark, comma and full stop (like Gboard)
+        final RomanScript romanScript = RomanScript.of(settingsValues.mLocale);
+        if (romanScript != null) {
+            final int urduPunctuation = toNativePunctuation(romanScript, event.getCodePoint());
             if (urduPunctuation != event.getCodePoint()) {
                 event = Event.createSoftwareKeypressEvent(urduPunctuation, event.getKeyCode(), event.getMetaState(),
                         event.getX(), event.getY(), event.isKeyRepeat());
@@ -1183,8 +1184,8 @@ public final class InputLogic {
         }
         // isComposingWord() may have changed since we stored wasComposing
         if (mWordComposer.isComposingWord()) {
-            // Roman -> Urdu always commits the transliterated word (like Gboard), independent of the autocorrect setting
-            final boolean urduTransliteration = UrduTransliteration.isActive(mDictionaryFacilitator.getMainLocale());
+            // Roman -> Urdu / Arabic always commits the transliterated word (like Gboard), independent of the autocorrect setting
+            final boolean urduTransliteration = RomanScript.isActive(mDictionaryFacilitator.getMainLocale());
             if ((settingsValues.mAutoCorrectEnabled || urduTransliteration) && ! isInlineEmojiSearchAction()) {
                 final String separator = shouldAvoidSendingCode ? LastComposedWord.NOT_A_SEPARATOR
                         : StringUtils.newSingleCodePointString(codePoint);
@@ -1291,23 +1292,24 @@ public final class InputLogic {
      */
     private static final int RLM = 0x200F;
 
-    /** Urdu variant of ? . , ; a . or , directly after a digit stays as is (decimals, thousands separators). */
-    private int toUrduPunctuation(final int codePoint) {
-        if (codePoint == '?') return '\u061F';
+    /** Native variant of ? . , ; a . or , directly after a digit stays as is (decimals, thousands separators). */
+    private int toNativePunctuation(final RomanScript script, final int codePoint) {
+        if (codePoint == '?') return script.getQuestionMark();
         if (codePoint != '.' && codePoint != ',') return codePoint;
+        if (codePoint == '.' && script.getFullStop() == null) return codePoint;
         final CharSequence before = mConnection.getTextBeforeCursor(1, 0);
         if (before != null && before.length() == 1 && Character.isDigit(before.charAt(0))) return codePoint;
-        return codePoint == '.' ? '\u06D4' : '\u060C';
+        return codePoint == '.' ? script.getFullStop() : script.getComma();
     }
 
     /**
-     * In Urdu (abc -> اردو) mode, a right-to-left mark is put at the start of each paragraph, so text direction
+     * In Urdu / Arabic (abc -> اردو / عربي) mode, a right-to-left mark is put at the start of each paragraph, so text direction
      * (cursor side, alignment) is right-to-left from the first keystroke, also when the paragraph starts with an
      * English word. Apps that choose direction by the first strong character (WhatsApp etc.) follow the mark.
      * Only done in multi-line fields, never for names, urls, passwords, ...
      */
     private void insertRtlMarkIfNeeded(final SettingsValues settingsValues) {
-        if (!UrduTransliteration.isActive(mDictionaryFacilitator.getMainLocale())) return;
+        if (!RomanScript.isActive(mDictionaryFacilitator.getMainLocale())) return;
         final InputAttributes attrs = settingsValues.mInputAttributes;
         if (attrs.mIsPasswordField || (attrs.mInputType & InputType.TYPE_TEXT_FLAG_MULTI_LINE) == 0) return;
         if (mConnection.hasSelection()) return;
@@ -1683,8 +1685,9 @@ public final class InputLogic {
         if (canBeFollowedByDoubleSpacePeriod(firstCodePoint)) {
             cancelDoubleSpacePeriodCountdown();
             mConnection.deleteTextBeforeCursor(1);
-            final String textToInsert = UrduTransliteration.isActive(inputTransaction.getSettingsValues().mLocale)
-                    ? "\u06D4 "
+            final RomanScript romanScript = RomanScript.of(inputTransaction.getSettingsValues().mLocale);
+            final String textToInsert = romanScript != null && romanScript.getFullStop() != null
+                    ? romanScript.getFullStop() + " "
                     : inputTransaction.getSettingsValues().mSpacingAndPunctuations.mSentenceSeparatorAndSpace;
             mConnection.commitText(textToInsert, 1);
             inputTransaction.requireShiftUpdate(InputTransaction.SHIFT_UPDATE_NOW);

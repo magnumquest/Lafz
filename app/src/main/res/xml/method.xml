@@ -502,6 +502,16 @@
         android:imeSubtypeExtraValue="AsciiCapable,EmojiCapable"
         android:isAsciiCapable="true"
     />
+    <!-- Roman (QWERTY) typing that is transliterated to Arabic script, see latin/urdu (RomanScript) -->
+    <subtype android:icon="@drawable/ic_ime_switcher"
+        android:label="@string/subtype_ar_Latn"
+        android:subtypeId="0x61726c74"
+        android:imeSubtypeLocale="ar_ZZ"
+        android:languageTag="ar-Latn"
+        android:imeSubtypeMode="keyboard"
+        android:imeSubtypeExtraValue="AsciiCapable,EmojiCapable"
+        android:isAsciiCapable="true"
+    />
     <subtype android:icon="@drawable/ic_ime_switcher"
         android:label="@string/subtype_generic"
         android:subtypeId="0x35b7526a"

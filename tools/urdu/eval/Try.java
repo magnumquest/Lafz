@@ -1,14 +1,14 @@
-import helium314.keyboard.latin.urdu.UrduTransliterator;
+import helium314.keyboard.latin.urdu.RomanTransliterator;
 import java.io.*; import java.util.*;
 public class Try { public static void main(String[] a) throws Exception {
-  UrduTransliterator t = UrduTransliterator.load(new FileInputStream(a[0]));
+  RomanTransliterator t = RomanTransliterator.load(new FileInputStream(a[0]));
   for (int s = 1; s < a.length; s++) {
     String prev = null; boolean start = true; StringBuilder out = new StringBuilder();
     for (String w : a[s].split(" ")) {
-      List<UrduTransliterator.Candidate> c = t.suggest(w, prev, start, 4);
-      out.append(c.isEmpty() ? "?" : c.get(0).urdu).append(" ");
+      List<RomanTransliterator.Candidate> c = t.suggest(w, prev, start, 4);
+      out.append(c.isEmpty() ? "?" : c.get(0).text).append(" ");
       System.out.println("  " + w + " -> " + c);
-      prev = c.isEmpty() ? null : c.get(0).urdu; start = false;
+      prev = c.isEmpty() ? null : c.get(0).text; start = false;
     }
     System.out.println(a[s] + "  =>  " + out + "\n");
   }

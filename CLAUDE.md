@@ -37,12 +37,12 @@ model decoded through a noisy-channel transliteration model, on-device. We do th
 ## Code map
 | What | Where |
 |---|---|
-| Engine (pure Java, no Android deps) | `app/src/main/java/helium314/keyboard/latin/urdu/UrduTransliterator.java` |
+| Engine (pure Java, no Android deps) | `app/src/main/java/helium314/keyboard/latin/urdu/RomanTransliterator.java` |
 | Lazy asset loader + `isActive(locale)` | `.../latin/urdu/UrduTransliteration.kt` |
 | Hook into suggestions (branch at top of `getSuggestedWordsForNonBatchInput`) | `.../latin/Suggest.kt` → `getUrduTransliterationSuggestions` |
 | Model asset (3.5 MB, binary "UTRL" v1) | `app/src/main/assets/urdu/urdu_translit.bin` |
 | Data/model pipeline + eval harness | `tools/urdu/` (see its README) |
-| Unit test (needs the asset) | `app/src/test/java/helium314/keyboard/latin/urdu/UrduTransliteratorTest.kt` |
+| Unit test (needs the asset) | `app/src/test/java/helium314/keyboard/latin/urdu/RomanTransliteratorTest.kt` |
 | Subtype `ur-Latn` | `res/xml/method.xml` (id 0x75726c74), `strings.xml` `subtype_ur_Latn`, `LocaleUtils.kt`, `donottranslate.xml` |
 | Icon generator | `tools/make_icon.py` (writes vectors + PNGs; preview in `art/lafz/`) |
 | Gboard palette + defaults | `keyboard/KeyboardTheme.kt` (THEME_LIGHT/THEME_DARK), `latin/settings/Defaults.kt` (Rounded style, key borders on) |
@@ -73,7 +73,7 @@ English (any Latin typing), Roman→Urdu typing and Urdu-script typing all get h
 
 ## TODO, in priority order
 1. **Build & fix compile errors.** `./gradlew assembleDebug` (needs Android SDK 37 + NDK for the JNI part, JDK 17+). Or push and let `.github/workflows/build-debug-apk.yml` build it.
-   Then `./gradlew testDebugUnitTest --tests '*UrduTransliteratorTest*'`.
+   Then `./gradlew testDebugUnitTest --tests '*RomanTransliteratorTest*'`.
 2. **Enable the layout on device**: Settings → Languages & layouts → add "Urdu (abc → اردو)" (it appears like Hinglish). Verify: typing shows Urdu candidates, space commits the best one,
    backspace after auto-commit reverts to Roman (standard HeliBoard behaviour), tap on a suggestion commits it.
    Possible issues to check: `ur-Latn` handling in places that special-case `hi-Latn` (grep it), spell-checker for the locale, dictionary-facilitator without a main dict,
@@ -84,7 +84,7 @@ English (any Latin typing), Roman→Urdu typing and Urdu-script typing all get h
    * Domain gap: LM is Wikipedia-only. Add conversational data (Dakshina romanized sentences are only 9.7k; consider licensed chat/subtitle corpora, or a user-opt-in *on-device* learning of committed words/bigrams).
    * OOV: only 60k words (98 % token coverage on Dakshina eval) plus extras. Names / unseen words currently show nothing (by design: dictionary-only). More verb forms are worth adding (past `kardiya`, `hogaya`, continuous `kar raha`, imperatives `karo`, `kardo`), plus a bigger curated loanword list and common chat words/slang (`yaar`, `bhai`, `acha`…): all go through `tools/urdu/build_extra.py`.
    * Roman `h`-aspirates, `ain`/`hamza` handled implicitly by the channel model; check hard cases (`kh`, `gh`, `ch`, nasal ں).
-   * Re-tune weights in `UrduTransliterator` (channelWeight 1.4, observedBonus 1.0, bigramWeight 0.5, completionPenalty 1.2) with `tools/urdu/eval/Eval.java`.
+   * Re-tune weights in `RomanTransliterator` (channelWeight 1.4, observedBonus 1.0, bigramWeight 0.5, completionPenalty 1.2) with `tools/urdu/eval/Eval.java`.
    * Mobile perf: measure `suggest()` latency on a mid-range phone; first-letter buckets already prune ~90 %. Move heavy work off the UI thread if needed (HeliBoard already calls Suggest from a background handler).
 5. **Gboard look polish**: compare side by side with Gboard on a phone. Key radius/gaps/heights, enter key accent color (blue pill), spacebar label "اردو" / language chip, suggestion strip font (Urdu needs Noto Nastaliq/Naskh; check bundled fonts), popup style, emoji/toolbar icon style. Colors are in `KeyboardTheme.kt` and style XMLs `res/values/themes-rounded-*.xml`.
 6. **GIF feature (phase 2)** — do not start before 1–3 work. Constraints from owner: internet only for GIF fetching.
@@ -96,7 +96,7 @@ English (any Latin typing), Roman→Urdu typing and Urdu-script typing all get h
 ## Rebuilding the model
 See `tools/urdu/README.md`. Needs `dakshina_dataset_v1.0.tar` (https://storage.googleapis.com/gresearch/dakshina/dakshina_dataset_v1.0.tar, 2 GB, extract only `ur/`), Python 3 (stdlib only),
 JDK for the eval harness. Training takes ~2 minutes. Shipping build: `python3 build_lm.py 60000` (no `--holdout`), `python3 export_model.py ../../app/src/main/assets/urdu/urdu_translit.bin --ship`.
-Binary format is defined by `export_model.py` and read by `UrduTransliterator.load` — change both together.
+Binary format is defined by `export_model.py` and read by `RomanTransliterator.load` — change both together.
 
 ## Working notes
 * **Git workflow (owner preference): commit directly to `main`; do not create new branches** unless the owner asks for one for a risky change. Repo is `magnumquest/Lafz`; `upstream` remote = HeliBoard.

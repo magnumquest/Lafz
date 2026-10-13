@@ -10,6 +10,7 @@
     <string-array name="subtype_locale_displayed_in_root_locale">
         <item>hi-Latn</item>
         <item>ur-Latn</item>
+        <item>ar-Latn</item>
         <item>mns</item>
         <item>dru</item>
         <item>xdq</item>
@@ -19,6 +20,7 @@
     <string-array name="subtype_locale_displayed_in_root_locale_display_names">
         <item>Hinglish</item>
         <item>Urdu (abc → اردو)</item>
+        <item>Arabic (abc → عربي)</item>
         <item>Ма̄ньси</item>
         <item>ХӀурухъла лугъат</item>
         <item>Хайдаҡӏла</item>

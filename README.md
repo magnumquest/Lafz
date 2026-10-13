@@ -58,7 +58,7 @@ score(word) = ln P(word | previous word)  +  1.4 · ln P(roman | word)
 - The language model is a unigram plus pruned bigram over 8.8M tokens of Urdu Wikipedia (60k-word vocabulary).
 - The whole model ships as a 3.5 MB asset and runs on the device.
 
-The engine is pure Java: `app/src/main/java/helium314/keyboard/latin/urdu/UrduTransliterator.java`.
+The engine is pure Java: `app/src/main/java/helium314/keyboard/latin/urdu/RomanTransliterator.java`.
 The data pipeline and evaluation tools are in [`tools/urdu/`](tools/urdu/README.md).
 
 ## Build from source
@@ -67,7 +67,7 @@ You need JDK 17+ and the Android SDK (with NDK).
 
 ```bash
 ./gradlew assembleDebug                                   # debug APK
-./gradlew testDebugUnitTest --tests '*UrduTransliteratorTest*'   # engine tests
+./gradlew testDebugUnitTest --tests '*RomanTransliteratorTest*'   # engine tests
 tools/build-release.sh                                    # signed release APK in dist/
 ```
 

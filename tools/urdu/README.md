@@ -1,7 +1,7 @@
 # Roman → Urdu transliteration model (offline)
 
 Pipeline that builds `app/src/main/assets/urdu/urdu_translit.bin`, consumed by
-`helium314.keyboard.latin.urdu.UrduTransliterator`.
+`helium314.keyboard.latin.urdu.RomanTransliterator`.
 
 Data: [Google Dakshina](https://github.com/google-research-datasets/dakshina) (CC BY-SA 4.0): Urdu romanization
 lexicons + Urdu Wikipedia text. Download `dakshina_dataset_v1.0.tar`, extract `ur/`, and set `DAKSHINA=.../ur`.

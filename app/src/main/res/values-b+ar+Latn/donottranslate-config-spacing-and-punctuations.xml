@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- Arabic written in Latin letters (Arabizi): the digits 2 3 5 6 7 8 9 (and 4) stand for Arabic letters
+         (2 = ء, 3 = ع, 5 = خ, 6 = ط, 7 = ح, 8 = غ, 9 = ص / ق), so they must be able to start and continue a word -->
+    <string name="symbols_word_connectors">\'-23456789</string>
+</resources>

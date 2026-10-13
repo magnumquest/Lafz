@@ -6,13 +6,13 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-class UrduTransliteratorTest {
-    private val engine = UrduTransliterator.load(File("src/main/assets/urdu/urdu_translit.bin").inputStream())
+class RomanTransliteratorTest {
+    private val engine = RomanTransliterator.load(File("src/main/assets/urdu/urdu_translit.bin").inputStream())
 
     private fun sentence(roman: String): String {
         var prev: String? = null
         return roman.split(" ").joinToString(" ") { w ->
-            val best = engine.suggest(w, prev, prev == null, 1).first().urdu
+            val best = engine.suggest(w, prev, prev == null, 1).first().text
             prev = best
             best
         }
@@ -28,7 +28,7 @@ class UrduTransliteratorTest {
     @Test fun completionsWhileTyping() {
         val c = engine.suggest("ka", null, true, 5)
         assertTrue(c.isNotEmpty())
-        assertTrue(engine.suggest("kal", "میں", false, 5).any { it.urdu == "کل" })
+        assertTrue(engine.suggest("kal", "میں", false, 5).any { it.text == "کل" })
     }
 
     @Test fun nextWordPrediction() {
@@ -38,7 +38,7 @@ class UrduTransliteratorTest {
     @Test fun futureTenseVerbsAreDictionaryPhrases() {
         assertEquals("میں کل آؤں گا", sentence("mein kal aonga"))
         assertEquals("جاؤں گا", sentence("jaunga"))
-        assertTrue(engine.suggest("aonga", null, true, 5).any { it.urdu == "آؤں گی" })
+        assertTrue(engine.suggest("aonga", null, true, 5).any { it.text == "آؤں گی" })
     }
 
     @Test fun englishLoanwordsGetUrduSpelling() {
@@ -51,7 +51,7 @@ class UrduTransliteratorTest {
     @Test fun neverSuggestsOutOfDictionaryWords() {
         assertTrue(engine.suggest("xyzqw", null, true, 5).isEmpty())
         for (w in listOf("karunga", "mein", "kaise", "computer", "ka")) {
-            engine.suggest(w, null, true, 6).forEach { assertTrue(engine.isKnownWord(it.urdu), "$w -> ${it.urdu}") }
+            engine.suggest(w, null, true, 6).forEach { assertTrue(engine.isKnownWord(it.text), "$w -> ${it.text}") }
         }
     }
 }

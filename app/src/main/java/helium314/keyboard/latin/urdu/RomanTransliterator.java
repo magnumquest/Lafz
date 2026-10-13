@@ -11,30 +11,33 @@ import java.util.HashMap;
 import java.util.List;
 
 /**
- * Offline Roman -> Urdu script transliteration, modelled on the approach described in
+ * Offline Roman -> native script transliteration (Urdu, Arabic: one model file per language, same engine),
+ * modelled on the approach described in
  * "Transliterated mobile keyboard input via weighted finite-state transducers" (Hellsten et al., 2017):
  * a lexicon + language model decoded through a noisy-channel model, instead of a fixed phonetic map.
  * <p>
  * score(word) = ln P(word | previous word) + channelWeight * ln P(roman | word)
  * <p>
  * P(roman | word) is a monotone character-alignment model (each Urdu letter emits a short Roman chunk, e.g.
- * ک -> k / ka / ki) learned with EM from human-written romanizations, summed over all alignments (forward algorithm).
+ * ک -> k / ka / ki) learned with EM from human-written romanizations (or, where none are available, a documented prior),
+ * summed over all alignments (forward algorithm).
  * Words the model has seen people romanize also get a bonus for those exact spellings.
  * No Android dependencies: this class is unit-testable on a plain JVM.
  */
-public final class UrduTransliterator {
+public final class RomanTransliterator {
     public static final class Candidate {
-        public final String urdu;
+        /** the word in native script (may contain a space for multi-word entries) */
+        public final String text;
         public final double score;
         /** true if the typed Roman text is only a prefix of this word's romanization (word completion) */
         public final boolean completion;
-        Candidate(String urdu, double score, boolean completion) {
-            this.urdu = urdu; this.score = score; this.completion = completion;
+        Candidate(String text, double score, boolean completion) {
+            this.text = text; this.score = score; this.completion = completion;
         }
-        @Override public String toString() { return urdu + (completion ? "…" : "") + String.format(" %.2f", score); }
+        @Override public String toString() { return text + (completion ? "…" : "") + String.format(" %.2f", score); }
     }
 
-    // tunables (set from offline evaluation, see tools/urdu)
+    // tunables (set from offline evaluation, see tools/urdu and tools/arabic); per-language values are set by RomanScript
     public double channelWeight = 1.4;
     public double observedBonus = 1.0;
     public double completionPenalty = 1.2; // per skipped trailing Urdu letter (ln units)
@@ -56,7 +59,7 @@ public final class UrduTransliterator {
         }
     }
 
-    private final int[] charIdx = new int[0x800];   // Urdu char -> channel alphabet index (+1), 0 = unknown
+    private final int[] charIdx = new int[0x800];   // native-script char -> channel alphabet index (+1), 0 = unknown
     private Chan[] chans;                           // [idx * 3 + pos]  pos: 0 initial, 1 medial, 2 final
     private String[] words;
     private char[][] wordChars;
@@ -69,17 +72,19 @@ public final class UrduTransliterator {
     private int[] bigramKeys;     // sorted w1 ids, -1 = sentence start
     private int[][] bigramNext;
     private byte[][] bigramQ;
-    private int[][] firstLetterBuckets = new int[26][];
+    /** typed symbols the model understands: a-z, digits (Arabizi 2 3 5 6 7 8 9) and the apostrophe, see {@link #slot} */
+    private static final int SLOTS = 37;
+    private int[][] firstLetterBuckets = new int[SLOTS][];
 
-    private UrduTransliterator() {}
+    private RomanTransliterator() {}
 
-    public static UrduTransliterator load(InputStream raw) throws IOException {
+    public static RomanTransliterator load(InputStream raw) throws IOException {
         final DataInputStream in = new DataInputStream(new BufferedInputStream(raw, 1 << 16));
         final byte[] magic = new byte[4];
         in.readFully(magic);
         if (!new String(magic, "US-ASCII").equals("UTRL")) throw new IOException("bad model file");
         in.readInt(); // version
-        final UrduTransliterator t = new UrduTransliterator();
+        final RomanTransliterator t = new RomanTransliterator();
         final int nKeys = in.readInt();
         final HashMap<Integer, Chan> tmp = new HashMap<>();
         int nChars = 0;
@@ -169,16 +174,24 @@ public final class UrduTransliterator {
         return new String(b, "UTF-8");
     }
 
+    /** index of a typed symbol in the first-letter buckets, or -1 if the symbol is not used for transliteration */
+    private static int slot(char c) {
+        if (c >= 'a' && c <= 'z') return c - 'a';
+        if (c >= '0' && c <= '9') return 26 + (c - '0');
+        if (c == '\'') return 36;
+        return -1;
+    }
+
     private void buildBuckets() {
         final ArrayList<ArrayList<Integer>> lists = new ArrayList<>();
-        for (int i = 0; i < 26; i++) lists.add(new ArrayList<>());
+        for (int i = 0; i < SLOTS; i++) lists.add(new ArrayList<>());
         for (int w = 0; w < words.length; w++) {
-            final boolean[] seen = new boolean[26];
+            final boolean[] seen = new boolean[SLOTS];
             firstLetters(wordCharIdx[w], wordPos[w], 0, seen, 0);
-            for (String v : variants[w]) { final int l = v.charAt(0) - 'a'; if (l >= 0 && l < 26) seen[l] = true; }
-            for (int l = 0; l < 26; l++) if (seen[l]) lists.get(l).add(w);
+            for (String v : variants[w]) { final int l = slot(v.charAt(0)); if (l >= 0) seen[l] = true; }
+            for (int l = 0; l < SLOTS; l++) if (seen[l]) lists.get(l).add(w);
         }
-        for (int l = 0; l < 26; l++) {
+        for (int l = 0; l < SLOTS; l++) {
             firstLetterBuckets[l] = new int[lists.get(l).size()];
             for (int i = 0; i < firstLetterBuckets[l].length; i++) firstLetterBuckets[l][i] = lists.get(l).get(i);
         }
@@ -190,14 +203,14 @@ public final class UrduTransliterator {
         if (c == null) return;
         for (int k = 0; k < c.chunks.length; k++) {
             if (c.len[k] == 0) firstLetters(ix, pos, i + 1, seen, depth + 1);
-            else { final int l = c.chunks[k][0] - 'a'; if (l >= 0 && l < 26) seen[l] = true; }
+            else { final int l = slot(c.chunks[k][0]); if (l >= 0) seen[l] = true; }
         }
     }
 
-    public boolean isKnownWord(String urdu) { return wordId.containsKey(urdu); }
+    public boolean isKnownWord(String word) { return wordId.containsKey(word); }
     /** ln unigram probability of a dictionary word, or -Infinity if unknown */
-    public double unigramLn(String urdu) {
-        final Integer i = wordId.get(urdu);
+    public double unigramLn(String word) {
+        final Integer i = wordId.get(word);
         return i == null ? Double.NEGATIVE_INFINITY : uniLn[i];
     }
     public int vocabularySize() { return words.length; }
@@ -206,7 +219,7 @@ public final class UrduTransliterator {
         return Arrays.binarySearch(bigramKeys, w1);
     }
 
-    /** ln P(w | prev). prev: Urdu word, or null at sentence start; unknown words fall back to the unigram. */
+    /** ln P(w | prev). prev: native-script word, or null at sentence start; unknown words fall back to the unigram. */
     private double lmLn(int w, int prevKey, int bgIdx) {
         final double uni = Math.exp(uniLn[w]);
         if (bgIdx < 0) return Math.log(uni);
@@ -218,14 +231,14 @@ public final class UrduTransliterator {
 
     /**
      * @param roman  Roman text typed so far (current word only)
-     * @param prev   previous Urdu word, or null if at sentence start / unknown
+     * @param prev   previous word (native script), or null if at sentence start / unknown
      * @param atStart true if sentence start
      */
     public List<Candidate> suggest(String roman, String prev, boolean atStart, int max) {
         final StringBuilder sb = new StringBuilder();
         for (int i = 0; i < roman.length() && sb.length() < MAXM; i++) {
             final char c = Character.toLowerCase(roman.charAt(i));
-            if (c >= 'a' && c <= 'z') sb.append(c);
+            if (slot(c) >= 0) sb.append(c);
         }
         final char[] r = new char[sb.length()];
         sb.getChars(0, r.length, r, 0);
@@ -247,7 +260,7 @@ public final class UrduTransliterator {
         final int[] topWord = new int[cap];
         final boolean[] topComp = new boolean[cap];
         Arrays.fill(topScore, Double.NEGATIVE_INFINITY);
-        for (final int w : firstLetterBuckets[r[0] - 'a']) {
+        for (final int w : firstLetterBuckets[slot(r[0])]) {
             final int n = wordCharIdx[w].length;
             if (n > MAXN || n == 0) continue;
             final int[] ix = wordCharIdx[w];
@@ -255,9 +268,12 @@ public final class UrduTransliterator {
             A[0][0] = 1.0;
             boolean ok = true;
             for (int i = 0; i < n && ok; i++) {
+                final double[] row = A[i], nxt = A[i + 1];
+                boolean live = false;
+                for (int j = 0; j <= m; j++) if (row[j] != 0.0) { live = true; break; }
+                if (!live) break;   // nothing in the typed text can be aligned any more: the remaining rows stay 0
                 final Chan c = ix[i] == 0 ? null : chans[ix[i] * 3 + wordPos[w][i]];
                 if (c == null) { ok = false; break; }
-                final double[] row = A[i], nxt = A[i + 1];
                 for (int j = 0; j <= m; j++) {
                     final double a = row[j];
                     if (a == 0.0) continue;
@@ -304,7 +320,7 @@ public final class UrduTransliterator {
         return out;
     }
 
-    /** Most likely next Urdu words after [prev] (or at sentence start), from the bigram table. */
+    /** Most likely next words after [prev] (or at sentence start), from the bigram table. */
     public List<String> nextWords(String prev, boolean atStart, int max) {
         final ArrayList<String> out = new ArrayList<>();
         int key = -2;
