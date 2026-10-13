@@ -39,7 +39,9 @@ import helium314.keyboard.latin.dictionary.Dictionary;
 import helium314.keyboard.latin.DictionaryFacilitator;
 import helium314.keyboard.latin.dictionary.DictionaryFactory;
 import helium314.keyboard.latin.LastComposedWord;
+import helium314.keyboard.latin.InputAttributes;
 import helium314.keyboard.latin.LatinIME;
+import helium314.keyboard.latin.urdu.UrduTransliteration;
 import helium314.keyboard.latin.NgramContext;
 import helium314.keyboard.latin.RichInputConnection;
 import helium314.keyboard.latin.SingleDictionaryFacilitator;
@@ -734,6 +736,7 @@ public final class InputLogic {
         switch (keyCode) {
             case KeyCode.DELETE:
                 handleBackspaceEvent(event, inputTransaction, currentKeyboardScript);
+                removeDanglingRtlMark();
                 // Backspace is a functional key, but it affects the contents of the editor.
                 inputTransaction.setDidAffectContents();
                 break;
@@ -1036,6 +1039,7 @@ public final class InputLogic {
         // not the same.
         boolean isComposingWord = mWordComposer.isComposingWord();
         mWordComposer.unsetBatchMode(); // relevant in case we continue a batch word with normal typing
+        if (!isComposingWord) insertRtlMarkIfNeeded(settingsValues);
 
         // if we continue directly after a sometimesWordConnector, restart suggestions for the whole word
         // (only with URL detection and suggestions enabled)
@@ -1274,6 +1278,32 @@ public final class InputLogic {
      * @param event The event to handle.
      * @param inputTransaction The transaction in progress.
      */
+    private static final int RLM = 0x200F;
+
+    /**
+     * In Urdu (abc -> اردو) mode, a right-to-left mark is put at the start of each paragraph, so text direction
+     * (cursor side, alignment) is right-to-left from the first keystroke, also when the paragraph starts with an
+     * English word. Apps that choose direction by the first strong character (WhatsApp etc.) follow the mark.
+     * Only done in multi-line fields, never for names, urls, passwords, ...
+     */
+    private void insertRtlMarkIfNeeded(final SettingsValues settingsValues) {
+        if (!UrduTransliteration.isActive(mDictionaryFacilitator.getMainLocale())) return;
+        final InputAttributes attrs = settingsValues.mInputAttributes;
+        if (attrs.mIsPasswordField || (attrs.mInputType & InputType.TYPE_TEXT_FLAG_MULTI_LINE) == 0) return;
+        if (mConnection.hasSelection()) return;
+        final int before = mConnection.getCodePointBeforeCursor();
+        if (before != Constants.NOT_A_CODE && before != '\n') return;
+        mConnection.commitText(new String(Character.toChars(RLM)), 1);
+    }
+
+    /** removes a mark inserted by [insertRtlMarkIfNeeded] when nothing else is left in its paragraph */
+    private void removeDanglingRtlMark() {
+        if (mConnection.getCodePointBeforeCursor() != RLM || mConnection.hasSelection()) return;
+        final CharSequence text = mConnection.getTextBeforeCursor(2, 0);
+        if (text == null || (text.length() == 2 && text.charAt(0) != '\n')) return;
+        mConnection.deleteTextBeforeCursor(1);
+    }
+
     private void handleBackspaceEvent(final Event event, final InputTransaction inputTransaction,
             final String currentKeyboardScript) {
         mSpaceState = SpaceState.NONE;
