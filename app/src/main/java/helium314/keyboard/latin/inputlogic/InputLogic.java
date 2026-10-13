@@ -1183,7 +1183,9 @@ public final class InputLogic {
         }
         // isComposingWord() may have changed since we stored wasComposing
         if (mWordComposer.isComposingWord()) {
-            if (settingsValues.mAutoCorrectEnabled && ! isInlineEmojiSearchAction()) {
+            // Roman -> Urdu always commits the transliterated word (like Gboard), independent of the autocorrect setting
+            final boolean urduTransliteration = UrduTransliteration.isActive(mDictionaryFacilitator.getMainLocale());
+            if ((settingsValues.mAutoCorrectEnabled || urduTransliteration) && ! isInlineEmojiSearchAction()) {
                 final String separator = shouldAvoidSendingCode ? LastComposedWord.NOT_A_SEPARATOR
                         : StringUtils.newSingleCodePointString(codePoint);
                 commitCurrentAutoCorrection(settingsValues, separator, handler);

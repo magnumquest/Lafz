@@ -348,7 +348,7 @@ public class SettingsValues {
 
     public boolean needsToLookupSuggestions() {
         return (mInputAttributes.mShouldShowSuggestions || mOverrideShowingSuggestions)
-                && (mAutoCorrectEnabled || mSuggestionsEnabled);
+                && (mAutoCorrectEnabled || mSuggestionsEnabled || UrduTransliteration.isActive(mLocale));
     }
 
     public boolean isWordSeparator(final int code) {
