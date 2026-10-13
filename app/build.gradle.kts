@@ -13,7 +13,7 @@ android {
         applicationId = "app.lafz.keyboard"
         minSdk = 21
         targetSdk = 37
-        versionCode = 4200
+        versionCode = 4201
         versionName = "0.1.0"
         ndk {
             abiFilters.clear()
