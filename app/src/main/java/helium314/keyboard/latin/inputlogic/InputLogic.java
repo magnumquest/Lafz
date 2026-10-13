@@ -40,7 +40,9 @@ import helium314.keyboard.latin.DictionaryFacilitator;
 import helium314.keyboard.latin.dictionary.DictionaryFactory;
 import helium314.keyboard.latin.LastComposedWord;
 import helium314.keyboard.latin.InputAttributes;
+import helium314.keyboard.latin.BuildConfig;
 import helium314.keyboard.latin.LatinIME;
+import helium314.keyboard.latin.urdu.PhoneticFallback;
 import helium314.keyboard.latin.urdu.RomanScript;
 import helium314.keyboard.latin.NgramContext;
 import helium314.keyboard.latin.RichInputConnection;
@@ -99,6 +101,24 @@ public final class InputLogic {
     private int mSpaceState;
     // Never null
     public SuggestedWords mSuggestedWords = SuggestedWords.getEmptyInstance();
+    // Generation of the latest strip update (UI thread only). Results of async strip requests
+    // with an older generation are dropped when they arrive.
+    private int mStripGeneration = 0;
+    // True while the latest async strip request is neither applied nor dropped (UI thread only).
+    private boolean mStripUpdateInFlight = false;
+    // Live transliteration (Urdu / Arabic layouts, UI thread only). The composer keeps the Roman word; the composing
+    // text shows native script. mLiveDisplayText is the composing text last set by setComposingDisplay(), or null when
+    // the composing text is not a live display (its length is then the composer's length).
+    private String mLiveDisplayText = null;
+    // Best decoder candidate for the Roman word mLiveCandidateFor (null if none); shown instead of the phonetic text.
+    private String mLiveCandidate = null;
+    private String mLiveCandidateFor = null;
+    // The Roman word the decoder has answered for (even with no candidate). Until then the phonetic text is shown.
+    private String mLiveDecodedFor = null;
+    // Where the live composing text starts in the field, and the longest live text of the current word. Our own
+    // composing-text updates have different lengths, so onUpdateSelection must recognise them (see there).
+    private int mLiveComposingStart = -1;
+    private int mLiveMaxLen = 0;
     public Suggest mSuggest; // non-final for active gesture data gathering, revert when data gathering phase is done (end of 2026 latest)
     public DictionaryFacilitator mDictionaryFacilitator; // non-final for active gesture data gathering, revert when data gathering phase is done (end of 2026 latest)
     private SingleDictionaryFacilitator mEmojiDictionaryFacilitator;
@@ -404,6 +424,14 @@ public final class InputLogic {
             // note that arrow keys are not considered, because for them isBelatedExpectedUpdate returns false
             return expectCursorMove;
         }
+        // Live transliteration: the field's selection moves with our own composing-text updates (the phonetic text, then
+        // the decoder's candidate, which may have another length). That is not a user cursor move, so keep the word.
+        if (mLiveDisplayText != null && mWordComposer.isComposingWord() && newSelStart == newSelEnd && (
+                (composingSpanStart == mLiveComposingStart && newSelEnd == composingSpanEnd)
+                || (composingSpanStart < 0 && newSelStart >= mLiveComposingStart
+                        && newSelStart <= mLiveComposingStart + mLiveMaxLen))) {
+            return expectCursorMove;
+        }
 
         // if all text is gone, we treat it like onStartInput
         if (GestureDataGatheringKt.useBackgroundGathering && newSelStart == 0 && newSelEnd == 0 && !mConnection.hasTextAfterCursor())
@@ -432,7 +460,7 @@ public final class InputLogic {
         // is or was a selection regardless of whether it changed or not.
         if (hasOrHadSelection || !settingsValues.needsToLookupSuggestions()
                 || (selectionChangedOrSafeToReset
-                        && !mWordComposer.moveCursorByAndReturnIfInsideComposingWord(moveAmount))) {
+                        && !moveCursorStaysInComposingWord(moveAmount))) {
             // If we are composing a word and moving the cursor, we would want to set a
             // suggestion span for recorrection to work correctly. Unfortunately, that
             // would involve the keyboard committing some new text, which would move the
@@ -677,8 +705,17 @@ public final class InputLogic {
         mSuggestedWords = suggestedWords;
         final boolean newAutoCorrectionIndicator = suggestedWords.mWillAutoCorrect;
 
-        // Put a blue underline to a word in TextView which will be auto-corrected.
-        if (mIsAutoCorrectionIndicatorOn != newAutoCorrectionIndicator && mWordComposer.isComposingWord()) {
+        if (mWordComposer.isComposingWord() && liveScriptForComposer() != null) {
+            // Live transliteration: the text shows the decoder's best candidate (or the phonetic text), no underline.
+            final String typedWord = mWordComposer.getTypedWord();
+            mLiveCandidate = liveCandidateFrom(suggestedWords, typedWord);
+            mLiveCandidateFor = mLiveCandidate == null ? null : typedWord;
+            if (suggestedWords.mTypedWordInfo != null && typedWord.equals(suggestedWords.mTypedWordInfo.mWord))
+                mLiveDecodedFor = typedWord; // the decoder has answered for this word, even if with no candidate
+            if (!composingDisplayText(typedWord).toString().equals(mLiveDisplayText))
+                setComposingDisplay(typedWord, false /* underline */);
+        } else if (mIsAutoCorrectionIndicatorOn != newAutoCorrectionIndicator && mWordComposer.isComposingWord()) {
+            // Put a blue underline to a word in TextView which will be auto-corrected.
             mIsAutoCorrectionIndicatorOn = newAutoCorrectionIndicator;
             final CharSequence textWithUnderline = getTextWithUnderline(mWordComposer.getTypedWord());
             // TODO: when called from an updateSuggestionStrip() call that results from a posted
@@ -686,6 +723,82 @@ public final class InputLogic {
             // janky flickering of the screen, although the display speed makes it unlikely in
             // the practice.
             setComposingTextInternal(textWithUnderline, 1);
+        }
+    }
+
+    /**
+     * Live transliteration is on for this locale (Urdu / Arabic layout with the setting enabled, in a general text field):
+     * the composing text shows native script instead of the typed Roman letters. Null if not.
+     */
+    private static RomanScript liveDisplayScript() {
+        final SettingsValues settingsValues = Settings.getValues();
+        if (settingsValues == null || !settingsValues.mLiveTransliteration
+                || !settingsValues.mInputAttributes.mIsGeneralTextInput) return null;
+        return RomanScript.of(settingsValues.mLocale);
+    }
+
+    /**
+     * The live script for the current composing word, or null. A word resumed from existing text (revert after an
+     * auto-commit, cursor tap) and a batch (gesture) word keep their Roman text, as in HeliBoard.
+     */
+    private RomanScript liveScriptForComposer() {
+        if (mWordComposer.isResumed() || mWordComposer.isBatchMode() || isInlineEmojiSearchAction()) return null;
+        return liveDisplayScript();
+    }
+
+    /** Forgets the live state of the composing word (it was committed, reset, or the strip is being recomputed). */
+    private void clearLiveState() {
+        mLiveDisplayText = null;
+        mLiveCandidate = null;
+        mLiveCandidateFor = null;
+        mLiveDecodedFor = null;
+        mLiveComposingStart = -1;
+        mLiveMaxLen = 0;
+    }
+
+    /**
+     * The decoder candidate to show as live text for the typed Roman word, or null: the first decoder candidate (the engine
+     * already ranks a full reading above a mere completion). Honorifics and the typed Roman word are never used.
+     */
+    private static String liveCandidateFrom(final SuggestedWords suggestedWords, final String typedWord) {
+        if (suggestedWords.isEmpty() || suggestedWords.mIsObsoleteSuggestions || suggestedWords.mTypedWordInfo == null
+                || !typedWord.equals(suggestedWords.mTypedWordInfo.mWord))
+            return null;
+        // the decoder already ranks a full reading first unless only a completion is plausible (completionCommitGap)
+        for (int i = 0; i < suggestedWords.size(); i++) {
+            final SuggestedWordInfo info = suggestedWords.getInfo(i);
+            if (info.mSourceDict == Suggest.ROMAN_SCRIPT_SOURCE && !info.mWord.equals(typedWord)) return info.mWord;
+        }
+        return null;
+    }
+
+    /**
+     * The text the composing region shows for the typed (Roman) word, only meaningful in live mode: the decoder's
+     * candidate if there is one, the Roman word once the decoder has answered without a candidate, and the phonetic
+     * text only until the decoder answers. The text shown is also the text committed on space.
+     */
+    private CharSequence composingDisplayText(final String typedWord) {
+        final RomanScript script = liveScriptForComposer();
+        if (script == null) return typedWord;
+        if (mLiveCandidate != null && typedWord.equals(mLiveCandidateFor)) return mLiveCandidate;
+        // unknown word: the decoder found nothing, so the Roman word is committed (not phonetic gibberish)
+        if (typedWord.equals(mLiveDecodedFor)) return typedWord;
+        return script == RomanScript.ARABIC ? PhoneticFallback.toArabic(typedWord) : PhoneticFallback.toUrdu(typedWord);
+    }
+
+    /** Sets the composing text for the typed (Roman) word; the composer keeps the Roman word. */
+    private void setComposingDisplay(final String typedWord, final boolean underline) {
+        final boolean live = mWordComposer.isComposingWord() && liveScriptForComposer() != null;
+        final CharSequence text = live ? composingDisplayText(typedWord)
+                : underline ? getTextWithUnderline(typedWord) : typedWord;
+        setComposingTextInternal(text, 1);
+        if (live) {
+            // remember where the live text starts and how long it got, see onUpdateSelection()
+            mLiveComposingStart = mConnection.getExpectedSelectionStart() - text.length();
+            mLiveMaxLen = Math.max(mLiveMaxLen, text.length());
+            mLiveDisplayText = text.toString();
+        } else {
+            mLiveDisplayText = null;
         }
     }
 
@@ -719,7 +832,7 @@ public final class InputLogic {
                 insertAutomaticSpaceIfOptionsAndTextAllow(settingsValues);
                 mSpaceState = SpaceState.NONE;
             }
-            setComposingTextInternal(mWordComposer.getTypedWord(), 1);
+            setComposingDisplay(mWordComposer.getTypedWord(), false /* underline */);
             inputTransaction.setDidAffectContents();
             inputTransaction.setRequiresUpdateSuggestions();
         }
@@ -1129,12 +1242,14 @@ public final class InputLogic {
         enterInlineEmojiSearchIfNeeded(codePoint, settingsValues);
 
         if (isComposingWord) {
+            // typing on at the end of a resumed word makes it a normal composing word again (live text, auto-correct)
+            if (mWordComposer.isResumed()) mWordComposer.clearResumed();
             mWordComposer.applyProcessedEvent(event);
             // If it's the first letter, make note of auto-caps state
             if (mWordComposer.isSingleLetter()) {
                 mWordComposer.setCapitalizedModeAtStartComposingTime(inputTransaction.getShiftState());
             }
-            setComposingTextInternal(getTextWithUnderline(mWordComposer.getTypedWord()), 1);
+            setComposingDisplay(mWordComposer.getTypedWord(), true /* underline */);
         } else {
             final boolean swapWeakSpace = tryStripSpaceAndReturnWhetherShouldSwapInstead(event, inputTransaction);
 
@@ -1151,6 +1266,12 @@ public final class InputLogic {
             }
         }
         inputTransaction.setRequiresUpdateSuggestions();
+    }
+
+    /** Whether a cursor move keeps the composition. A live display has a different length than the Roman word. */
+    private boolean moveCursorStaysInComposingWord(final int moveAmount) {
+        if (mLiveDisplayText != null && mWordComposer.isComposingWord()) return false;
+        return mWordComposer.moveCursorByAndReturnIfInsideComposingWord(moveAmount);
     }
 
     private boolean isCursorAtStartOrAfterSeparator(SettingsValues settingsValues) {
@@ -1293,6 +1414,30 @@ public final class InputLogic {
     private static final int RLM = 0x200F;
 
     /** Native variant of ? . , ; a . or , directly after a digit stays as is (decimals, thousands separators). */
+    /** Arabic: "wa", "bi", "al", "fa"... are written attached to the next word, so the space after a committed one-word proclitic is removed again */
+    /**
+     * Arabic: "wa", "bi", "al", "fa"... are written attached to the next word. A proclitic is committed with its space as
+     * usual; when the next word is committed, that space is removed again (the word was just committed at the cursor).
+     */
+    private void joinPrecedingArabicProclitic(final SettingsValues settingsValues, final String committedWord) {
+        if (RomanScript.of(settingsValues.mLocale) != RomanScript.ARABIC || committedWord.isEmpty()) return;
+        final int n = committedWord.length();
+        final CharSequence before = mConnection.getTextBeforeCursor(n + 14, 0);
+        if (before == null || before.length() < n + 2) return;
+        final String text = before.toString();
+        if (!text.endsWith(committedWord) || text.charAt(text.length() - n - 1) != ' ') return;
+        final int spacePos = text.length() - n - 1;
+        int start = spacePos;
+        while (start > 0 && text.charAt(start - 1) != ' ' && text.charAt(start - 1) != '\n' && text.charAt(start - 1) != '\u200f') start--;
+        switch (text.substring(start, spacePos)) {
+            case "و": case "ف": case "ب": case "ل": case "ك": case "ال": case "وال": case "فال": case "بال": case "لل": case "ولل": case "كال": case "وب": case "ول": case "وك":
+                mConnection.deleteTextBeforeCursor(n + 1);
+                mConnection.commitText(committedWord, 1);
+                break;
+            default:
+        }
+    }
+
     private int toNativePunctuation(final RomanScript script, final int codePoint) {
         if (codePoint == '?') return script.getQuestionMark();
         if (codePoint != '.' && codePoint != ',') return codePoint;
@@ -1371,8 +1516,9 @@ public final class InputLogic {
                 StatsUtils.onBackspacePressed(1);
             }
             if (mWordComposer.isComposingWord()) {
-                setComposingTextInternal(getTextWithUnderline(mWordComposer.getTypedWord()), 1);
+                setComposingDisplay(mWordComposer.getTypedWord(), true /* underline */);
             } else {
+                clearLiveState();
                 mConnection.commitText("", 1);
             }
             updateInlineEmojiSearch();
@@ -1807,7 +1953,107 @@ public final class InputLogic {
         );
     }
 
+    /**
+     * Non-blocking variant of {@link #performUpdateSuggestionStripSync}. The UI thread only takes a
+     * snapshot of the composing word and the previous suggestions and posts the computation to the
+     * suggestion thread. When the result arrives it is applied on the UI thread, but only if no newer
+     * strip update happened and the composing word is still the one that was computed.
+     */
+    public void performUpdateSuggestionStripAsync(final SettingsValues settingsValues, final int inputStyle) {
+        final long perfStartNanos = BuildConfig.DEBUG ? System.nanoTime() : 0;
+        // Invalidate any request still in flight, also for the early-outs below which change the strip.
+        final int gen = ++mStripGeneration;
+        mStripUpdateInFlight = false;
+        // Check if we have a suggestion engine attached.
+        if (!settingsValues.needsToLookupSuggestions()) {
+            if (mWordComposer.isComposingWord()) {
+                Log.w(TAG, "Called updateSuggestionsOrPredictions but suggestions were not "
+                        + "requested!");
+            }
+            mSuggestionStripViewAccessor.setSuggestions(SuggestedWords.getEmptyInstance());
+            return;
+        }
+        if (!mWordComposer.isComposingWord() && !settingsValues.mBigramPredictionEnabled) {
+            mSuggestionStripViewAccessor.setNeutralSuggestionStrip();
+            return;
+        }
+        if (isInlineEmojiSearchAction()) {
+            // Inline emoji search is rare and has its own path: keep it synchronous.
+            performUpdateSuggestionStripSync(settingsValues, inputStyle);
+            return;
+        }
+
+        // Everything the suggestion thread reads from the composer is copied here, on the UI thread.
+        mWordComposer.adviseCapitalizedModeBeforeFetchingSuggestions(
+                getActualCapsMode(settingsValues, KeyboardSwitcher.getInstance().getKeyboardCapsMode()));
+        final WordComposer composerSnapshot = mWordComposer.copy();
+        final String typedWordString = mWordComposer.getTypedWord();
+        final SuggestedWords previousSuggestedWords = mSuggestedWords;
+        // The n-gram context and the keyboard read the text field / UI state: they are taken here, not on the suggestion thread.
+        final NgramContext ngramContext = getNgramContextFromNthPreviousWordForSuggestion(
+                settingsValues.mSpacingAndPunctuations, nthPreviousWordForSuggestion());
+        final Keyboard keyboard = KeyboardSwitcher.getInstance().getKeyboard();
+        final long postNanos = BuildConfig.DEBUG ? System.nanoTime() : 0;
+        mStripUpdateInFlight = true;
+        mInputLogicHandler.getSuggestedWords(() -> getSuggestedWordsFromSnapshot(composerSnapshot, ngramContext,
+            keyboard, settingsValues, inputStyle,
+            suggestedWords -> {
+                // Runs on the suggestion thread.
+                // Same rule as the sync variant: keep the previous suggestions with the new typed word
+                // when there is nothing new, except after a deletion (typed word of length <= 1).
+                final SuggestedWords result;
+                if (suggestedWords.size() > 1 || typedWordString.length() <= 1) {
+                    result = suggestedWords;
+                } else {
+                    final SuggestedWordInfo typedWordInfo = new SuggestedWordInfo(
+                            typedWordString, "", SuggestedWordInfo.MAX_SCORE, SuggestedWordInfo.KIND_TYPED,
+                            Dictionary.DICTIONARY_USER_TYPED, SuggestedWordInfo.NOT_AN_INDEX, SuggestedWordInfo.NOT_A_CONFIDENCE
+                    );
+                    result = retrieveOlderSuggestions(typedWordInfo, previousSuggestedWords);
+                }
+                mLatinIME.mHandler.post(() -> applyAsyncSuggestionStrip(gen, typedWordString, result,
+                        settingsValues, postNanos));
+            }
+        ));
+        if (BuildConfig.DEBUG) {
+            Log.d("LafzPerf", "async-post UI-thread ms=" + String.format(Locale.ROOT, "%.2f",
+                    (System.nanoTime() - perfStartNanos) / 1e6) + " typed=" + typedWordString.length());
+        }
+    }
+
+    // UI thread only. Applies an async strip result if it is still current.
+    private void applyAsyncSuggestionStrip(final int gen, final String typedWordAtPost,
+            final SuggestedWords suggestedWords, final SettingsValues settingsValues, final long postNanos) {
+        final long latencyMicros = BuildConfig.DEBUG ? (System.nanoTime() - postNanos) / 1000 : 0;
+        if (gen != mStripGeneration) {
+            // A newer strip update (or a sync one, or a reset) superseded this request.
+            if (BuildConfig.DEBUG) Log.d("LafzPerf", "async-apply dropped=stale latency ms=" + latencyMicros / 1000.0);
+            return;
+        }
+        mStripUpdateInFlight = false;
+        if (!typedWordAtPost.equals(mWordComposer.getTypedWord())) {
+            if (BuildConfig.DEBUG) Log.d("LafzPerf", "async-apply dropped=typed-changed latency ms=" + latencyMicros / 1000.0);
+            return;
+        }
+        // Same as the sync variant with a non-null result.
+        if (!(suggestedWords.mInputStyle == SuggestedWords.INPUT_STYLE_BEGINNING_OF_SENTENCE_PREDICTION
+                && mLatinIME.tryShowClipboardSuggestion())) {
+            mSuggestionStripViewAccessor.setSuggestions(suggestedWords);
+        }
+        if (!suggestedWords.isEmpty() && settingsValues.mSuggestionsEnabled && isInlineEmojiSearchAction()) {
+            mSuggestionStripViewAccessor.showSuggestionStrip();
+        }
+        if (BuildConfig.DEBUG) {
+            Log.d("LafzPerf", "async-apply applied latency ms=" + latencyMicros / 1000.0
+                    + " typed=" + typedWordAtPost.length());
+        }
+    }
+
     public void performUpdateSuggestionStripSync(final SettingsValues settingsValues, final int inputStyle) {
+        final long perfStartNanos = BuildConfig.DEBUG ? System.nanoTime() : 0;
+        // Any async request still in flight is now stale.
+        ++mStripGeneration;
+        mStripUpdateInFlight = false;
         long startTimeMillis = 0;
         if (DebugFlags.DEBUG_ENABLED) {
             startTimeMillis = SystemClock.elapsedRealtime();
@@ -1864,6 +2110,10 @@ public final class InputLogic {
         if (DebugFlags.DEBUG_ENABLED) {
             long runTimeMillis = SystemClock.elapsedRealtime() - startTimeMillis;
             Log.d(TAG, "performUpdateSuggestionStripSync() : " + runTimeMillis + " ms to finish");
+        }
+        if (BuildConfig.DEBUG) {
+            Log.d("LafzPerf", "strip-sync UI-thread ms=" + String.format(Locale.ROOT, "%.2f",
+                    (System.nanoTime() - perfStartNanos) / 1e6) + " typed=" + mWordComposer.getTypedWord().length());
         }
     }
 
@@ -2146,6 +2396,21 @@ public final class InputLogic {
      * @param nthPreviousWord reverse index of the word to get (1-indexed)
      * @return the information of previous words
      */
+    /**
+     * The index of the previous word the n-gram context starts from. Without a composing word that is 1 (skip whitespace).
+     * With one it is 2 (the composing word is skipped), plus one per space in a live display: a multi-word entry such
+     * as آؤں گا is several words in the field. Must be called on the UI thread (it reads the live state).
+     */
+    private int nthPreviousWordForSuggestion() {
+        if (!mWordComposer.isComposingWord()) return 1;
+        int nth = 2;
+        if (mLiveDisplayText != null) {
+            for (int i = 0; i < mLiveDisplayText.length(); i++)
+                if (mLiveDisplayText.charAt(i) == ' ') nth++;
+        }
+        return nth;
+    }
+
     public NgramContext getNgramContextFromNthPreviousWordForSuggestion(
             final SpacingAndPunctuations spacingAndPunctuations, final int nthPreviousWord) {
         if (spacingAndPunctuations.mCurrentLanguageHasSpaces) {
@@ -2250,6 +2515,10 @@ public final class InputLogic {
      * @param alsoResetLastComposedWord whether to also reset the last composed word.
      */
     private void resetComposingState(final boolean alsoResetLastComposedWord) {
+        // Late async strip results for the old composing word must not be applied.
+        ++mStripGeneration;
+        mStripUpdateInFlight = false;
+        clearLiveState();
         mWordComposer.reset();
         if (alsoResetLastComposedWord) {
             mLastComposedWord = LastComposedWord.NOT_A_COMPOSED_WORD;
@@ -2376,7 +2645,10 @@ public final class InputLogic {
         if (settingsValues.mUrlDetectionEnabled && settingsValues.mSpacingAndPunctuations.containsSometimesWordConnector(mWordComposer.getTypedWord()))
             return true;
         // "://" before typed word -> very much looks like URL
-        final CharSequence textBeforeCursor = mConnection.getTextBeforeCursor(mWordComposer.getTypedWord().length() + 3, 0);
+        // the composing text is the live (native script) text in live mode, its length is what is before the cursor
+        final int composingLength = mLiveDisplayText != null && mWordComposer.isComposingWord()
+                ? mLiveDisplayText.length() : mWordComposer.getTypedWord().length();
+        final CharSequence textBeforeCursor = mConnection.getTextBeforeCursor(composingLength + 3, 0);
         if (textBeforeCursor != null && textBeforeCursor.toString().startsWith("://"))
             return true;
         return false;
@@ -2400,7 +2672,7 @@ public final class InputLogic {
         }
         mWordComposer.setBatchInputWord(batchInputText);
         enterInlineEmojiSearchIfNeeded(batchInputText.codePointAt(0), settingsValues);
-        setComposingTextInternal(batchInputText, 1);
+        setComposingDisplay(batchInputText, false /* underline */);
         mConnection.endBatchEdit();
         // Space state must be updated before calling updateShiftState
         if (settingsValues.mAutospaceAfterGestureTyping)
@@ -2432,7 +2704,9 @@ public final class InputLogic {
         final String typedWord = mWordComposer.getTypedWord();
         if (typedWord.length() > 0) {
             final boolean isBatchMode = mWordComposer.isBatchMode();
-            commitChosenWord(settingsValues, typedWord, LastComposedWord.COMMIT_TYPE_USER_TYPED_WORD, separatorString);
+            // Live transliteration: the field shows the native script, so that is what gets committed.
+            final String textToCommit = liveScriptForComposer() != null ? composingDisplayText(typedWord).toString() : typedWord;
+            commitChosenWord(settingsValues, textToCommit, LastComposedWord.COMMIT_TYPE_USER_TYPED_WORD, separatorString);
             StatsUtils.onWordCommitUserTyped(typedWord, isBatchMode);
         }
     }
@@ -2456,7 +2730,7 @@ public final class InputLogic {
     private void commitCurrentAutoCorrection(final SettingsValues settingsValues,
             final String separator, final LatinIME.UIHandler handler) {
         // Complete any pending suggestions query first
-        if (handler.hasPendingUpdateSuggestions()) {
+        if (handler.hasPendingUpdateSuggestions() || mStripUpdateInFlight) {
             handler.cancelUpdateSuggestionStrip();
             // To know the input style here, we should retrieve the in-flight "update suggestions"
             // message and read its arg1 member here. However, the Handler class does not let
@@ -2470,7 +2744,10 @@ public final class InputLogic {
         }
         final SuggestedWordInfo autoCorrectionOrNull = mWordComposer.getAutoCorrectionOrNull();
         final String typedWord = mWordComposer.getTypedWord();
-        final String stringToCommit = (autoCorrectionOrNull != null) ? autoCorrectionOrNull.mWord : typedWord;
+        // Live transliteration: commit exactly what the composing region shows.
+        final boolean live = liveScriptForComposer() != null;
+        final String stringToCommit = live ? composingDisplayText(typedWord).toString()
+                : (autoCorrectionOrNull != null) ? autoCorrectionOrNull.mWord : typedWord;
         if (stringToCommit != null) {
             final boolean isBatchMode = mWordComposer.isBatchMode();
             commitChosenWord(settingsValues, stringToCommit, LastComposedWord.COMMIT_TYPE_DECIDED_WORD, separator);
@@ -2480,10 +2757,12 @@ public final class InputLogic {
                 // note that this won't affect the text inside the text field AT ALL: it only makes
                 // the segment of text starting at the supplied index and running for the length
                 // of the auto-correction flash. At this moment, the "typedWord" argument is
-                // ignored by TextView.
-                mConnection.commitCorrection(new CorrectionInfo(
-                        mConnection.getExpectedSelectionEnd() - stringToCommit.length(),
-                        typedWord, stringToCommit));
+                // ignored by TextView. Not in live mode: the text is the transliteration, not a correction.
+                if (!live) {
+                    mConnection.commitCorrection(new CorrectionInfo(
+                            mConnection.getExpectedSelectionEnd() - stringToCommit.length(),
+                            typedWord, stringToCommit));
+                }
                 final String prevWordsContext = (autoCorrectionOrNull != null)
                         ? autoCorrectionOrNull.mPrevWordsContext
                         : "";
@@ -2506,6 +2785,13 @@ public final class InputLogic {
      */
     private void commitChosenWord(final SettingsValues settingsValues, final String chosenWord,
             final int commitType, final String separatorString) {
+        // a strip result still on its way for the composing word must not show up after the commit
+        ++mStripGeneration;
+        mStripUpdateInFlight = false;
+        // needs the composing state, so it is read before the live state is cleared
+        final int nthPreviousWord = nthPreviousWordForSuggestion();
+        // the composing text becomes committed text, the live state belongs to the composing word
+        clearLiveState();
         long startTimeMillis = 0;
         if (DebugFlags.DEBUG_ENABLED) {
             startTimeMillis = SystemClock.elapsedRealtime();
@@ -2525,7 +2811,7 @@ public final class InputLogic {
         // 1st previous word is the word to be committed. Otherwise get n-gram context from the 1st
         // previous word.
         final NgramContext ngramContext = mConnection.getNgramContextFromNthPreviousWord(
-                settingsValues.mSpacingAndPunctuations, mWordComposer.isComposingWord() ? 2 : 1);
+                settingsValues.mSpacingAndPunctuations, nthPreviousWord);
         if (DebugFlags.DEBUG_ENABLED) {
             long runTimeMillis = SystemClock.elapsedRealtime() - startTimeMillis;
             Log.d(TAG, "commitChosenWord() : " + runTimeMillis + " ms to run "
@@ -2534,6 +2820,7 @@ public final class InputLogic {
             startTimeMillis = SystemClock.elapsedRealtime();
         }
         mConnection.commitText(chosenWordWithSuggestions, 1);
+        joinPrecedingArabicProclitic(settingsValues, chosenWord);
         if (DebugFlags.DEBUG_ENABLED) {
             long runTimeMillis = SystemClock.elapsedRealtime() - startTimeMillis;
             Log.d(TAG, "commitChosenWord() : " + runTimeMillis + " ms to run "
@@ -2633,11 +2920,36 @@ public final class InputLogic {
                     // Get the word on which we should search the bigrams. If we are composing
                     // a word, it's whatever is *before* the half-committed word in the buffer,
                     // hence 2; if we aren't, we should just skip whitespace if any, so 1.
-                    mWordComposer.isComposingWord() ? 2 : 1),
+                    nthPreviousWordForSuggestion()),
                     keyboard,
                     settingsValues.mSettingsValuesForSuggestion,
                     settingsValues.mAutoCorrectEnabled,
                     inputStyle, sequenceNumber);
+            callback.onGetSuggestedWords(suggestedWords);
+        } catch (Exception e) {
+            // better go without suggestions than have the keyboard crash
+            Log.e(TAG, "Error fetching suggested words, using empty words instead", e);
+            callback.onGetSuggestedWords(SuggestedWords.getEmptyInstance());
+            KeyboardSwitcher.getInstance().showToast("Error getting suggestions", true);
+        }
+    }
+
+    // Runs on the suggestion thread. Like getSuggestedWords, but uses a composer copy that was taken on
+    // the UI thread, so it never reads state the UI thread is changing.
+    private void getSuggestedWordsFromSnapshot(final WordComposer composerSnapshot, final NgramContext ngramContext,
+            final Keyboard keyboard, final SettingsValues settingsValues, final int inputStyle,
+            final OnGetSuggestedWordsCallback callback) {
+        if (keyboard == null) {
+            callback.onGetSuggestedWords(SuggestedWords.getEmptyInstance());
+            return;
+        }
+        try {
+            SuggestedWords suggestedWords = mSuggest.getSuggestedWords(composerSnapshot,
+                    ngramContext,
+                    keyboard,
+                    settingsValues.mSettingsValuesForSuggestion,
+                    settingsValues.mAutoCorrectEnabled,
+                    inputStyle, SuggestedWords.NOT_A_SEQUENCE_NUMBER);
             callback.onGetSuggestedWords(suggestedWords);
         } catch (Exception e) {
             // better go without suggestions than have the keyboard crash
@@ -2661,6 +2973,7 @@ public final class InputLogic {
      */
     private void setComposingTextInternal(final CharSequence newComposingText,
             final int newCursorPosition) {
+        mLiveDisplayText = null; // a live display is set again by setComposingDisplay()
         setComposingTextInternalWithBackgroundColor(newComposingText, newCursorPosition,
                 Color.TRANSPARENT, newComposingText.length());
     }
@@ -2724,7 +3037,7 @@ public final class InputLogic {
         if (!mConnection.isCursorPositionKnown() || mConnection.hasSelection()) {
             return -1;
         }
-        return mConnection.getExpectedSelectionStart() - mWordComposer.size();
+        return mConnection.getExpectedSelectionStart() - getComposingLength();
     }
 
     /**
@@ -2736,7 +3049,9 @@ public final class InputLogic {
     // TODO: try and see if we can get rid of this method. Ideally the users of this class should
     // never need to know this.
     public int getComposingLength() {
-        return mWordComposer.size();
+        // the composing text may be a live (native script) display, its length is not the composer's
+        return mLiveDisplayText != null && mWordComposer.isComposingWord()
+                ? mLiveDisplayText.length() : mWordComposer.size();
     }
 
     private void paste(String packageName) {

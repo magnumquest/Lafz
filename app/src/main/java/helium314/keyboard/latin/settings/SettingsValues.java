@@ -107,6 +107,8 @@ public class SettingsValues {
     public final List<String> mPopupKeyHintOrder;
     public final List<Locale> mSecondaryLocales;
     public final boolean mBigramPredictionEnabled;// Use bigrams to predict the next word when there is no input for it yet
+    // Urdu / Arabic: show the native script in the text field while the Roman word is being typed
+    public final boolean mLiveTransliteration;
     public final boolean mSuggestPunctuation;
     public final boolean mCenterSuggestionTextToEnter;
     public final boolean mGestureInputEnabled;
@@ -240,6 +242,7 @@ public class SettingsValues {
         mAutoCorrectShortcuts = prefs.getBoolean(Settings.PREF_AUTOCORRECT_SHORTCUTS, Defaults.PREF_AUTOCORRECT_SHORTCUTS);
         mBackspaceRevertsAutocorrect = prefs.getBoolean(Settings.PREF_BACKSPACE_REVERTS_AUTOCORRECT, Defaults.PREF_BACKSPACE_REVERTS_AUTOCORRECT);
         mBigramPredictionEnabled = prefs.getBoolean(Settings.PREF_BIGRAM_PREDICTIONS, Defaults.PREF_BIGRAM_PREDICTIONS);
+        mLiveTransliteration = prefs.getBoolean(Settings.PREF_LIVE_TRANSLITERATION, Defaults.PREF_LIVE_TRANSLITERATION);
         mSuggestPunctuation = prefs.getBoolean(Settings.PREF_SUGGEST_PUNCTUATION, Defaults.PREF_SUGGEST_PUNCTUATION);
         mSuggestClipboardContent = prefs.getBoolean(Settings.PREF_SUGGEST_CLIPBOARD_CONTENT, Defaults.PREF_SUGGEST_CLIPBOARD_CONTENT);
         mDoubleSpacePeriodTimeout = 1100; // ms
@@ -439,6 +442,8 @@ public class SettingsValues {
         sb.append("" + mBlockPotentiallyOffensive);
         sb.append("\n   mBigramPredictionEnabled = ");
         sb.append("" + mBigramPredictionEnabled);
+        sb.append("\n   mLiveTransliteration = ");
+        sb.append("" + mLiveTransliteration);
         sb.append("\n   mGestureInputEnabled = ");
         sb.append("" + mGestureInputEnabled);
         sb.append("\n   mGestureTrailEnabled = ");

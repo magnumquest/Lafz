@@ -16,3 +16,5 @@ tools/*.txt
 *.diff
 *.sh
 dist/
+data/
+tools/arabic/work2/
