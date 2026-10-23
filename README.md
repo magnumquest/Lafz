@@ -9,6 +9,8 @@
   Type <code>mein kal aonga</code>, get <span dir="rtl">میں کل آؤں گا</span>.
 </p>
 
+<p align="center"><b>Version 0.3.0 is in progress.</b> It adds offline contextual emoji suggestions and a redesigned Settings screen.</p>
+
 ---
 
 ## What it does
@@ -24,6 +26,7 @@ word replaces it as the decoder settles, and space commits what you see. The sug
 - **Native numerals and punctuation** on the symbol page: Arabic-Indic digits ٠١٢٣ with ، ؛ ؟ for Arabic, Urdu digits ۰۱۲۳ with ۔ ، ؟ for Urdu.
   (Number/phone fields still show Western digits.)
 - **Fast typing.** Suggestions are computed off the UI thread, so keys never wait for the decoder.
+- **Contextual emoji suggestions.** Bundled keywords suggest relevant emoji in English, Urdu, and Arabic, including Roman Urdu and Roman Arabic input. Suggestions work offline.
 
 - **Not a fixed phonetic map.** Spelling is free: `kal`, `kl`, `kaal` all find کل. The engine scores dictionary words
   against what you typed, using a language model plus a learned model of how people romanize Urdu.
@@ -37,6 +40,7 @@ word replaces it as the decoder settles, and space commits what you see. The sug
 - **English typing is unchanged**, and you can switch languages like any other keyboard.
 - **100% offline.** The app does not request the internet permission.
 - A Gboard-style look (rounded keys, light and dark themes).
+- A redesigned Settings screen groups options by task and makes commonly used settings easier to find.
 
 ## How accurate is it?
 
@@ -64,6 +68,7 @@ score(word) = ln P(word | previous word)  +  1.4 · ln P(roman | word)
 
 - `P(roman | word)` is a character-alignment channel model learned by EM from human-written romanizations.
 - Urdu: unigram plus pruned bigram over 8.8M tokens of Urdu Wikipedia (60k words), a 3.5 MB asset.
+- A native-script Urdu dictionary is bundled for the dictionary system; it does not replace the Roman Urdu model. Its provenance and license are documented in [`docs/dictionaries/`](docs/dictionaries/README.md).
 - Arabic: unigram, bigram and trigram model over Qur'an, Hadith and web text (400k words, about 2.7B tokens counted), a 37 MB asset.
   It can also glue up to three words together, so `wakitab` finds و كتاب.
 - Everything runs on the device.

@@ -112,6 +112,21 @@ public final class RomanTransliterator {
 
     private RomanTransliterator() {}
 
+    /** Attested Roman spellings for the offline swipe decoder. The decoder ranks paths first;
+     *  suggest() still chooses the native-script output using language context. */
+    public java.util.Map<String, Integer> swipeSpellings() {
+        final java.util.HashMap<String, Integer> spellings = new java.util.HashMap<>();
+        for (int i = 0; i < variants.length; i++) {
+            for (int j = 0; j < variants[i].length; j++) {
+                final String spelling = variants[i][j];
+                if (spelling.length() < 2 || spelling.length() > 24) continue;
+                final int frequency = Math.max(1, (int) (160 + 8 * uniLn[i] + 32 * variantP[i][j]));
+                spellings.merge(spelling, frequency, Math::max);
+            }
+        }
+        return spellings;
+    }
+
     public static RomanTransliterator load(InputStream raw) throws IOException {
         final DataInputStream in = new DataInputStream(new BufferedInputStream(raw, 1 << 16));
         final byte[] magic = new byte[4];

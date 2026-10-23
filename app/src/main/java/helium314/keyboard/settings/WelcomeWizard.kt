@@ -7,263 +7,170 @@ import android.provider.Settings
 import android.view.inputmethod.InputMethodManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LocalContentColor
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import helium314.keyboard.latin.R
-import helium314.keyboard.latin.utils.JniUtils
 import helium314.keyboard.latin.utils.Theme
 import helium314.keyboard.latin.utils.UncachedInputMethodManagerUtils
 import helium314.keyboard.latin.utils.previewDark
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 @Composable
-fun WelcomeWizard(
-    close: () -> Unit,
-    finish: () -> Unit
-) {
-    val ctx = LocalContext.current
-    val imm = ctx.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-    fun determineStep(): Int = when {
-        !UncachedInputMethodManagerUtils.isThisImeEnabled(ctx, imm) -> 0
-        !UncachedInputMethodManagerUtils.isThisImeCurrent(ctx, imm) -> 2
+fun WelcomeWizard(close: () -> Unit, finish: () -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val inputMethodManager = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+    fun currentStep() = when {
+        !UncachedInputMethodManagerUtils.isThisImeEnabled(context, inputMethodManager) -> 1
+        !UncachedInputMethodManagerUtils.isThisImeCurrent(context, inputMethodManager) -> 2
         else -> 3
     }
-    var step by rememberSaveable { mutableIntStateOf(determineStep()) }
-    val scope = rememberCoroutineScope { Dispatchers.IO }
+    var step by rememberSaveable { mutableIntStateOf(currentStep()) }
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        step = currentStep()
+    }
     LaunchedEffect(step) {
-        if (step == 2)
-            scope.launch {
-                while (step == 2 && !UncachedInputMethodManagerUtils.isThisImeCurrent(ctx, imm)) {
-                    delay(50)
-                }
-                step = 3
+        if (step == 2) {
+            while (step == 2 && !UncachedInputMethodManagerUtils.isThisImeCurrent(context, inputMethodManager)) {
+                delay(250)
             }
-    }
-    val useWideLayout = isWideScreen()
-    val stepBackgroundColor = Color(ContextCompat.getColor(ctx, R.color.setup_step_background))
-    val textColor = Color(ContextCompat.getColor(ctx, R.color.setup_text_action))
-    val textColorDim = textColor.copy(alpha = 0.5f)
-    val titleColor = Color(ContextCompat.getColor(ctx, R.color.setup_text_title))
-    val appName = stringResource(ctx.applicationInfo.labelRes)
-    @Composable fun bigText() {
-        val resource = if (step == 0) R.string.setup_welcome_title else R.string.setup_steps_title
-        Column(Modifier.padding(bottom = 36.dp)) {
-            Text(
-                stringResource(resource, appName),
-                style = MaterialTheme.typography.displayMedium,
-                textAlign = TextAlign.Center,
-                color = titleColor,
-            )
-            if (JniUtils.sHaveGestureLib)
-                Text(
-                    stringResource(R.string.setup_welcome_additional_description),
-                    style = MaterialTheme.typography.bodyLarge,
-                    textAlign = TextAlign.End,
-                    color = titleColor,
-                    modifier = Modifier.fillMaxWidth()
-                )
+            if (step == 2) step = 3
         }
     }
-    @Composable
-    fun ColumnScope.Step(step: Int, title: String, instruction: String, actionText: String, icon: Painter, action: () -> Unit) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("1", color = if (step == 1) titleColor else textColorDim)
-            Text("2", color = if (step == 2) titleColor else textColorDim)
-            Text("3", color = if (step == 3) titleColor else textColorDim)
-        }
-        Column(Modifier
-            .background(color = stepBackgroundColor)
-            .padding(16.dp)
+    val appName = stringResource(context.applicationInfo.labelRes)
+    val colors = MaterialTheme.colorScheme
+
+    Surface(color = colors.background) {
+        Column(
+            Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+                .windowInsetsPadding(WindowInsets.safeDrawing).padding(horizontal = 24.dp, vertical = 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text(title)
-            Text(instruction, style = MaterialTheme.typography.bodyLarge.merge(color = textColor))
-        }
-        Spacer(Modifier.height(4.dp))
-        Row(
-            Modifier.clickable { action() }
-                .background(color = stepBackgroundColor)
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(icon, null, Modifier.padding(end = 6.dp).size(32.dp), tint = textColor)
-            Text(actionText, Modifier.weight(1f))
-        }
-    }
-    @Composable fun steps() {
-        if (step == 0)
-            Step0 { step = 1 }
-        else
-            Column {
-                val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-                    step = determineStep()
-                }
-                if (step == 1) {
-                    Step(
-                        step,
-                        stringResource(R.string.setup_step1_title, appName),
-                        stringResource(R.string.setup_step1_instruction, appName),
-                        stringResource(R.string.setup_step1_action),
-                        painterResource(R.drawable.ic_setup_key)
-                    ) {
-                        val intent = Intent()
-                        intent.action = Settings.ACTION_INPUT_METHOD_SETTINGS
-                        intent.addCategory(Intent.CATEGORY_DEFAULT)
-                        launcher.launch(intent)
+            Column(Modifier.widthIn(max = 520.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(24.dp)) {
+                // Brand block: the Urdu wordmark is the one expressive element on the screen.
+                Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Surface(shape = RoundedCornerShape(36.dp), color = colors.primaryContainer) {
+                        Text("لفظ", style = MaterialTheme.typography.displayLarge.copy(fontSize = 64.sp),
+                            color = colors.onPrimaryContainer, fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 40.dp, vertical = 20.dp))
                     }
-                } else if (step == 2) {
-                    Step(
-                        step,
-                        stringResource(R.string.setup_step2_title, appName),
-                        stringResource(R.string.setup_step2_instruction, appName),
-                        stringResource(R.string.setup_step2_action),
-                        painterResource(R.drawable.ic_setup_select),
-                        imm::showInputMethodPicker
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    Row(
-                        Modifier.clickable { close() }
-                            .background(color = stepBackgroundColor)
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            painterResource(R.drawable.sym_keyboard_language_switch),
-                            null,
-                            Modifier.padding(end = 6.dp).size(32.dp),
-                            tint = textColor
-                        )
-                        Text(stringResource(R.string.setup_step3_action), Modifier.weight(1f))
-                    }
-                } else { // step 3
-                    Step(
-                        step,
-                        stringResource(R.string.setup_step3_title),
-                        stringResource(R.string.setup_step3_instruction, appName),
-                        stringResource(R.string.setup_step3_action),
-                        painterResource(R.drawable.sym_keyboard_language_switch),
-                        close
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    Row(
-                        Modifier.clickable { finish() }
-                            .background(color = stepBackgroundColor)
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            painterResource(R.drawable.ic_setup_check),
-                            null,
-                            Modifier.padding(end = 6.dp).size(32.dp),
-                            tint = textColor
-                        )
-                        Text(stringResource(R.string.setup_finish_action), Modifier.weight(1f))
-                    }
-                }
-            }
-    }
-    Surface {
-        CompositionLocalProvider(
-            LocalContentColor provides textColor,
-            LocalTextStyle provides MaterialTheme.typography.titleLarge.merge(color = textColor),
-        ) {
-            Box(
-                modifier = Modifier.fillMaxSize().padding(32.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                if (useWideLayout)
-                    Row {
-                        Box(Modifier.weight(0.4f)) {
-                            bigText()
-                        }
-                        Box(Modifier.weight(0.6f)) {
-                            steps()
+                    Spacer(Modifier.height(20.dp))
+                    Text(if (step == 3) stringResource(R.string.setup_step3_title)
+                        else stringResource(R.string.setup_welcome_title, appName),
+                        style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center,
+                        color = colors.onSurface)
+                    Spacer(Modifier.height(8.dp))
+                    Text(stringResource(R.string.lafz_setup_intro), style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center, color = colors.onSurfaceVariant)
+                    Spacer(Modifier.height(16.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf("English", "اردو", "عربي").forEach {
+                            Surface(shape = RoundedCornerShape(50), color = colors.secondaryContainer) {
+                                Text(it, style = MaterialTheme.typography.labelLarge, color = colors.onSecondaryContainer,
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp))
+                            }
                         }
                     }
-                else
-                    Column {
-                        bigText()
-                        steps()
+                }
+
+                Surface(shape = RoundedCornerShape(24.dp), color = colors.surfaceContainerLow) {
+                    Column(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+                        SetupRow(1, step, R.drawable.ic_setup_key, stringResource(R.string.setup_step1_title, appName),
+                            stringResource(R.string.setup_step1_instruction, appName))
+                        SetupRow(2, step, R.drawable.ic_setup_select, stringResource(R.string.setup_step2_title, appName),
+                            stringResource(R.string.setup_step2_instruction, appName))
+                        SetupRow(3, step, R.drawable.sym_keyboard_language_switch, stringResource(R.string.lafz_setup_ready),
+                            stringResource(R.string.setup_step3_instruction, appName))
                     }
+                }
+
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = {
+                        when (step) {
+                            1 -> launcher.launch(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS).addCategory(Intent.CATEGORY_DEFAULT))
+                            2 -> inputMethodManager.showInputMethodPicker()
+                            else -> close()
+                        }
+                    }, modifier = Modifier.fillMaxWidth().height(56.dp)) {
+                        Text(when (step) {
+                            1 -> stringResource(R.string.setup_step1_action)
+                            2 -> stringResource(R.string.setup_step2_action)
+                            else -> stringResource(R.string.setup_step3_action)
+                        }, style = MaterialTheme.typography.titleMedium)
+                    }
+                    if (step >= 2) {
+                        TextButton(onClick = if (step == 2) close else finish, modifier = Modifier.fillMaxWidth().height(48.dp)) {
+                            Text(stringResource(if (step == 2) R.string.setup_step3_action else R.string.setup_finish_action))
+                        }
+                    }
+                }
             }
         }
     }
 }
 
+/** One checklist entry: done (check), current (filled icon, instruction shown) or upcoming (dimmed). */
 @Composable
-fun Step0(onClick: () -> Unit) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Image(painterResource(R.drawable.setup_welcome_image), null)
-        Row(Modifier.clickable { onClick() }
-            .padding(top = 4.dp, start = 4.dp, end = 4.dp)
-            //.background(color = MaterialTheme.colorScheme.primary)
-        ) {
-            Spacer(Modifier.weight(1f))
-            Text(
-                stringResource(R.string.setup_start_action),
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
+private fun SetupRow(index: Int, step: Int, icon: Int, title: String, instruction: String) {
+    val colors = MaterialTheme.colorScheme
+    val done = index < step
+    val current = index == step
+    Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        Surface(shape = CircleShape, modifier = Modifier.size(44.dp),
+            color = when { current -> colors.primary; done -> colors.primaryContainer; else -> colors.surfaceContainerHighest }) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(painterResource(if (done) R.drawable.ic_setup_check else icon), contentDescription = null,
+                    modifier = Modifier.size(24.dp),
+                    tint = when { current -> colors.onPrimary; done -> colors.onPrimaryContainer; else -> colors.onSurfaceVariant })
+            }
+        }
+        Column(Modifier.weight(1f).padding(top = 2.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(title, style = MaterialTheme.typography.titleMedium,
+                color = if (current || done) colors.onSurface else colors.onSurfaceVariant)
+            if (current) Text(instruction, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
         }
     }
 }
 
 @Preview
 @Composable
-private fun Preview() {
-    Theme(previewDark) {
-        Surface {
-            WelcomeWizard({}) {  }
-        }
-    }
-}
-
-@Preview(
-    // content cut off on real device, but not here... great?
-    device = "spec:orientation=landscape,width=400dp,height=780dp"
-)
-@Composable
-private fun WidePreview() {
-    Theme(previewDark) {
-        Surface {
-            WelcomeWizard({}) {  }
-        }
-    }
+private fun PreviewWelcomeWizard() {
+    Theme(previewDark) { WelcomeWizard(close = {}, finish = {}) }
 }

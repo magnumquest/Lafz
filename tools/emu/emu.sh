@@ -1,15 +1,21 @@
 #!/usr/bin/env bash
 # Private-emulator helpers for Lafz (port 5580; never touches emulator-5554).  usage: tools/emu/emu.sh <cmd> [args]
-#   boot | install [apk] | subtype <en-US|ur-Latn|ar-Latn> | field | field2 | clear | switch <ur|ar|en> | ui [regex] | uitap <regex> | type "<text>" [delay] | key <name> | shot <png> | logcat | kill
+#   settings | tap x y | swipe x1 y1 x2 y2 [ms] | back | night <yes|no> | boot | install [apk] | subtype <en-US|ur-Latn|ar-Latn> | field | field2 | clear | switch <ur|ar|en> | ui [regex] | uitap <regex> | type "<text>" [delay] | key <name> | shot <png> | logcat | kill
 # Key coordinates are for the 1080x2400 Pixel_API36 AVD with the Lafz alphabet layout (qwerty rows at y=1842/1980/2114, space y=2252).
 . ~/.android-env.sh
 S=emulator-5580; A="adb -s $S"; P=app.lafz.keyboard.debug; IME=$P/helium314.keyboard.latin.LatinIME
 HERE="$(cd "$(dirname "$0")/../.." && pwd)"
 case "$1" in
+settings) $A shell am start -n "$P/helium314.keyboard.settings.SettingsActivity" ;;
+tap) $A shell input tap "$2" "$3" ;;
+swipe) $A shell input swipe "$2" "$3" "$4" "$5" "${6:-300}" ;;
+back) $A shell input keyevent KEYCODE_BACK ;;
+night) $A shell cmd uimode night "$2" ;;
+
 boot)
   adb devices | grep -q $S || nohup emulator -avd Pixel_API36 -port 5580 -read-only -no-snapshot -no-audio -no-window -gpu swiftshader_indirect > /tmp/emu.log 2>&1 &
   for i in $(seq 1 60); do $A shell getprop sys.boot_completed 2>/dev/null | grep -q 1 && break; sleep 5; done; $A shell getprop sys.boot_completed ;;
-install) $A install -r "${2:-$HERE/app/build/outputs/apk/debug/Lafz_0.1.0-debug.apk}" | tail -1
+install) $A install -r "${2:-$HERE/app/build/outputs/apk/debug/Lafz_0.4.2-debug.apk}" | tail -1
   $A shell ime enable $IME >/dev/null; $A shell ime set $IME ;;
 subtype) # writes enabled/selected subtype into the debug app's device-protected prefs (app is force-stopped first)
   F=/data/user_de/0/$P/shared_prefs/${P}_preferences.xml
@@ -48,12 +54,12 @@ uitap) # tap the centre of the first node whose attributes match the regex
   B=$(python3 -I "$HERE/tools/emu/uinode.py" /tmp/emu_ui.xml center "$2") || { echo "uitap: no match for $2"; exit 1; }
   echo "tap $B"; $A shell input tap $B ;;
 switch) # long-press space (language chooser), then tap the entry; verify with: emu.sh ui
-  case "$2" in ur) L='Urdu';; ar) L='Arabic';; en) L='English';; *) echo "usage: switch ur|ar|en"; exit 1;; esac
+  case "$2" in ur) L='text="Urdu[^"]*Lafz';; ar) L='text="Arabic[^"]*Lafz';; en) L='text="English[^"]*Lafz';; *) echo "usage: switch ur|ar|en"; exit 1;; esac
   $A shell input swipe 540 2252 540 2252 800; sleep 1.5
   "$0" uitap "$L" || { echo "switch: '$L' not visible; see: $0 ui"; exit 1; }; sleep 1.5 ;;
 key) case "$2" in backspace) $A shell input tap 1000 2114;; symbols) $A shell input tap 80 2252;; enter) $A shell input tap 1000 2252;; esac ;;
 shot) $A exec-out screencap -p > "${2:-/tmp/shot.png}" ;;
 logcat) $A logcat -d -s LatinIME:* LafzPerf:* AndroidRuntime:E ;;
 kill) $A emu kill ;;
-*) echo "usage: $0 boot|install|subtype|field|field2|clear|switch|ui|uitap|type|key|shot|logcat|kill"; exit 1 ;;
+*) echo "usage: $0 settings|tap|swipe|back|night|boot|install|subtype|field|field2|clear|switch|ui|uitap|type|key|shot|logcat|kill"; exit 1 ;;
 esac

@@ -2,7 +2,24 @@
 package helium314.keyboard.settings.screens
 
 import android.content.Context
+import android.content.Intent
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.unit.sp
+import helium314.keyboard.latin.BuildConfig
+import helium314.keyboard.latin.gesture.FutoSwipe
+import helium314.keyboard.latin.gesture.SwipeDiagnostics
+import helium314.keyboard.latin.settings.GESTURE_ENGINE_FUTO
+import helium314.keyboard.latin.settings.GESTURE_ENGINE_GOOGLE
+import helium314.keyboard.latin.settings.GESTURE_ENGINE_LAFZ
+import helium314.keyboard.settings.dialogs.ThreeButtonAlertDialog
+import helium314.keyboard.settings.preferences.ListPreference
+import helium314.keyboard.settings.preferences.Preference
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalContext
@@ -19,6 +36,7 @@ import helium314.keyboard.latin.utils.prefs
 import helium314.keyboard.settings.Setting
 import helium314.keyboard.settings.SearchSettingsScreen
 import helium314.keyboard.settings.SettingsActivity
+import helium314.keyboard.settings.SettingsWithoutKey
 import helium314.keyboard.settings.preferences.SliderPreference
 import helium314.keyboard.settings.preferences.SwitchPreference
 import helium314.keyboard.latin.utils.Theme
@@ -39,6 +57,10 @@ fun GestureTypingScreen(
     val items = listOf(
         Settings.PREF_GESTURE_INPUT,
         if (gestureEnabled)
+            Settings.PREF_GESTURE_ENGINE else null,
+        if (gestureEnabled && BuildConfig.BUILD_TYPE != "nouserlib")
+            SettingsWithoutKey.LOAD_GESTURE_LIB else null,
+        if (gestureEnabled)
             Settings.PREF_GESTURE_PREVIEW_TRAIL else null,
         if (gestureEnabled)
             Settings.PREF_GESTURE_FLOATING_PREVIEW_TEXT else null,
@@ -50,7 +72,9 @@ fun GestureTypingScreen(
             Settings.PREF_GESTURE_FAST_TYPING_COOLDOWN else null,
         if (gestureEnabled &&
             (prefs.getBoolean(Settings.PREF_GESTURE_PREVIEW_TRAIL, Defaults.PREF_GESTURE_PREVIEW_TRAIL) || gestureFloatingPreviewEnabled))
-            Settings.PREF_GESTURE_TRAIL_FADEOUT_DURATION else null
+            Settings.PREF_GESTURE_TRAIL_FADEOUT_DURATION else null,
+        SettingsWithoutKey.SWIPE_DIAGNOSTICS,
+        SettingsWithoutKey.FUTO_SWIPE,
         )
     SearchSettingsScreen(
         onClickBack = onClickBack,
@@ -63,6 +87,39 @@ fun createGestureTypingSettings(context: Context) = listOf(
     Setting(context, Settings.PREF_GESTURE_INPUT, R.string.gesture_input, R.string.gesture_input_summary) {
         SwitchPreference(it, Defaults.PREF_GESTURE_INPUT)
     },
+    Setting(context, Settings.PREF_GESTURE_ENGINE, R.string.lafz_swipe_engine) {
+        val items = listOf(
+            stringResource(R.string.lafz_swipe_engine_futo) to GESTURE_ENGINE_FUTO,
+            stringResource(R.string.lafz_swipe_engine_google) to GESTURE_ENGINE_GOOGLE,
+            stringResource(R.string.lafz_swipe_engine_lafz) to GESTURE_ENGINE_LAFZ,
+        )
+        val googleNote = if (JniUtils.sHaveGestureLib) "" else " " + stringResource(R.string.lafz_swipe_engine_google_missing)
+        ListPreference(it, items, Defaults.PREF_GESTURE_ENGINE,
+            description = stringResource(R.string.lafz_swipe_engine_summary) + googleNote)
+    },
+    Setting(context, SettingsWithoutKey.SWIPE_DIAGNOSTICS, R.string.lafz_swipe_diagnostics, R.string.lafz_swipe_diagnostics_summary) { setting ->
+        val ctx = LocalContext.current
+        var show by remember { mutableStateOf(false) }
+        Preference(name = setting.title, description = setting.description, onClick = { show = true })
+        if (show) {
+            val report = remember { SwipeDiagnostics.report(ctx, FutoSwipe.status() + "\nengine setting: " +
+                prefsValue(ctx) + ", Google library loaded: " + JniUtils.sHaveGestureLib) }
+            ThreeButtonAlertDialog(
+                onDismissRequest = { show = false },
+                onConfirmed = {
+                    val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, report)
+                    ctx.startActivity(Intent.createChooser(send, null).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                },
+                onNeutral = { SwipeDiagnostics.clear() },
+                confirmButtonText = stringResource(R.string.lafz_swipe_diagnostics_share),
+                cancelButtonText = stringResource(android.R.string.ok),
+                neutralButtonText = stringResource(R.string.lafz_swipe_diagnostics_clear),
+                scrollContent = true,
+                content = { Text(report, fontFamily = FontFamily.Monospace, fontSize = 11.sp, lineHeight = 14.sp) },
+            )
+        }
+    },
+
     Setting(context, Settings.PREF_GESTURE_PREVIEW_TRAIL, R.string.gesture_preview_trail) {
         SwitchPreference(it, Defaults.PREF_GESTURE_PREVIEW_TRAIL)
     },
@@ -123,3 +180,6 @@ private fun Preview() {
         }
     }
 }
+
+private fun prefsValue(context: Context) =
+    context.prefs().getString(Settings.PREF_GESTURE_ENGINE, Defaults.PREF_GESTURE_ENGINE)

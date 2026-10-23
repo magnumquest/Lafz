@@ -21,6 +21,7 @@ import helium314.keyboard.latin.common.StringUtils
 import helium314.keyboard.latin.dictionary.Dictionary
 import helium314.keyboard.latin.settings.Settings
 import helium314.keyboard.latin.settings.SettingsValuesForSuggestion
+import helium314.keyboard.latin.utils.JniUtils
 import helium314.keyboard.latin.utils.SuggestionResults
 import helium314.keyboard.latin.utils.prefs
 import org.junit.runner.RunWith
@@ -32,6 +33,7 @@ import org.robolectric.annotation.Implements
 import org.robolectric.shadows.ShadowLog
 import java.util.*
 import kotlin.test.BeforeTest
+import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -57,11 +59,55 @@ class SuggestTest {
     }
 
     @BeforeTest fun reset() {
-        latinIME.prefs().edit { clear() }
+        JniUtils.sHaveGestureLib = true // the tests below exercise the dictionary based gesture decoder of the Google library
+        latinIME.prefs().edit { clear(); putBoolean(Settings.PREF_SUGGEST_EMOJIS, false) }
         currentTypingLocale = Locale.ENGLISH
         tapTypingSuggestions = suggestionResults(emptyList())
         glideTypingSuggestions = suggestionResults(emptyList())
         nextWordSuggestions = suggestionResults(emptyList())
+    }
+
+    @AfterTest fun restoreGestureLib() {
+        JniUtils.sHaveGestureLib = false
+    }
+
+    // Regression: HeliBoard's native gesture decoder only exists in the Google library. Without it the native call
+    // dereferences a null pointer and kills the keyboard process (seen on arm64 whenever a swipe had no result yet).
+    @Test fun `a swipe never reaches the native dictionary decoder without the Google gesture library`() {
+        JniUtils.sHaveGestureLib = false
+        glideTypingSuggestions = suggestionResults(listOf(suggestion("next", 95)))
+        val results = getSuggestedWords(true, "", CapsMode.OFF)
+        assertEquals(emptyList(), results.mSuggestedWordInfoList.map { it.mWord })
+        currentTypingLocale = Locale.GERMAN
+        assertEquals(emptyList(), getSuggestedWords(true, "", CapsMode.OFF).mSuggestedWordInfoList.map { it.mWord })
+    }
+
+    @Test fun `bundled emoji coexist with words and never become autocorrection`() {
+        latinIME.prefs().edit { putBoolean(Settings.PREF_SUGGEST_EMOJIS, true) }
+        tapTypingSuggestions = suggestionResults(listOf(suggestion("love", 1500000), suggestion("lover", 500000)))
+        val result = getSuggestedWords(false, "love", CapsMode.OFF)
+        val words = (0 until result.size()).map { result.getInfo(it) }
+        kotlin.test.assertTrue(words.any { it.mWord == "❤️" })
+        kotlin.test.assertTrue(words.any { it.mWord == "lover" })
+        kotlin.test.assertFalse(result.mWillAutoCorrect && result.getInfo(1).isEmoji)
+        assertEquals("love", result.mTypedWordInfo?.mWord)
+    }
+
+    @Test fun `emoji toggle disables bundled suggestions`() {
+        latinIME.prefs().edit { putBoolean(Settings.PREF_SUGGEST_EMOJIS, false) }
+        tapTypingSuggestions = suggestionResults(listOf(suggestion("hug", 1500000), suggestion("huge", 500000)))
+        val result = getSuggestedWords(false, "hug", CapsMode.OFF)
+        kotlin.test.assertFalse((0 until result.size()).any { result.getInfo(it).isEmoji })
+    }
+
+    @Test fun `emoji appear after a committed word alongside next word predictions`() {
+        latinIME.prefs().edit { putBoolean(Settings.PREF_SUGGEST_EMOJIS, true) }
+        nextWordSuggestions = suggestionResults(listOf(suggestion("you", 1000), suggestion("it", 900)))
+        val result = getSuggestedWords(false, "", CapsMode.OFF, NgramContext(NgramContext.WordInfo("love")))
+        val words = (0 until result.size()).map { result.getInfo(it).mWord }
+        kotlin.test.assertTrue("❤️" in words)
+        kotlin.test.assertTrue("you" in words)
+        kotlin.test.assertFalse(result.mWillAutoCorrect)
     }
 
     @Test fun `'on' to 'in' if 'in' was used before in this context`() {
@@ -590,7 +636,8 @@ class SuggestTest {
         assertEquals(listOf("bur", "BUR", "BUT", "BIT", "BUY", "😢", "BUTTER"), result4.mSuggestedWordInfoList.map { it.mWord })
     }
 
-    private fun getSuggestedWords(gesture: Boolean, typedWord: String, capsMode: CapsMode): SuggestedWords {
+    private fun getSuggestedWords(gesture: Boolean, typedWord: String, capsMode: CapsMode,
+                                  context: NgramContext = NgramContext.EMPTY_PREV_WORDS_INFO): SuggestedWords {
         val wc = WordComposer()
         if (gesture) wc.setBatchInputPointers(InputPointers(1))
         if (typedWord.isNotEmpty()) {
@@ -617,7 +664,7 @@ class SuggestTest {
 
         suggest.clearNextWordSuggestionsCache()
         return suggest.getSuggestedWords(
-            wc, NgramContext.EMPTY_PREV_WORDS_INFO, Keyboard(params), Settings.getValues().mSettingsValuesForSuggestion,
+            wc, context, Keyboard(params), Settings.getValues().mSettingsValuesForSuggestion,
             Settings.getValues().mAutoCorrectEnabled, 0, 0
         )
     }
@@ -641,7 +688,7 @@ class SuggestTest {
         enableAutocorrect(autoCorrectThreshold)
         currentTypingLocale = typingLocale
         val suggestionsContainer = ArrayList<SuggestedWordInfo>().apply { addAll(suggestions) }
-        val suggestionResults = SuggestionResults(suggestions.size, false, false)
+        val suggestionResults = SuggestionResults(suggestions.size, NgramContext.EMPTY_PREV_WORDS_INFO, false)
         suggestions.forEach { suggestionResults.add(it) }
 
         // store the original SuggestedWordInfo for typed word, as it will be removed
@@ -687,7 +734,7 @@ fun suggestion(word: String, score: Int, locale: Locale = currentTypingLocale, s
     )
 
 fun suggestionResults(suggestions: List<SuggestedWordInfo>, isBeginningOfSentence: Boolean = false) =
-    SuggestionResults(18, isBeginningOfSentence, false).apply { addAll(suggestions) }
+    SuggestionResults(18, if (isBeginningOfSentence) NgramContext.BEGINNING_OF_SENTENCE else NgramContext.EMPTY_PREV_WORDS_INFO, false).apply { addAll(suggestions) }
 
 @Implements(DictionaryFacilitatorImpl::class)
 class ShadowFacilitator {

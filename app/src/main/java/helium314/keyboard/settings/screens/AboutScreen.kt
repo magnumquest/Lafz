@@ -52,12 +52,13 @@ fun AboutScreen(
     onClickBack: () -> Unit,
 ) {
     val items = listOf(
+        R.string.lafz_section_project,
         SettingsWithoutKey.APP,
         SettingsWithoutKey.VERSION,
         SettingsWithoutKey.LICENSE,
+        SettingsWithoutKey.FUTO_SWIPE,
+        R.string.lafz_section_help,
         SettingsWithoutKey.HIDDEN_FEATURES,
-        SettingsWithoutKey.GITHUB_WIKI,
-        SettingsWithoutKey.COMMUNITY_LINKS,
         SettingsWithoutKey.GITHUB,
         SettingsWithoutKey.SAVE_LOG,
     )
@@ -69,6 +70,9 @@ fun AboutScreen(
 }
 
 fun createAboutSettings(context: Context) = listOf(
+    Setting(context, SettingsWithoutKey.FUTO_SWIPE, R.string.lafz_futo_swipe_title, R.string.lafz_futo_swipe_summary) {
+        Preference(name = it.title, description = it.description, onClick = { }, icon = R.drawable.ic_settings_gesture)
+    },
     Setting(context, SettingsWithoutKey.APP, R.string.english_ime_name, R.string.app_slogan) {
         Preference(
             name = it.title,
@@ -133,34 +137,6 @@ fun createAboutSettings(context: Context) = listOf(
             icon = R.drawable.ic_settings_about_hidden_features
         )
     },
-    Setting(context, SettingsWithoutKey.GITHUB_WIKI, R.string.about_wiki_link, R.string.about_wiki_link_description) {
-        val ctx = LocalContext.current
-        Preference(
-            name = it.title,
-            description = it.description,
-            onClick = {
-                val intent = Intent()
-                intent.data = Links.WIKI_URL.toUri()
-                intent.action = Intent.ACTION_VIEW
-                ctx.startActivity(intent)
-            },
-            icon = R.drawable.ic_settings_about_wiki
-        )
-    },
-    Setting(context, SettingsWithoutKey.COMMUNITY_LINKS, R.string.about_community_links, R.string.about_community_links_description) {
-        val ctx = LocalContext.current
-        Preference(
-            name = it.title,
-            description = it.description,
-            onClick = {
-                val intent = Intent()
-                intent.data = Links.COMMUNITY_LINKS.toUri()
-                intent.action = Intent.ACTION_VIEW
-                ctx.startActivity(intent)
-            },
-            icon = R.drawable.ic_settings_about_community
-        )
-     },
     Setting(context, SettingsWithoutKey.GITHUB, R.string.about_github_link) {
         val ctx = LocalContext.current
         Preference(
@@ -186,7 +162,7 @@ fun createAboutSettings(context: Context) = listOf(
                     os.writer().use { writer ->
                         val logcat = Runtime.getRuntime().exec("logcat -d -b all *:W").inputStream.use { it.reader().readText() }
                         val internal = Log.getLog().joinToString("\n")
-                        writer.write(logcat + "\n\n" + internal)
+                        writer.write(logcat + "\n\n" + internal + "\n\n" + helium314.keyboard.latin.gesture.SwipeDiagnostics.report(ctx, helium314.keyboard.latin.gesture.FutoSwipe.status()))
                     }
                 }
             }

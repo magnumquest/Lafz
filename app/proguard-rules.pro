@@ -12,3 +12,6 @@
 # after upgrading to gradle 8, stack traces contain "unknown source"
 -keepattributes SourceFile,LineNumberTable
 -dontobfuscate
+
+# FUTO Swipe: classes and members are used from native code via JNI
+-keep class org.futo.ml.inference.** { *; }

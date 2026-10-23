@@ -5,6 +5,8 @@ import helium314.keyboard.keyboard.KeyboardElement
 import helium314.keyboard.keyboard.KeyboardSwitcher
 import helium314.keyboard.keyboard.internal.keyboard_parser.floris.KeyCode
 import helium314.keyboard.latin.LatinIME
+import helium314.keyboard.latin.settings.Settings
+import helium314.keyboard.latin.utils.prefs
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
@@ -103,6 +105,8 @@ class InputTest {
 
     @BeforeTest
     fun reset() {
+        // the app now enables en-US, ur-Latn and ar-Latn by default; these tests expect the plain English layout
+        latinIME.prefs().edit().putString(Settings.PREF_ENABLED_SUBTYPES, "").apply()
         keyboardSwitcher.reloadMainKeyboard()
         ShadowInputMethodService.reset()
     }

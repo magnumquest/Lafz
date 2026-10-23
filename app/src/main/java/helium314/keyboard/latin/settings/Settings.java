@@ -118,7 +118,7 @@ public final class Settings implements SharedPreferences.OnSharedPreferenceChang
     public static final String PREF_EMOJI_SKIN_TONE = "emoji_skin_tone";
     public static final String PREF_SPACE_HORIZONTAL_SWIPE = "horizontal_space_swipe";
     public static final String PREF_SPACE_VERTICAL_SWIPE = "vertical_space_swipe";
-    public static final String PREF_DELETE_SWIPE = "delete_swipe";
+    public static final String PREF_DELETE_SWIPE = "delete_swipe_type";
     public static final String PREF_AUTOSPACE_AFTER_PUNCTUATION = "autospace_after_punctuation";
     public static final String PREF_AUTOSPACE_AFTER_SUGGESTION = "autospace_after_suggestion";
     public static final String PREF_AUTOSPACE_AFTER_GESTURE_TYPING = "autospace_after_gesture_typing";
@@ -130,6 +130,7 @@ public final class Settings implements SharedPreferences.OnSharedPreferenceChang
     public static final String PREF_PUNCTUATION_SUGGESTIONS = "punctuation_suggestions";
     public static final String PREF_SUGGEST_CLIPBOARD_CONTENT = "suggest_clipboard_content";
     public static final String PREF_GESTURE_INPUT = "gesture_input";
+    public static final String PREF_GESTURE_ENGINE = "gesture_engine";
     public static final String PREF_VIBRATION_DURATION_SETTINGS = "vibration_duration_settings";
     public static final String PREF_KEYPRESS_SOUND_VOLUME = "keypress_sound_volume";
     public static final String PREF_KEY_LONGPRESS_TIMEOUT = "key_longpress_timeout";
@@ -314,7 +315,6 @@ public final class Settings implements SharedPreferences.OnSharedPreferenceChang
         mPrefs.registerOnSharedPreferenceChangeListener(this);
     }
 
-    // TODO: Remove this method and add proxy method to SettingsValues.
     public SettingsValues getCurrent() {
         return mSettingsValues;
     }

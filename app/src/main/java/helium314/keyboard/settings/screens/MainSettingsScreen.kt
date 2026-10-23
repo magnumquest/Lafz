@@ -1,31 +1,26 @@
 // SPDX-License-Identifier: GPL-3.0-only
 package helium314.keyboard.settings.screens
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.only
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.dp
 import helium314.keyboard.latin.R
 import helium314.keyboard.latin.utils.JniUtils
+import helium314.keyboard.latin.utils.NextScreenIcon
 import helium314.keyboard.latin.utils.SubtypeLocaleUtils.displayName
 import helium314.keyboard.latin.utils.SubtypeSettings
-import helium314.keyboard.latin.utils.NextScreenIcon
 import helium314.keyboard.settings.SearchSettingsScreen
-import helium314.keyboard.latin.utils.Theme
-import helium314.keyboard.settings.initPreview
 import helium314.keyboard.settings.preferences.Preference
-import helium314.keyboard.latin.utils.previewDark
+import helium314.keyboard.settings.preferences.PreferenceCategory
 import helium314.keyboard.settings.screens.gesturedata.END_DATE_EPOCH_MILLIS
 import helium314.keyboard.settings.screens.gesturedata.TWO_WEEKS_IN_MILLIS
 
@@ -44,87 +39,75 @@ fun MainSettingsScreen(
     onClickDictionaries: () -> Unit,
     onClickBack: () -> Unit,
 ) {
-    SearchSettingsScreen(
-        onClickBack = onClickBack,
-        title = stringResource(R.string.ime_settings),
-        settings = emptyList(),
-    ) {
-        val enabledSubtypes = SubtypeSettings.getEnabledSubtypes(true)
-        Scaffold(contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom)) { innerPadding ->
-            Column(
-                Modifier.verticalScroll(rememberScrollState()).then(Modifier.padding(innerPadding))
-            ) {
-                Preference(
-                    name = stringResource(R.string.language_and_layouts_title),
-                    description = enabledSubtypes.joinToString(", ") { it.displayName() },
-                    onClick = onClickLanguage,
-                    icon = R.drawable.ic_settings_languages
-                ) { NextScreenIcon() }
-                Preference(
-                    name = stringResource(R.string.settings_screen_preferences),
-                    onClick = onClickPreferences,
-                    icon = R.drawable.ic_settings_preferences
-                ) { NextScreenIcon() }
-                Preference(
-                    name = stringResource(R.string.settings_screen_appearance),
-                    onClick = onClickAppearance,
-                    icon = R.drawable.ic_settings_appearance
-                ) { NextScreenIcon() }
-                Preference(
-                    name = stringResource(R.string.settings_screen_toolbar),
-                    onClick = onClickToolbar,
-                    icon = R.drawable.ic_settings_toolbar
-                ) { NextScreenIcon() }
-                if (JniUtils.sHaveGestureLib)
-                    Preference(
-                        name = stringResource(R.string.settings_screen_gesture),
-                        onClick = onClickGestureTyping,
-                        icon = R.drawable.ic_settings_gesture
-                    ) { NextScreenIcon() }
-                // we don't even show the menu if data gathering phase ended more than 2 weeks ago
-                if (JniUtils.sHaveGestureLib && System.currentTimeMillis() < END_DATE_EPOCH_MILLIS + TWO_WEEKS_IN_MILLIS)
-                    Preference(
-                        name = stringResource(R.string.gesture_data_screen),
-                        onClick = onClickDataGathering,
-                        icon = R.drawable.ic_settings_gesture
-                    ) { NextScreenIcon() }
-                Preference(
-                    name = stringResource(R.string.settings_screen_correction),
-                    onClick = onClickTextCorrection,
-                    icon = R.drawable.ic_settings_correction
-                ) { NextScreenIcon() }
-                Preference(
-                    name = stringResource(R.string.settings_screen_secondary_layouts),
-                    onClick = onClickLayouts,
-                    icon = R.drawable.ic_settings_layout
-                ) { NextScreenIcon() }
-                Preference(
-                    name = stringResource(R.string.dictionary_settings_category),
-                    onClick = onClickDictionaries,
-                    icon = R.drawable.ic_dictionary
-                ) { NextScreenIcon() }
-                Preference(
-                    name = stringResource(R.string.settings_screen_advanced),
-                    onClick = onClickAdvanced,
-                    icon = R.drawable.ic_settings_advanced
-                ) { NextScreenIcon() }
-                Preference(
-                    name = stringResource(R.string.settings_screen_about),
-                    onClick = onClickAbout,
-                    icon = R.drawable.ic_settings_about
-                ) { NextScreenIcon() }
+    SearchSettingsScreen(onClickBack, "Lafz", emptyList(), home = true) {
+        Column(
+            Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom)),
+            horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+        ) {
+            Column(Modifier.widthIn(max = 840.dp).padding(horizontal = 20.dp).padding(bottom = 32.dp)) {
+                PreferenceCategory(stringResource(R.string.lafz_section_personalize))
+                SettingsGroup {
+                    HomeRow(R.string.language_and_layouts_title, R.drawable.ic_settings_languages,
+                        SubtypeSettings.getEnabledSubtypes(true).joinToString(", ") { it.displayName() }, onClickLanguage)
+                    HomeRow(R.string.settings_screen_appearance, R.drawable.ic_settings_appearance,
+                        stringResource(R.string.lafz_appearance_description), onClickAppearance)
+                    HomeRow(R.string.settings_screen_toolbar, R.drawable.ic_settings_toolbar,
+                        stringResource(R.string.lafz_toolbar_description), onClickToolbar)
+                }
+                PreferenceCategory(stringResource(R.string.lafz_section_typing))
+                SettingsGroup {
+                    HomeRow(R.string.settings_screen_correction, R.drawable.ic_settings_correction,
+                        stringResource(R.string.lafz_correction_description), onClickTextCorrection)
+                    HomeRow(R.string.settings_screen_preferences, R.drawable.ic_settings_preferences,
+                        stringResource(R.string.lafz_preferences_description), onClickPreferences)
+                    HomeRow(R.string.settings_screen_gesture, R.drawable.ic_settings_gesture,
+                        stringResource(R.string.lafz_gesture_description), onClickGestureTyping)
+                    HomeRow(R.string.dictionary_settings_category, R.drawable.ic_dictionary,
+                        stringResource(R.string.lafz_dictionary_description), onClickDictionaries)
+                }
+                PreferenceCategory(stringResource(R.string.lafz_try_keyboard))
+                SettingsGroup {
+                    var text by rememberSaveable { mutableStateOf("") }
+                    Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text(stringResource(R.string.lafz_try_description), style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        OutlinedTextField(
+                            value = text, onValueChange = { text = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text(stringResource(R.string.lafz_try_hint)) },
+                            shape = RoundedCornerShape(16.dp),
+                            keyboardOptions = KeyboardOptions(autoCorrectEnabled = true, imeAction = ImeAction.Default),
+                            minLines = 2, maxLines = 5,
+                        )
+                    }
+                }
+                PreferenceCategory(stringResource(R.string.lafz_section_more))
+                SettingsGroup {
+                    HomeRow(R.string.settings_screen_secondary_layouts, R.drawable.ic_settings_layout,
+                        stringResource(R.string.lafz_layouts_description), onClickLayouts)
+                    HomeRow(R.string.settings_screen_advanced, R.drawable.ic_settings_advanced,
+                        stringResource(R.string.lafz_advanced_description), onClickAdvanced)
+                    if (JniUtils.sHaveGestureLib && System.currentTimeMillis() < END_DATE_EPOCH_MILLIS + TWO_WEEKS_IN_MILLIS)
+                        HomeRow(R.string.gesture_data_screen, R.drawable.ic_settings_gesture, null, onClickDataGathering)
+                    HomeRow(R.string.settings_screen_about, R.drawable.ic_settings_about,
+                        stringResource(R.string.lafz_about_description), onClickAbout)
+                }
             }
         }
     }
 }
 
-@Preview
 @Composable
-private fun PreviewScreen() {
-    initPreview(LocalContext.current)
-    Theme(previewDark) {
-        Surface {
-            MainSettingsScreen({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})
-        }
+private fun SettingsGroup(content: @Composable ColumnScope.() -> Unit) {
+    Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceContainerLowest) {
+        Column(content = content)
+    }
+}
+
+@Composable
+private fun HomeRow(title: Int, icon: Int, description: String?, onClick: () -> Unit) {
+    Preference(name = stringResource(title), description = description, icon = icon, onClick = onClick) {
+        NextScreenIcon()
     }
 }
