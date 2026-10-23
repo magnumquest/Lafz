@@ -21,6 +21,7 @@ import helium314.keyboard.latin.common.StringUtils
 import helium314.keyboard.latin.dictionary.Dictionary
 import helium314.keyboard.latin.settings.Settings
 import helium314.keyboard.latin.settings.SettingsValuesForSuggestion
+import helium314.keyboard.latin.utils.JniUtils
 import helium314.keyboard.latin.utils.SuggestionResults
 import helium314.keyboard.latin.utils.prefs
 import org.junit.runner.RunWith
@@ -32,6 +33,7 @@ import org.robolectric.annotation.Implements
 import org.robolectric.shadows.ShadowLog
 import java.util.*
 import kotlin.test.BeforeTest
+import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -57,11 +59,27 @@ class SuggestTest {
     }
 
     @BeforeTest fun reset() {
+        JniUtils.sHaveGestureLib = true // the tests below exercise the dictionary based gesture decoder of the Google library
         latinIME.prefs().edit { clear(); putBoolean(Settings.PREF_SUGGEST_EMOJIS, false) }
         currentTypingLocale = Locale.ENGLISH
         tapTypingSuggestions = suggestionResults(emptyList())
         glideTypingSuggestions = suggestionResults(emptyList())
         nextWordSuggestions = suggestionResults(emptyList())
+    }
+
+    @AfterTest fun restoreGestureLib() {
+        JniUtils.sHaveGestureLib = false
+    }
+
+    // Regression: HeliBoard's native gesture decoder only exists in the Google library. Without it the native call
+    // dereferences a null pointer and kills the keyboard process (seen on arm64 whenever a swipe had no result yet).
+    @Test fun `a swipe never reaches the native dictionary decoder without the Google gesture library`() {
+        JniUtils.sHaveGestureLib = false
+        glideTypingSuggestions = suggestionResults(listOf(suggestion("next", 95)))
+        val results = getSuggestedWords(true, "", CapsMode.OFF)
+        assertEquals(emptyList(), results.mSuggestedWordInfoList.map { it.mWord })
+        currentTypingLocale = Locale.GERMAN
+        assertEquals(emptyList(), getSuggestedWords(true, "", CapsMode.OFF).mSuggestedWordInfoList.map { it.mWord })
     }
 
     @Test fun `bundled emoji coexist with words and never become autocorrection`() {

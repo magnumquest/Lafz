@@ -162,7 +162,7 @@ fun createAboutSettings(context: Context) = listOf(
                     os.writer().use { writer ->
                         val logcat = Runtime.getRuntime().exec("logcat -d -b all *:W").inputStream.use { it.reader().readText() }
                         val internal = Log.getLog().joinToString("\n")
-                        writer.write(logcat + "\n\n" + internal)
+                        writer.write(logcat + "\n\n" + internal + "\n\n" + helium314.keyboard.latin.gesture.SwipeDiagnostics.report(ctx, helium314.keyboard.latin.gesture.FutoSwipe.status()))
                     }
                 }
             }

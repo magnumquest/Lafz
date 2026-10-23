@@ -37,6 +37,14 @@ enum class RomanScript(val languageTag: String, private val modelAsset: String, 
         return null
     }
 
+    /** Like [engine] but waits (up to [timeoutMs]) for the model to finish loading; only for background threads. */
+    fun engineBlocking(context: Context, timeoutMs: Long = 15000): RomanTransliterator? {
+        engine(context)
+        val end = System.currentTimeMillis() + timeoutMs
+        while (engine == null && loading && System.currentTimeMillis() < end) Thread.sleep(20)
+        return engine
+    }
+
     companion object {
         @JvmStatic
         fun of(locale: Locale?): RomanScript? {

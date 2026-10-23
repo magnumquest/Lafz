@@ -101,6 +101,22 @@ public final class SwipeDecoder {
 
     private SwipeDecoder() {}
 
+    private static volatile boolean englishLoading;
+
+    public static boolean englishWordsLoaded() {
+        return englishWords != null;
+    }
+
+    /** Reads the English word list on a background thread; the suggestion thread must never do this mid-swipe. */
+    public static void preloadEnglishWords(final Context context) {
+        if (englishWords != null || englishLoading) return;
+        englishLoading = true;
+        final Context app = context.getApplicationContext();
+        new Thread(() -> {
+            try { englishWords(app); } finally { englishLoading = false; }
+        }, "SwipeEnglishWords").start();
+    }
+
     /** Reads the already bundled English dictionary; no network or second word-list asset. */
     public static synchronized Map<String, Integer> englishWords(Context context) {
         if (englishWords != null) return englishWords;
@@ -130,7 +146,7 @@ public final class SwipeDecoder {
                     token = next.mNextToken;
                 } while (token != 0);
             } finally { dictionary.close(); }
-        } catch (Exception | UnsatisfiedLinkError e) {
+        } catch (Exception | Error e) {
             Log.e(TAG, "Could not load swipe dictionary", e);
         }
         englishWords = result;

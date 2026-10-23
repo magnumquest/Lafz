@@ -2588,6 +2588,12 @@ public final class InputLogic {
             return;
         }
         mConnection.beginBatchEdit();
+        if (mWordComposer.isComposingWord() && mWordComposer.isBatchMode()) {
+            // This result arrived after the next swipe had already started (slow decoder): the word of the earlier
+            // swipe is still composing, and setBatchInputWord below would silently replace it. Commit it first.
+            commitTyped(settingsValues, LastComposedWord.NOT_A_SEPARATOR);
+            if (settingsValues.mAutospaceBeforeGestureTyping) mSpaceState = SpaceState.PHANTOM;
+        }
         if (SpaceState.PHANTOM == mSpaceState) {
             insertAutomaticSpaceIfOptionsAndTextAllow(settingsValues);
             mSpaceState = SpaceState.NONE;
@@ -2822,6 +2828,12 @@ public final class InputLogic {
 
     // we used to provide keyboard, settingsValues and keyboardShiftMode, but every time read it from current instance anyway
     void getSuggestedWords(final int inputStyle, final int sequenceNumber, final OnGetSuggestedWordsCallback callback) {
+        getSuggestedWords(inputStyle, sequenceNumber, callback, null);
+    }
+
+    /** @param batchPointers private copy of the swipe points to decode (batch input only), null to use the composer's own */
+    void getSuggestedWords(final int inputStyle, final int sequenceNumber, final OnGetSuggestedWordsCallback callback,
+                           final InputPointers batchPointers) {
         final Keyboard keyboard = KeyboardSwitcher.getInstance().getKeyboard();
         if (keyboard == null) {
             callback.onGetSuggestedWords(SuggestedWords.getEmptyInstance());
@@ -2836,7 +2848,9 @@ public final class InputLogic {
         mWordComposer.adviseCapitalizedModeBeforeFetchingSuggestions(
                 getActualCapsMode(settingsValues, KeyboardSwitcher.getInstance().getKeyboardCapsMode()));
         try {
-            SuggestedWords suggestedWords = mSuggest.getSuggestedWords(mWordComposer.copy(),
+            final WordComposer composerForSuggestions = mWordComposer.copy();
+            if (batchPointers != null) composerForSuggestions.setBatchInputPointers(batchPointers);
+            SuggestedWords suggestedWords = mSuggest.getSuggestedWords(composerForSuggestions,
                     getNgramContextFromNthPreviousWordForSuggestion(
                     settingsValues.mSpacingAndPunctuations,
                     // Get the word on which we should search the bigrams. If we are composing

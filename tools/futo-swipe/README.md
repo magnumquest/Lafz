@@ -30,5 +30,7 @@ Models come from https://huggingface.co/futo-org/futo-swipe (`honorable_sturgeon
 ## How it is used
 * English: encoder + English decoder + context LM, dictionary = bundled en-US main dictionary.
 * Roman Urdu/Arabic: encoder only; dictionaries = English words + the language's Roman spellings (`RomanTransliterator.swipeSpellings`), mapped to native script by the existing transliterator.
-* Word lists are written once to `files/futo_swipe/tries/*.combined` (bump `ASSET_VERSION` in `FutoSwipe.kt` to rebuild).
+* Word lists ship prebuilt in `assets/futo_swipe/tries/{en,urdu,arabic}.combined` (AOSP `word=...,f=...` format), so the first load needs no dictionary scan. They were generated on a device by the app itself from `main_en-US.dict` (`SwipeDecoder.englishWords`) and `RomanTransliterator.swipeSpellings()`; **regenerate them if the transliteration models change**: delete `files/futo_swipe/tries/` on a debug build, swipe once, pull the files with `adb exec-out run-as ... cat`. Assets are re-copied after every app update (keyed by versionCode).
+* Everything heavy loads on the `FutoSwipeLoader` thread at keyboard start / language switch (`Suggest.preloadSwipeEngine`); the swipe path never loads anything and returns no result until the engine is ready.
+* Settings > Gesture typing: engine choice (FUTO, Google library, Lafz built-in) and a diagnostics screen (`SwipeDiagnostics`: persistent log + Android process-exit reasons).
 * HeliBoard only handles swipes when a main dictionary exists; `LatinIME` treats Roman-script locales as available.

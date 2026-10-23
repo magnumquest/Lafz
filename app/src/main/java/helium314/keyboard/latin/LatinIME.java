@@ -594,6 +594,9 @@ public class LatinIME extends InputMethodService implements
         final RomanScript romanScript = RomanScript.of(locale);
         if (romanScript != null) romanScript.engine(this);
         final SettingsValues currentSettingsValues = mSettings.getCurrent();
+        helium314.keyboard.latin.gesture.SwipeDiagnostics.INSTANCE.init(this);
+        // swipe typing: load the decoder in the background now, never on the first swipe
+        if (currentSettingsValues.mGestureInputEnabled) Suggest.preloadSwipeEngine(this, locale, currentSettingsValues.mGestureEngine);
         AudioAndHapticFeedbackManager.getInstance().onSettingsChanged(currentSettingsValues);
         // This method is called on startup and language switch, before the new layout has
         // been displayed. Opening dictionaries never affects responsivity as dictionaries are
@@ -621,7 +624,9 @@ public class LatinIME extends InputMethodService implements
     public void onUpdateMainDictionaryAvailability(final boolean isMainDictionaryAvailable) {
         final MainKeyboardView mainKeyboardView = mKeyboardSwitcher.getMainKeyboardView();
         if (mainKeyboardView != null) {
-            mainKeyboardView.setMainDictionaryAvailability(isMainDictionaryAvailable);
+            // Roman Urdu/Arabic have no main dictionary but decode swipes with their own engines
+            mainKeyboardView.setMainDictionaryAvailability(isMainDictionaryAvailable
+                    || RomanScript.of(mDictionaryFacilitator.getMainLocale()) != null);
         }
         if (mHandler.hasPendingWaitForDictionaryLoad()) {
             mHandler.cancelWaitForDictionaryLoad();
