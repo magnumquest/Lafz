@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="lafz_search_settings">Search settings</string>
-    <string name="lafz_home_headline">Your keyboard,\nyour way.</string>
-    <string name="lafz_home_description">Write naturally in English, Urdu and Arabic. All on your device.</string>
-    <string name="lafz_section_personalize">Make it yours</string>
-    <string name="lafz_section_typing">Words &amp; expression</string>
-    <string name="lafz_section_more">More controls</string>
+    <string name="lafz_section_personalize">Keyboard</string>
+    <string name="lafz_section_typing">Typing</string>
+    <string name="lafz_section_more">More</string>
     <string name="lafz_appearance_description">Themes, colors, fonts and keyboard size</string>
     <string name="lafz_toolbar_description">Shortcuts for the things you use most</string>
     <string name="lafz_correction_description">Autocorrect, live transliteration and emoji suggestions</string>
@@ -30,5 +28,5 @@
     <string name="lafz_section_privacy">Privacy</string>
     <string name="lafz_section_backup">Backup &amp; troubleshooting</string>
     <string name="lafz_section_project">Lafz</string>
-    <string name="lafz_section_help">Help &amp; community</string>
+    <string name="lafz_section_help">Help</string>
 </resources>

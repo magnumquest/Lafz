@@ -68,6 +68,7 @@ score(word) = ln P(word | previous word)  +  1.4 · ln P(roman | word)
 
 - `P(roman | word)` is a character-alignment channel model learned by EM from human-written romanizations.
 - Urdu: unigram plus pruned bigram over 8.8M tokens of Urdu Wikipedia (60k words), a 3.5 MB asset.
+- A native-script Urdu dictionary is bundled for the dictionary system; it does not replace the Roman Urdu model. Its provenance and license are documented in [`docs/dictionaries/`](docs/dictionaries/README.md).
 - Arabic: unigram, bigram and trigram model over Qur'an, Hadith and web text (400k words, about 2.7B tokens counted), a 37 MB asset.
   It can also glue up to three words together, so `wakitab` finds و كتاب.
 - Everything runs on the device.

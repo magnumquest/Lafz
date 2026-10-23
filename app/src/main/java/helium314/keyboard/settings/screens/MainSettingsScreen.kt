@@ -11,7 +11,6 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import helium314.keyboard.latin.R
@@ -47,18 +46,6 @@ fun MainSettingsScreen(
             horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
         ) {
             Column(Modifier.widthIn(max = 840.dp).padding(horizontal = 20.dp).padding(bottom = 32.dp)) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-                    shape = RoundedCornerShape(28.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                ) {
-                    Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Text(stringResource(R.string.lafz_home_headline), style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.SemiBold)
-                        Text("English · اردو · العربية", style = MaterialTheme.typography.titleMedium)
-                        Text(stringResource(R.string.lafz_home_description), style = MaterialTheme.typography.bodyMedium)
-                    }
-                }
                 PreferenceCategory(stringResource(R.string.lafz_section_personalize))
                 SettingsGroup {
                     HomeRow(R.string.language_and_layouts_title, R.drawable.ic_settings_languages,
