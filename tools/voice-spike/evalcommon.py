@@ -5,8 +5,9 @@ MAP = str.maketrans({'ي':'ی','ى':'ی','ك':'ک','ه':'ہ','ة':'ہ','ۃ':'ہ'
 def norm(s, lang):
     s = unicodedata.normalize('NFKC', s)
     s = re.sub(r'[ً-ٰٟۖ-ۭـ]', '', s)         # diacritics, tatweel
+    if lang == 'en': s = s.lower()
     if lang == 'ur': s = s.translate(MAP)
-    else: s = s.translate(str.maketrans({'ى':'ي','ة':'ه','أ':'ا','إ':'ا','آ':'ا','ٱ':'ا'}))
+    elif lang == 'ar': s = s.translate(str.maketrans({'ى':'ي','ة':'ه','أ':'ا','إ':'ا','آ':'ا','ٱ':'ا'}))
     s = re.sub(r'[^\w\s]', ' ', s)                                         # punctuation
     s = re.sub(r'[0-9٠-٩۰-۹]', '', s)                                       # digits differ between written and spoken forms
     return ' '.join(s.split())

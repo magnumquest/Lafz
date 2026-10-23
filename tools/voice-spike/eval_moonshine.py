@@ -5,8 +5,10 @@ from evalcommon import *
 import torch
 from transformers import AutoProcessor, MoonshineForConditionalGeneration
 model_dir, lang, n = sys.argv[1], sys.argv[2], int(sys.argv[3])
-test = {'ar': ('../data/fleurs_ar/data/ar_eg/test.tsv', '../data/fleurs_ar/data/ar_eg/audio/test')}[lang]
-rows = load_test(*test, n=n or None)
+test = {'ur': ('../data/fleurs_ur/data/ur_pk/test.tsv', '../data/fleurs_ur/data/ur_pk/audio/test', 'urdu'),
+        'ar': ('../data/fleurs_ar/data/ar_eg/test.tsv', '../data/fleurs_ar/data/ar_eg/audio/test', 'arabic'),
+        'en': ('../data/fleurs_en/data/en_us/test.tsv', '../data/fleurs_en/data/en_us/audio/test', 'english')}[lang]
+rows = load_test(test[0], test[1], n=n or None)
 proc = AutoProcessor.from_pretrained(model_dir)
 model = MoonshineForConditionalGeneration.from_pretrained(model_dir, torch_dtype=torch.float32).to('cuda:0').eval()
 hyps, refs, audio_s = [], [], 0.0

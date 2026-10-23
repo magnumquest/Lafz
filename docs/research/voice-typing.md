@@ -46,6 +46,27 @@ Scripts: `tools/voice-spike/`. **These are desktop numbers on clean read speech,
 | Arabic | Whisper-small, stock | 244M / ~465 MB | 8.3 % | 26.0 % | RTF 0.010 (GPU) | Apache-2.0 |
 | Arabic | Moonshine-tiny-ar | 27M / 108 MB | 13.5 % | 24.0 % | RTF 0.065 (GPU, one clip at a time) | **Moonshine AI Community License** (research / limited commercial; not MIT) |
 
+### Sweep (2026-10-23/24): more Urdu fine-tunes and English
+Same method; English = LibriSpeech-style FLEURS `en_us` test, first 200 clips. Whisper runs fp16 on GPU (sizes are the fp32 safetensors). Script: `tools/voice-spike/sweep.py`.
+
+| Language | Model | Size | CER | WER |
+|---|---|---|---|---|
+| Urdu | khawajaaliarshad/whisper-small-urdu | 967 MB | **9.6 %** | **25.6 %** |
+| Urdu | hamza-amin/whisper-small-urdu-v2 (above) | ~967 MB | 9.9 % | 26.3 % |
+| Urdu | kingabzpro/whisper-base-urdu-full | 290 MB | 15.2 % | 39.3 % |
+| Urdu | sharjeel103/whisper-tiny-urdu | 151 MB | 19.7 % | 47.1 % |
+| Urdu | kingabzpro/whisper-tiny-urdu | 151 MB | 19.0 % | 47.5 % |
+| Urdu | UmarRamzan/w2v2-bert-urdu (CTC) | 2.4 GB | 98.2 % | 99.9 % (unusable as published) |
+| English | Whisper small.en | 967 MB | **3.0 %** | **6.1 %** |
+| English | Whisper base.en | 290 MB | 4.0 % | 8.1 % |
+| English | Whisper tiny.en | 151 MB | 5.6 % | 11.5 % |
+| English | Moonshine base | 246 MB | 7.8 % | 12.2 % |
+| English | Moonshine tiny | 108 MB | 7.0 % | 14.0 % |
+
+* Urdu accuracy scales with size: tiny/base fine-tunes are too weak (39-47 % WER); only the small class (~26 % WER) is usable, and that needs a quantised file (q5/int8 roughly 250-500 MB) to be phone-friendly.
+* English: Whisper base.en is the sweet spot (8.1 % WER at 290 MB fp32); small.en is best but heavy. Moonshine is smaller but not more accurate than Whisper at equal size.
+* Still pending when this was written: whisper-large-v3-turbo-urdu (ceiling), Moonshine Urdu fine-tunes (shaeel12), wav2vec2 XLS-R Urdu, English wav2vec2 CTC models.
+
 What this says:
 * **Urdu: use the Urdu Whisper fine-tune.** It writes Urdu script directly, so **no Roman conversion is needed and any keyboard layout (Urdu Pakistan, Roman Urdu, English) can host the mic key**; the text is simply inserted.
   The Omnilingual CTC model writes Urdu speech in Devanagari (Hindi script), which is why I tried the Roman/Lafz route: it works (21.5 % CER) but is clearly worse, and int8 hurts it further.
