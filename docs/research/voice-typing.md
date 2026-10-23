@@ -62,10 +62,16 @@ Same method; English = LibriSpeech-style FLEURS `en_us` test, first 200 clips. W
 | English | Whisper tiny.en | 151 MB | 5.6 % | 11.5 % |
 | English | Moonshine base | 246 MB | 7.8 % | 12.2 % |
 | English | Moonshine tiny | 108 MB | 7.0 % | 14.0 % |
+| English | wav2vec2-large-960h-lv60-self (CTC) | 1.26 GB | 5.4 % | 11.8 % |
+| English | wav2vec2-base-960h (CTC) | 378 MB | 8.0 % | 18.6 % |
+| Urdu | shaeel12 Moonshine base Urdu | 246 MB | 63.5 % | 87.1 % (unusable) |
+| Urdu | shaeel12 Moonshine tiny Urdu | 108 MB | 86.8 % | 123 % (unusable) |
 
 * Urdu accuracy scales with size: tiny/base fine-tunes are too weak (39-47 % WER); only the small class (~26 % WER) is usable, and that needs a quantised file (q5/int8 roughly 250-500 MB) to be phone-friendly.
 * English: Whisper base.en is the sweet spot (8.1 % WER at 290 MB fp32); small.en is best but heavy. Moonshine is smaller but not more accurate than Whisper at equal size.
-* Still pending when this was written: whisper-large-v3-turbo-urdu (ceiling), Moonshine Urdu fine-tunes (shaeel12), wav2vec2 XLS-R Urdu, English wav2vec2 CTC models.
+* English wav2vec2 CTC models are worse than Whisper at equal size, so no reason to prefer them. Moonshine Urdu fine-tunes are unusable.
+* Skipped on purpose (too large to ship, no value as a ceiling): whisper-large-v3-turbo-urdu (3 GB), XLS-R 300M Urdu and xlsr-53 English (language-model files broken).
+* **Conclusion:** Whisper is the engine family for Urdu (small fine-tune, quantised) and English (base.en). Arabic stays on Omnilingual CTC int8.
 
 What this says:
 * **Urdu: use the Urdu Whisper fine-tune.** It writes Urdu script directly, so **no Roman conversion is needed and any keyboard layout (Urdu Pakistan, Roman Urdu, English) can host the mic key**; the text is simply inserted.
