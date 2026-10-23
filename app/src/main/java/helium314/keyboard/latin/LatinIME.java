@@ -805,6 +805,7 @@ public class LatinIME extends InputMethodService implements
     @Override
     public void onFinishInputView(final boolean finishingInput) {
         StatsUtils.onFinishInputView();
+        RomanScript.saveAllLearned();
         mHandler.onFinishInputView(finishingInput);
         mStatsUtilsManager.onFinishInputView();
         mGestureConsumer = GestureConsumer.NULL_GESTURE_CONSUMER;

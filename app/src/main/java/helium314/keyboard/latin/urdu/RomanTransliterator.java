@@ -529,6 +529,7 @@ public final class RomanTransliterator {
             }
             if (hyps[m] != null) for (Hyp h : hyps[m]) if (h.n >= 2 || h.text.indexOf(' ') < 0) { scored.add(new double[]{h.score}); texts.add(h.text); comps.add(h.comp); }
         }
+        applyPersonal(sb.toString(), prev, scored, texts, comps);
         // --- merge: best score per distinct text, best first
         final int cnt = scored.size();
         final Integer[] order = new Integer[cnt];
@@ -564,10 +565,48 @@ public final class RomanTransliterator {
         return out;
     }
 
+    /** what the owner's typing taught the keyboard; null = nothing learned / learning off. Set from another thread. */
+    public volatile PersonalModel personal;
+
+    private static String lastWord(String prev) {
+        if (prev == null) return null;
+        final String t = prev.replaceAll("[\u200e\u200f\u061c]", "").trim();
+        final int sp = t.lastIndexOf(' ');
+        final String w = sp < 0 ? t : t.substring(sp + 1);
+        return w.isEmpty() ? null : w;
+    }
+
+    /**
+     * Adds the owner's habits to the candidate scores: a bonus per candidate, and words used for exactly this spelling before
+     * (e.g. a name kept in Roman letters) that the decoder did not offer. Runs on the finished candidate list, a few hash reads.
+     */
+    private void applyPersonal(String roman, String prev, ArrayList<double[]> scored, ArrayList<String> texts, ArrayList<Boolean> comps) {
+        final PersonalModel pm = personal;
+        if (pm == null || pm.isEmpty()) return;
+        final String pw = lastWord(prev);
+        final String rn = PersonalModel.normalizeRoman(roman);
+        double top = -12 + 2.5;
+        for (int i = 0; i < scored.size(); i++) {
+            top = Math.max(top, scored.get(i)[0]);
+            scored.get(i)[0] += pm.bonus(pw, texts.get(i), rn);
+        }
+        for (String w : pm.injected(rn, 3)) {
+            if (texts.contains(w)) continue;
+            scored.add(new double[]{top - 2.5 + pm.bonus(pw, w, rn)});
+            texts.add(w);
+            comps.add(false);
+        }
+    }
+
     /** Most likely next words after [prev] (or at sentence start): trigram continuations first, then bigram ones. */
     public List<String> nextWords(String prev, boolean atStart, int max) {
         final ArrayList<String> out = new ArrayList<>();
         final Ctx c = context(prev, atStart);
+        final PersonalModel pm = personal;
+        if (pm != null && !atStart) {
+            final String pw = lastWord(prev);
+            for (String w : pm.nextWords(pw, 3)) if (out.size() < max) out.add(w);
+        }
         if (c.p1 == -2) return out;
         if (c.tri >= 0) topNext(triNext[c.tri], triQ[c.tri], max, out);
         if (c.bg >= 0 && out.size() < max) topNext(bigramNext[c.bg], bigramQ[c.bg], max, out);

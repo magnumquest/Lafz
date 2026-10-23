@@ -186,6 +186,7 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
     private fun getRomanScriptSuggestions(script: RomanScript, wordComposer: WordComposer, ngramContext: NgramContext,
                                           inputStyleIfNotPrediction: Int, sequenceNumber: Int): SuggestedWords? {
         val engine = script.engine(Settings.getCurrentContext()) ?: return null
+        engine.personal = if (Settings.getValues()?.mLearnRomanTyping == true) script.personal else null
         val typed = wordComposer.typedWord
         val prevInfo = if (ngramContext.prevWordCount > 0) ngramContext.getNthPrevWord(1) else null
         val atStart = ngramContext.isBeginningOfSentenceContext || prevInfo == null
@@ -268,6 +269,7 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
      */
     private fun addHonorificSuggestions(list: ArrayList<SuggestedWordInfo>, typed: String, ngramContext: NgramContext,
                                         isPrediction: Boolean, insertIndex: Int, forcedScript: Int?) {
+        if (Settings.getValues()?.mHonorificSuggestions == false) return
         val shortcuts = Honorifics.get(Settings.getCurrentContext()) ?: return
         val prev = if (ngramContext.prevWordCount > 0 && !ngramContext.isBeginningOfSentenceContext)
             ngramContext.getNthPrevWord(1)?.toString()?.takeIf { it.isNotEmpty() } else null

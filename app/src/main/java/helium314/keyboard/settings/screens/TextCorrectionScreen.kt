@@ -23,6 +23,7 @@ import helium314.keyboard.latin.R
 import helium314.keyboard.latin.permissions.PermissionsUtil
 import helium314.keyboard.latin.settings.Defaults
 import helium314.keyboard.latin.settings.Settings
+import helium314.keyboard.latin.urdu.RomanScript
 import helium314.keyboard.latin.utils.JniUtils
 import helium314.keyboard.latin.utils.Log
 import helium314.keyboard.latin.utils.ToolbarMode
@@ -87,6 +88,9 @@ fun TextCorrectionScreen(
         Settings.PREF_KEY_USE_PERSONALIZED_DICTS,
         Settings.PREF_BIGRAM_PREDICTIONS,
         Settings.PREF_LIVE_TRANSLITERATION,
+        Settings.PREF_HONORIFIC_SUGGESTIONS,
+        Settings.PREF_LEARN_ROMAN_TYPING,
+        SettingsWithoutKey.CLEAR_LEARNED,
         Settings.PREF_SUGGEST_PUNCTUATION,
         if (prefs.getBoolean(Settings.PREF_SUGGEST_PUNCTUATION, Defaults.PREF_SUGGEST_PUNCTUATION))
             Settings.PREF_PUNCTUATION_SUGGESTIONS else null,
@@ -229,6 +233,27 @@ fun createCorrectionSettings(context: Context) = listOf(
         R.string.live_transliteration_title, R.string.live_transliteration_summary
     ) {
         SwitchPreference(it, Defaults.PREF_LIVE_TRANSLITERATION)
+    },
+    Setting(context, Settings.PREF_LEARN_ROMAN_TYPING,
+        R.string.learn_roman_typing_title, R.string.learn_roman_typing_summary
+    ) {
+        SwitchPreference(it, Defaults.PREF_LEARN_ROMAN_TYPING)
+    },
+    Setting(context, SettingsWithoutKey.CLEAR_LEARNED, R.string.clear_learned_words_title, R.string.clear_learned_words_summary) {
+        var show by rememberSaveable { mutableStateOf(false) }
+        val ctx = LocalContext.current
+        Preference(name = it.title, description = it.description, onClick = { show = true })
+        if (show) ConfirmationDialog(
+            onDismissRequest = { show = false },
+            onConfirmed = { RomanScript.clearAllLearned(ctx) },
+            title = { Text(stringResource(R.string.clear_learned_words_title)) },
+            content = { Text(stringResource(R.string.clear_learned_words_confirm)) },
+        )
+    },
+    Setting(context, Settings.PREF_HONORIFIC_SUGGESTIONS,
+        R.string.honorific_suggestions_title, R.string.honorific_suggestions_summary
+    ) {
+        SwitchPreference(it, Defaults.PREF_HONORIFIC_SUGGESTIONS)
     },
     Setting(context, Settings.PREF_SUGGEST_PUNCTUATION, R.string.suggest_punctuation, R.string.suggest_punctuation_summary
     ) {

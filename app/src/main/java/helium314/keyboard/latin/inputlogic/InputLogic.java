@@ -1880,6 +1880,40 @@ public final class InputLogic {
                 timeStampInSeconds, settingsValues.mBlockPotentiallyOffensive);
     }
 
+    // the last word learned by learnRomanScriptWord, so that a revert right after the commit can take it back
+    private RomanScript mLastLearnScript;
+    private String mLastLearnWord, mLastLearnRoman, mLastLearnPrev;
+    private float mLastLearnWeight;
+
+    /**
+     * On-device learning for Roman Urdu / Arabic: counts the committed word, the word pair and the Roman spelling that was typed.
+     * Same conditions as the user history (no incognito, no fields without suggestions); a few map updates, saved later in the background.
+     */
+    private void learnRomanScriptWord(final SettingsValues settingsValues, final String word,
+            @NonNull final NgramContext ngramContext, final int commitType) {
+        mLastLearnScript = null;
+        if (!settingsValues.mLearnRomanTyping || settingsValues.mIncognitoModeEnabled
+                || !settingsValues.needsToLookupSuggestions() || mConnection.hasSlowInputConnection()) return;
+        final RomanScript script = RomanScript.Companion.of(getDictionaryFacilitatorLocale());
+        if (script == null || word == null) return;
+        boolean hasLetter = false;
+        for (int i = 0; i < word.length(); i++) if (Character.isLetter(word.charAt(i))) { hasLetter = true; break; }
+        if (!hasLetter) return;
+        String prev = null;
+        if (ngramContext.getPrevWordCount() > 0 && !ngramContext.isBeginningOfSentenceContext()) {
+            final CharSequence p = ngramContext.getNthPrevWord(1);
+            if (p != null) {
+                final String t = p.toString().replaceAll("[\u200e\u200f\u061c]", "").trim();
+                prev = t.substring(t.lastIndexOf(' ') + 1);
+                if (prev.isEmpty()) prev = null;
+            }
+        }
+        final String roman = mWordComposer.isComposingWord() ? mWordComposer.getTypedWord() : "";
+        final float weight = commitType == LastComposedWord.COMMIT_TYPE_MANUAL_PICK ? 2f : 1f;
+        script.learn(roman, word, prev, weight);
+        mLastLearnScript = script; mLastLearnWord = word; mLastLearnRoman = roman; mLastLearnPrev = prev; mLastLearnWeight = weight;
+    }
+
     private void addToHistoryIfEmoji(final String text, final SettingsValues settingsValues) {
         if (mLastComposedWord == LastComposedWord.NOT_A_COMPOSED_WORD // we want a last composed word, also to avoid storing consecutive emojis
             || mWordComposer.isComposingWord() // emoji will be part of the word in this case, better do nothing
@@ -2214,6 +2248,10 @@ public final class InputLogic {
         mConnection.deleteTextBeforeCursor(deleteLength);
         if (!TextUtils.isEmpty(committedWord)) {
             unlearnWord(committedWordString, inputTransaction.getSettingsValues(), DictionaryFacilitator.UnlearnEvent.REVERT);
+            if (mLastLearnScript != null && committedWordString.equals(mLastLearnWord)) {
+                mLastLearnScript.unlearn(mLastLearnRoman, mLastLearnWord, mLastLearnPrev, mLastLearnWeight);
+                mLastLearnScript = null;
+            }
         }
         final String stringToCommit = originallyTypedWord +
                 (usePhantomSpace ? "" : separatorString);
@@ -2757,6 +2795,7 @@ public final class InputLogic {
         }
         // Add the word to the user history dictionary
         performAdditionToUserHistoryDictionary(settingsValues, chosenWord, ngramContext);
+        learnRomanScriptWord(settingsValues, chosenWord, ngramContext, commitType);
         if (DebugFlags.DEBUG_ENABLED) {
             long runTimeMillis = SystemClock.elapsedRealtime() - startTimeMillis;
             Log.d(TAG, "commitChosenWord() : " + runTimeMillis + " ms to run "

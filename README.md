@@ -28,6 +28,9 @@ word replaces it as the decoder settles, and space commits what you see. The sug
 - **Swipe typing, offline.** Glide across the letters in English, Roman Urdu or Roman Arabic. Decoding uses [FUTO Swipe](https://github.com/futo-org/swipe-library)
   on the device. Settings → Gesture typing lets you pick the engine, and has a diagnostics page to share if swiping misbehaves.
   With swipe typing switched off, none of its engines or word lists are loaded, and anything loaded earlier is released.
+- **Learns from you, on the device.** Roman Urdu and Roman Arabic remember the words you commit, which word follows which, and the spellings you
+  use. Only the final word you commit (space, punctuation or tapping a suggestion) counts, never keystrokes, and a backspace right after an auto-commit
+  takes it back. Nothing is learned in password fields or incognito. Turn it off or clear it in Settings → Text correction.
 - **Fast typing.** Suggestions are computed off the UI thread, so keys never wait for the decoder.
 - **Contextual emoji suggestions.** Bundled keywords suggest relevant emoji in English, Urdu, and Arabic, including Roman Urdu and Roman Arabic input. Suggestions work offline.
 
@@ -97,11 +100,11 @@ Back that key up and never commit it: updates must be signed with the same key.
 - [x] Offline swipe typing (FUTO Swipe) for English, Roman Urdu and Roman Arabic (0.4.x)
 - [x] Swipe engines fully unloaded when swipe typing is off (0.4.3)
 - [ ] Swipe quality: double-letter words (`hello`), less common Arabic words, a user-dictionary trie
-- [ ] Learning from your typing (next-word habits) for Urdu and Arabic
+- [x] Learning from your typing (words, word pairs, spellings) for Urdu and Arabic, on the device only
 - [ ] Better casual-chat accuracy (conversational training data, optional on-device learning)
 - [ ] More verb forms (past, continuous, imperative) and slang
 - [ ] Native digits in number/phone fields
-- [ ] Settings toggle for the honorific suggestions
+- [x] Settings toggle for the honorific suggestions
 - [ ] Offline-first GIF search (the only feature that would ever need the internet)
 
 ## License and credits

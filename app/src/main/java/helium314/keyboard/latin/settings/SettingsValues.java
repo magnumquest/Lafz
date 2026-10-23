@@ -109,6 +109,8 @@ public class SettingsValues {
     public final boolean mBigramPredictionEnabled;// Use bigrams to predict the next word when there is no input for it yet
     // Urdu / Arabic: show the native script in the text field while the Roman word is being typed
     public final boolean mLiveTransliteration;
+    public final boolean mHonorificSuggestions;
+    public final boolean mLearnRomanTyping;
     public final boolean mSuggestPunctuation;
     public final boolean mCenterSuggestionTextToEnter;
     public final boolean mGestureInputEnabled;
@@ -244,6 +246,8 @@ public class SettingsValues {
         mBackspaceRevertsAutocorrect = prefs.getBoolean(Settings.PREF_BACKSPACE_REVERTS_AUTOCORRECT, Defaults.PREF_BACKSPACE_REVERTS_AUTOCORRECT);
         mBigramPredictionEnabled = prefs.getBoolean(Settings.PREF_BIGRAM_PREDICTIONS, Defaults.PREF_BIGRAM_PREDICTIONS);
         mLiveTransliteration = prefs.getBoolean(Settings.PREF_LIVE_TRANSLITERATION, Defaults.PREF_LIVE_TRANSLITERATION);
+        mHonorificSuggestions = prefs.getBoolean(Settings.PREF_HONORIFIC_SUGGESTIONS, Defaults.PREF_HONORIFIC_SUGGESTIONS);
+        mLearnRomanTyping = prefs.getBoolean(Settings.PREF_LEARN_ROMAN_TYPING, Defaults.PREF_LEARN_ROMAN_TYPING);
         mSuggestPunctuation = prefs.getBoolean(Settings.PREF_SUGGEST_PUNCTUATION, Defaults.PREF_SUGGEST_PUNCTUATION);
         mSuggestClipboardContent = prefs.getBoolean(Settings.PREF_SUGGEST_CLIPBOARD_CONTENT, Defaults.PREF_SUGGEST_CLIPBOARD_CONTENT);
         mDoubleSpacePeriodTimeout = 1100; // ms

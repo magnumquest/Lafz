@@ -3,7 +3,11 @@ package helium314.keyboard.latin.urdu
 
 import android.content.Context
 import helium314.keyboard.latin.utils.Log
+import java.io.File
 import java.util.Locale
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 
 /**
@@ -19,14 +23,76 @@ enum class RomanScript(val languageTag: String, private val modelAsset: String, 
     @Volatile private var engine: RomanTransliterator? = null
     @Volatile private var loading = false
 
+    /** what the owner's typing taught the keyboard; null until loaded (learning is skipped, never waited for, before that) */
+    @Volatile var personal: PersonalModel? = null
+        private set
+    private var saveTask: ScheduledFuture<*>? = null
+    @Volatile private var appContext: Context? = null
+
+    private fun learnedFile(context: Context) = File(context.filesDir, "learned_$languageTag.bin")
+
+    private fun loadPersonal(context: Context) {
+        val f = learnedFile(context)
+        personal = try {
+            if (f.exists()) f.inputStream().buffered().use { PersonalModel.load(it) } else PersonalModel()
+        } catch (e: Exception) {
+            Log.e("RomanScript", "could not load learned words", e)
+            PersonalModel()
+        }
+    }
+
+    fun learn(roman: String, word: String, prev: String?, weight: Float) {
+        val pm = personal ?: return
+        pm.learn(roman, word, prev, weight)
+        scheduleSave()
+    }
+
+    fun unlearn(roman: String, word: String, prev: String?, weight: Float) {
+        val pm = personal ?: return
+        pm.unlearn(roman, word, prev, weight)
+        scheduleSave()
+    }
+
+    /** saves 10 s after the last change, on a background thread */
+    private fun scheduleSave() {
+        synchronized(SAVER) {
+            saveTask?.cancel(false)
+            saveTask = SAVER.schedule({ saveNow() }, 10, TimeUnit.SECONDS)
+        }
+    }
+
+    fun saveNow() {
+        val pm = personal ?: return
+        val context = appContext ?: return
+        if (!pm.isDirty) return
+        try {
+            val f = learnedFile(context)
+            val tmp = File(f.parentFile, f.name + ".tmp")
+            tmp.outputStream().buffered().use { pm.save(it) }
+            if (!tmp.renameTo(f)) { f.delete(); tmp.renameTo(f) }
+        } catch (e: Exception) {
+            Log.e("RomanScript", "could not save learned words", e)
+        }
+    }
+
+    /** forgets everything learned in this language, also on disk */
+    fun clearLearned(context: Context) {
+        appContext = context.applicationContext
+        if (personal == null) loadPersonal(context.applicationContext)
+        personal?.clear()
+        SAVER.execute { saveNow() }
+    }
+
     /** returns the engine if loaded, otherwise starts loading it in the background and returns null */
     fun engine(context: Context?): RomanTransliterator? {
         engine?.let { return it }
         if (context == null || loading) return null
         loading = true
         val appContext = context.applicationContext
+        this.appContext = appContext
         thread(name = "translit-model-load-$languageTag") {
             try {
+                if (personal == null) loadPersonal(appContext)
                 engine = appContext.assets.open(modelAsset).use { RomanTransliterator.load(it) }
             } catch (e: Exception) {
                 Log.e("RomanScript", "could not load $modelAsset", e)
@@ -46,6 +112,15 @@ enum class RomanScript(val languageTag: String, private val modelAsset: String, 
     }
 
     companion object {
+        private val SAVER = Executors.newSingleThreadScheduledExecutor { r -> Thread(r, "lafz-learn-save").apply { isDaemon = true } }
+
+        /** writes pending learned words now (keyboard hidden) */
+        @JvmStatic
+        fun saveAllLearned() { values().forEach { s -> SAVER.execute { s.saveNow() } } }
+
+        @JvmStatic
+        fun clearAllLearned(context: Context) { values().forEach { it.clearLearned(context) } }
+
         @JvmStatic
         fun of(locale: Locale?): RomanScript? {
             if (locale == null) return null

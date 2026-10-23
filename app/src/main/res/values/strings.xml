@@ -169,6 +169,14 @@
     <!-- Option to enable using next word suggestions. After the user types a space, with this option on, the keyboard will try to predict the next word. -->
     <string name="bigram_prediction">Next-word suggestions</string>
     <!-- Title for the switch that shows Urdu or Arabic script in the text field while Roman letters are typed. -->
+    <string name="learn_roman_typing_title">Learn from my typing</string>
+    <string name="learn_roman_typing_summary">In Roman Urdu and Roman Arabic, remember the words, word pairs and spellings you use. Stays on this device</string>
+    <string name="clear_learned_words_title">Clear learned words</string>
+    <string name="clear_learned_words_summary">Forget what Roman Urdu and Roman Arabic learned from your typing</string>
+    <string name="clear_learned_words_confirm">Delete everything learned from your typing in Roman Urdu and Roman Arabic?</string>
+    <string name="honorific_suggestions_title">Religious honorific suggestions</string>
+    <!-- Summary for "honorific_suggestions_title". -->
+    <string name="honorific_suggestions_summary">Suggest honorifics and terms such as Rasulullah ﷺ, Umar Radiallahu Anhu, inshallah</string>
     <string name="live_transliteration_title">Live transliteration while typing</string>
     <!-- Summary for "live_transliteration_title": Urdu / Arabic layouts. -->
     <string name="live_transliteration_summary">In the Urdu and Arabic layouts, show the native script in the text while you type Roman letters</string>
