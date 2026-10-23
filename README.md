@@ -110,6 +110,7 @@ Back that key up and never commit it: updates must be signed with the same key.
 - [ ] Native digits in number/phone fields
 - [x] Settings toggle for the honorific suggestions
 - [x] Smart clipboard (codes and numbers as chips), contacts in Roman Urdu/Arabic, backup of learned words (0.5.0)
+- [x] Offline on-device learning for every language with backup and restore (0.5.0): Roman Urdu and Roman Arabic use Lafz's own learning model (export/import file, plus part of the full backup); all other languages learn through the user history dictionary, which the full backup also covers
 - [ ] Voice typing: research done (`docs/research/voice-typing.md`); Urdu accuracy of small offline models still to be measured
 - [ ] Clipboard history search and filters
 - [ ] Offline-first GIF search (the only feature that would ever need the internet)
