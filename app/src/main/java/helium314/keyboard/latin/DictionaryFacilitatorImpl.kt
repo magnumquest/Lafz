@@ -516,6 +516,22 @@ class DictionaryFacilitatorImpl : DictionaryFacilitator {
         return suggestionResults
     }
 
+    override fun getContactSuggestions(
+        composedData: ComposedData, ngramContext: NgramContext, keyboard: Keyboard,
+        settingsValuesForSuggestion: SettingsValuesForSuggestion, sessionId: Int
+    ): List<SuggestedWordInfo> {
+        val result = ArrayList<SuggestedWordInfo>()
+        val proximityInfoHandle = keyboard.proximityInfo.nativeProximityInfo
+        val weightOfLangModelVsSpatialModel = floatArrayOf(Dictionary.NOT_A_WEIGHT_OF_LANG_MODEL_VS_SPATIAL_MODEL)
+        for (group in dictionaryGroups) {
+            val dict = group.getSubDict(Dictionary.TYPE_CONTACTS) ?: continue
+            val found = dict.getSuggestions(composedData, ngramContext, proximityInfoHandle, settingsValuesForSuggestion,
+                sessionId, group.getWeightForLocale(dictionaryGroups, false), weightOfLangModelVsSpatialModel) ?: continue
+            for (info in found) if (!isBlacklisted(info.word) && result.none { it.mWord == info.mWord }) result.add(info)
+        }
+        return result
+    }
+
     private fun getSuggestions(
         composedData: ComposedData, ngramContext: NgramContext,
         settingsValuesForSuggestion: SettingsValuesForSuggestion, sessionId: Int,

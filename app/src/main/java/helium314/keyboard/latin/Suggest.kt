@@ -90,7 +90,7 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
                       isCorrectionEnabled: Boolean, sequenceNumber: Int): SuggestedWords {
         val typedWordString = wordComposer.typedWord
         RomanScript.of(mDictionaryFacilitator.mainLocale)?.let { script ->
-            getRomanScriptSuggestions(script, wordComposer, ngramContext, inputStyleIfNotPrediction, sequenceNumber)?.let { return it }
+            getRomanScriptSuggestions(script, wordComposer, ngramContext, inputStyleIfNotPrediction, sequenceNumber, keyboard, settingsValuesForSuggestion)?.let { return it }
         }
         val resultsArePredictions = !wordComposer.isComposingWord
         val suggestionResults = if (typedWordString.isEmpty())
@@ -184,7 +184,8 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
      * Returns null if the model is not loaded yet, in which case regular suggestions are used.
      */
     private fun getRomanScriptSuggestions(script: RomanScript, wordComposer: WordComposer, ngramContext: NgramContext,
-                                          inputStyleIfNotPrediction: Int, sequenceNumber: Int): SuggestedWords? {
+                                          inputStyleIfNotPrediction: Int, sequenceNumber: Int, keyboard: Keyboard,
+                                          settingsValuesForSuggestion: SettingsValuesForSuggestion): SuggestedWords? {
         val engine = script.engine(Settings.getCurrentContext()) ?: return null
         engine.personal = if (Settings.getValues()?.mLearnRomanTyping == true) script.personal else null
         val typed = wordComposer.typedWord
@@ -232,6 +233,7 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
         val romanChoice = SuggestedWordInfo(typed, "", 500, SuggestedWordInfo.KIND_CORRECTION, source,
             SuggestedWordInfo.NOT_AN_INDEX, SuggestedWordInfo.NOT_A_CONFIDENCE)
         list.add(3.coerceAtMost(list.size), romanChoice)
+        addContactSuggestions(list, wordComposer, ngramContext, keyboard, settingsValuesForSuggestion, typed)
         addContextEmoji(list, typed, ngramContext, false, 2)
         return SuggestedWords(list, null, typedInfo, false, willAutoCorrect, false, inputStyleIfNotPrediction, sequenceNumber)
     }
@@ -257,6 +259,23 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
                 SuggestedWordInfo.KIND_PREDICTION, emojiSource,
                 SuggestedWordInfo.NOT_AN_INDEX, SuggestedWordInfo.NOT_A_CONFIDENCE))
             if (list.none { it.mWord == info.mWord }) list.add(index++, info)
+        }
+    }
+
+    /**
+     * Roman Urdu / Arabic skip the regular dictionaries, so names from the phone's contacts (a Latin word such as "Ahmed") are looked up here
+     * and offered as plain choices behind the Roman spelling; never auto-committed. Only when the contacts dictionary is on (setting + permission).
+     */
+    private fun addContactSuggestions(list: ArrayList<SuggestedWordInfo>, wordComposer: WordComposer, ngramContext: NgramContext,
+                                      keyboard: Keyboard, settingsValuesForSuggestion: SettingsValuesForSuggestion, typed: String) {
+        if (typed.length < 2) return
+        val contacts = mDictionaryFacilitator.getContactSuggestions(wordComposer.composedDataSnapshot, ngramContext, keyboard,
+            settingsValuesForSuggestion, SESSION_ID_TYPING)
+        var index = 4.coerceAtMost(list.size)
+        for (c in contacts.take(2)) {
+            if (list.any { it.mWord == c.mWord }) continue
+            list.add(index++, SuggestedWordInfo(c.mWord, "", 600, SuggestedWordInfo.KIND_COMPLETION, c.mSourceDict,
+                SuggestedWordInfo.NOT_AN_INDEX, SuggestedWordInfo.NOT_A_CONFIDENCE))
         }
     }
 

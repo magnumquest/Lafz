@@ -138,6 +138,13 @@ public interface DictionaryFacilitator {
             final SettingsValuesForSuggestion settingsValuesForSuggestion, final int sessionId,
             final int inputStyle);
 
+    /** contact names (Latin script) matching the typed text, empty if the contacts dictionary is off; used by the Roman Urdu / Arabic keyboards, which skip the other dictionaries */
+    @NonNull default java.util.List<SuggestedWords.SuggestedWordInfo> getContactSuggestions(final ComposedData composedData,
+            final NgramContext ngramContext, @NonNull final Keyboard keyboard,
+            final SettingsValuesForSuggestion settingsValuesForSuggestion, final int sessionId) {
+        return java.util.Collections.emptyList();
+    }
+
     boolean isValidSpellingWord(final String word);
 
     boolean isValidSuggestionWord(final String word);

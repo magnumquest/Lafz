@@ -88,8 +88,9 @@ object Defaults {
     @JvmField
     val PREF_SPLIT_SPACER_SCALE = Array(4) { DEFAULT_SIZE_SCALE }
     @JvmField
-    // Lafz: portrait (normal and folded) defaults to ~Gboard key height, landscape unchanged. Index bit 0 = landscape.
-    val PREF_KEYBOARD_HEIGHT_SCALE = arrayOf(0.85f, DEFAULT_SIZE_SCALE, 0.85f, DEFAULT_SIZE_SCALE)
+    // Lafz: portrait (normal and folded) matches Gboard's row pitch, measured side by side on the emulator (1080x2400, 420 dpi: Gboard 154 px per row, 0.96 gives 156 px);
+    // landscape unchanged. Index bit 0 = landscape.
+    val PREF_KEYBOARD_HEIGHT_SCALE = arrayOf(0.96f, DEFAULT_SIZE_SCALE, 0.96f, DEFAULT_SIZE_SCALE)
     @JvmField
     val PREF_BOTTOM_ROW_SCALE = Array(4) { DEFAULT_SIZE_SCALE }
     @JvmField
@@ -98,7 +99,7 @@ object Defaults {
     @JvmField
     val PREF_SIDE_PADDING_SCALE = Array(8) { 0f }
     @JvmField
-    val PREF_KEY_GAP_SCALE = Array(4) { DEFAULT_SIZE_SCALE }
+    val PREF_KEY_GAP_SCALE = arrayOf(1.2f, DEFAULT_SIZE_SCALE, 1.2f, DEFAULT_SIZE_SCALE) // Lafz: Gboard has ~20 % more room between keys in portrait
     const val PREF_FONT_SCALE = 0.9f // Lafz: slightly smaller key labels, like Gboard
     const val PREF_HINT_FONT_SCALE = DEFAULT_SIZE_SCALE
     const val PREF_EMOJI_FONT_SCALE = DEFAULT_SIZE_SCALE
@@ -153,7 +154,7 @@ object Defaults {
     const val PREF_LOCALIZED_NUMBER_ROW = true
     const val PREF_SHOW_NUMBER_ROW_HINTS = false
     const val PREF_CUSTOM_CURRENCY_KEY = ""
-    const val PREF_SHOW_HINTS = true
+    const val PREF_SHOW_HINTS = false // Lafz: no key hint characters, like Gboard (long-press still works)
     const val PREF_POPUP_KEYS_ORDER = POPUP_KEYS_ORDER_DEFAULT
     const val PREF_POPUP_KEYS_HINT_ORDER = POPUP_KEYS_LABEL_DEFAULT
     const val PREF_SHOW_POPUP_HINTS = false
