@@ -272,7 +272,8 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
         val contacts = mDictionaryFacilitator.getContactSuggestions(wordComposer.composedDataSnapshot, ngramContext, keyboard,
             settingsValuesForSuggestion, SESSION_ID_TYPING)
         var index = 4.coerceAtMost(list.size)
-        for (c in contacts.take(2)) {
+        // the contacts dictionary also returns typo-tolerant matches ("rasul" -> "Hashmi"): only names that start with what was typed
+        for (c in contacts.filter { it.mWord.startsWith(typed, ignoreCase = true) }.take(2)) {
             if (list.any { it.mWord == c.mWord }) continue
             list.add(index++, SuggestedWordInfo(c.mWord, "", 600, SuggestedWordInfo.KIND_COMPLETION, c.mSourceDict,
                 SuggestedWordInfo.NOT_AN_INDEX, SuggestedWordInfo.NOT_A_CONFIDENCE))
