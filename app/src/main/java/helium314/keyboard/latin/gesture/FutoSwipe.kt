@@ -108,6 +108,37 @@ object FutoSwipe {
         }
     }
 
+    /**
+     * Swipe typing was switched off: free the native engines, word lists and decoder state so the plain keyboard carries
+     * nothing from swipe. Runs on the loader thread (after any load still in progress). A cheap no-op when nothing is loaded,
+     * which is the normal case on every keyboard start.
+     */
+    fun release() {
+        synchronized(stateLock) {
+            if (readyLanguages.isEmpty() && loading.isEmpty()) return
+        }
+        loader.execute {
+            synchronized(lock) {
+                try {
+                    english?.close()
+                    roman?.close()
+                    tries.values.forEach { SwipeDecoder.nativeFreeTrie(it) }
+                } catch (e: Throwable) {
+                    SwipeDiagnostics.logError("releasing the swipe engines failed", e)
+                }
+                english = null
+                roman = null
+                tries.clear()
+                englishLayout = 0L
+                romanLayout = 0L
+                romanKey = null
+                apostrophes = emptyMap()
+                synchronized(stateLock) { readyLanguages = emptySet() }
+            }
+            SwipeDiagnostics.log("swipe typing off: engines released")
+        }
+    }
+
     /** Best candidates for the swipe, or null when this engine cannot be used for it right now (not loaded, failed). */
     fun recognize(keyboard: Keyboard, pointers: InputPointers, request: Request, limit: Int): List<String>? {
         val waitStart = System.nanoTime()

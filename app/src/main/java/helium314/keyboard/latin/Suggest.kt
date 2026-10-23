@@ -53,7 +53,7 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
     private var mAutoCorrectionThreshold = 0f
     private val mPlausibilityThreshold = 0f
     private val nextWordSuggestionsCache = HashMap<NgramContext, SuggestionResults>()
-    private val swipeWords = HashMap<RomanScript, Map<String, Int>>()
+    private val swipeWords = java.util.concurrent.ConcurrentHashMap<RomanScript, Map<String, Int>>()
 
     // cache cleared whenever LatinIME.loadSettings is called, notably on changing layout and switching input fields
     fun clearNextWordSuggestionsCache() = nextWordSuggestionsCache.clear()
@@ -576,6 +576,13 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
             false, ""), ngramContext, keyboard, settingsValuesForSuggestion, SESSION_ID_TYPING, inputStyle)
         nextWordSuggestionsCache[ngramContext] = newResults
         return newResults
+    }
+
+    /** Swipe typing is off: let go of everything the swipe engines hold (no-op when nothing was loaded). */
+    fun releaseSwipeEngine() {
+        swipeWords.clear()
+        FutoSwipe.release()
+        SwipeDecoder.releaseWords()
     }
 
     companion object {

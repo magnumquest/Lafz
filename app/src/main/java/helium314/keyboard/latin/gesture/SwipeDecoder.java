@@ -103,6 +103,14 @@ public final class SwipeDecoder {
 
     private static volatile boolean englishLoading;
 
+    /** Drops the cached word lists and layout index (swipe typing switched off). */
+    public static synchronized void releaseWords() {
+        englishWords = null;
+        cachedIndex = null;
+        cachedWords = null;
+        cachedLayoutSignature = 0;
+    }
+
     public static boolean englishWordsLoaded() {
         return englishWords != null;
     }
