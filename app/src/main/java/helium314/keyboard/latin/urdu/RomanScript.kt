@@ -8,6 +8,9 @@ import java.util.Locale
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
+import java.util.zip.ZipEntry
+import java.util.zip.ZipInputStream
+import java.util.zip.ZipOutputStream
 import kotlin.concurrent.thread
 
 /**
@@ -75,6 +78,22 @@ enum class RomanScript(val languageTag: String, private val modelAsset: String, 
         }
     }
 
+    /** reads the learned words from disk again, e.g. after a backup was restored (anything not saved yet is dropped) */
+    fun reloadLearned(context: Context) {
+        appContext = context.applicationContext
+        synchronized(SAVER) { saveTask?.cancel(false) }
+        loadPersonal(context.applicationContext)
+    }
+
+    /** writes this language's learned words as a zip entry, see [exportLearned] */
+    private fun writeLearnedTo(zip: ZipOutputStream, context: Context) {
+        appContext = context.applicationContext
+        if (personal == null) loadPersonal(context.applicationContext)
+        zip.putNextEntry(ZipEntry("learned_$languageTag.bin"))
+        personal?.save(zip)
+        zip.closeEntry()
+    }
+
     /** forgets everything learned in this language, also on disk */
     fun clearLearned(context: Context) {
         appContext = context.applicationContext
@@ -113,6 +132,39 @@ enum class RomanScript(val languageTag: String, private val modelAsset: String, 
 
     companion object {
         private val SAVER = Executors.newSingleThreadScheduledExecutor { r -> Thread(r, "lafz-learn-save").apply { isDaemon = true } }
+
+        /** all learned words in one zip (one entry per language); run on a background thread */
+        @JvmStatic
+        fun exportLearned(context: Context, out: java.io.OutputStream) {
+            ZipOutputStream(out).use { zip -> values().forEach { it.writeLearnedTo(zip, context) } }
+        }
+
+        /** merges a zip written by [exportLearned] into what is learned here (counts are added); returns the number of words found, run on a background thread */
+        @JvmStatic
+        fun importLearned(context: Context, input: java.io.InputStream): Int {
+            var found = 0
+            ZipInputStream(input).use { zip ->
+                var entry = zip.nextEntry
+                while (entry != null) {
+                    val script = values().firstOrNull { "learned_${it.languageTag}.bin" == entry!!.name }
+                    if (script != null) {
+                        script.appContext = context.applicationContext
+                        if (script.personal == null) script.loadPersonal(context.applicationContext)
+                        val incoming = PersonalModel.load(java.io.BufferedInputStream(zip))
+                        found += incoming.wordCount()
+                        script.personal?.merge(incoming)
+                        script.scheduleSave()
+                    }
+                    zip.closeEntry()
+                    entry = zip.nextEntry
+                }
+            }
+            return found
+        }
+
+        /** after a restore: the files on disk are the truth */
+        @JvmStatic
+        fun reloadAllLearned(context: Context) { values().forEach { it.reloadLearned(context) } }
 
         /** writes pending learned words now (keyboard hidden) */
         @JvmStatic

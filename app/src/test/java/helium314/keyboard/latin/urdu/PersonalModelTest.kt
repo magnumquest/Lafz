@@ -110,3 +110,24 @@ class PersonalModelTest {
         } finally { engine.personal = null }
     }
 }
+
+class PersonalModelMergeTest {
+    @Test fun mergeAddsCountsAndKeepsExisting() {
+        val a = PersonalModel(); val b = PersonalModel()
+        a.learn("kl", "کل", "میں", 1f); a.learn("x", "ایکس", null, 1f)
+        b.learn("kl", "کل", "میں", 1f); b.learn("y", "وائی", null, 2f)
+        val before = a.bonus("میں", "کل", "kl")
+        a.merge(b)
+        assertTrue(a.bonus("میں", "کل", "kl") > before)          // counts added
+        assertTrue(a.bonus(null, "ایکس", "x") > 0 || a.bonus(null, "ایکس", null) > 0) // own word kept
+        assertTrue(a.bonus(null, "وائی", null) > 0)               // imported word present
+        a.merge(a)                                                 // self merge is a no-op, no deadlock
+    }
+
+    @Test fun exportedBytesLoadBack() {
+        val a = PersonalModel(); a.learn("kl", "کل", null, 2f)
+        val out = ByteArrayOutputStream(); a.save(out)
+        val b = PersonalModel(); b.merge(PersonalModel.load(ByteArrayInputStream(out.toByteArray())))
+        assertEquals(a.bonus(null, "کل", "kl"), b.bonus(null, "کل", "kl"))
+    }
+}

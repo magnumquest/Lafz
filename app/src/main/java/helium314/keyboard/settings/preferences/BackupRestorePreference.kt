@@ -22,6 +22,7 @@ import helium314.keyboard.latin.R
 import helium314.keyboard.latin.common.FileUtils
 import helium314.keyboard.latin.database.Database
 import helium314.keyboard.latin.settings.Settings
+import helium314.keyboard.latin.urdu.RomanScript
 import helium314.keyboard.latin.utils.DeviceProtectedUtils
 import helium314.keyboard.latin.utils.ExecutorUtils
 import helium314.keyboard.latin.utils.LayoutUtilsCustom
@@ -269,6 +270,7 @@ private fun restoreLauncher(onError: (String) -> Unit): ManagedActivityResultLau
         wait.await()
         checkVersionUpgrade(ctx)
         transferOldPinnedClips(ctx)
+        RomanScript.reloadAllLearned(ctx)
         Settings.getInstance().startListener()
         SubtypeSettings.reloadEnabledSubtypes(ctx)
         val newDictBroadcast = Intent(DictionaryPackConstants.NEW_DICTIONARY_INTENT_ACTION)
@@ -348,4 +350,5 @@ private val backupFilePatterns by lazy { listOf(
     "custom_font".toRegex(),
     "custom_emoji_font".toRegex(),
     "clipboard/.*".toRegex(),
+    "learned_.*\\.bin".toRegex(), // words learned in Roman Urdu / Arabic
 ) }

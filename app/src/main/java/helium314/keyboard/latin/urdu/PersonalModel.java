@@ -131,6 +131,32 @@ public final class PersonalModel {
         return out.size() > max ? new ArrayList<>(out.subList(0, max)) : out;
     }
 
+    /** adds everything [other] has learned (counts are summed); used when words are imported from another device */
+    public void merge(PersonalModel other) {
+        if (other == this) return;
+        final HashMap<String, Float> w2;
+        final HashMap<String, HashMap<String, Float>> p2, s2;
+        synchronized (other) {   // snapshot first: never hold both locks
+            w2 = new HashMap<>(other.words);
+            p2 = deepCopy(other.pairs);
+            s2 = deepCopy(other.spellings);
+        }
+        synchronized (this) {
+            for (Map.Entry<String, Float> e : w2.entrySet()) add(words, e.getKey(), e.getValue());
+            for (Map.Entry<String, HashMap<String, Float>> e : p2.entrySet())
+                for (Map.Entry<String, Float> f : e.getValue().entrySet()) addNested(pairs, e.getKey(), f.getKey(), f.getValue());
+            for (Map.Entry<String, HashMap<String, Float>> e : s2.entrySet())
+                for (Map.Entry<String, Float> f : e.getValue().entrySet()) addNested(spellings, e.getKey(), f.getKey(), f.getValue());
+            dirty = true;
+        }
+    }
+
+    private static HashMap<String, HashMap<String, Float>> deepCopy(HashMap<String, HashMap<String, Float>> m) {
+        final HashMap<String, HashMap<String, Float>> c = new HashMap<>();
+        for (Map.Entry<String, HashMap<String, Float>> e : m.entrySet()) c.put(e.getKey(), new HashMap<>(e.getValue()));
+        return c;
+    }
+
     public synchronized boolean isEmpty() { return words.isEmpty(); }
     public synchronized int wordCount() { return words.size(); }
     public synchronized boolean isDirty() { return dirty; }

@@ -171,6 +171,13 @@
     <!-- Title for the switch that shows Urdu or Arabic script in the text field while Roman letters are typed. -->
     <string name="learn_roman_typing_title">Learn from my typing</string>
     <string name="learn_roman_typing_summary">In Roman Urdu and Roman Arabic, remember the words, word pairs and spellings you use. Stays on this device</string>
+    <string name="export_learned_words_title">Export learned words</string>
+    <string name="export_learned_words_summary">Save what Roman Urdu and Roman Arabic learned to a file, for a new phone or as a backup</string>
+    <string name="import_learned_words_title">Import learned words</string>
+    <string name="import_learned_words_summary">Add the words from such a file to what is learned here. Nothing already learned is lost</string>
+    <string name="learned_words_exported">Learned words saved</string>
+    <string name="learned_words_imported">Imported %1$d learned words</string>
+    <string name="learned_words_error">Learned words could not be processed: %1$s</string>
     <string name="clear_learned_words_title">Clear learned words</string>
     <string name="clear_learned_words_summary">Forget what Roman Urdu and Roman Arabic learned from your typing</string>
     <string name="clear_learned_words_confirm">Delete everything learned from your typing in Roman Urdu and Roman Arabic?</string>

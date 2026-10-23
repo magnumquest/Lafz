@@ -38,6 +38,8 @@ import helium314.keyboard.settings.SettingsWithoutKey
 import helium314.keyboard.latin.utils.Theme
 import helium314.keyboard.settings.dialogs.ConfirmationDialog
 import helium314.keyboard.settings.initPreview
+import helium314.keyboard.settings.preferences.ExportLearnedWordsPreference
+import helium314.keyboard.settings.preferences.ImportLearnedWordsPreference
 import helium314.keyboard.settings.preferences.Preference
 import helium314.keyboard.settings.preferences.SwitchPreference
 import helium314.keyboard.settings.preferences.SwitchPreferenceWithEmojiDictWarning
@@ -90,6 +92,8 @@ fun TextCorrectionScreen(
         Settings.PREF_LIVE_TRANSLITERATION,
         Settings.PREF_HONORIFIC_SUGGESTIONS,
         Settings.PREF_LEARN_ROMAN_TYPING,
+        SettingsWithoutKey.EXPORT_LEARNED,
+        SettingsWithoutKey.IMPORT_LEARNED,
         SettingsWithoutKey.CLEAR_LEARNED,
         Settings.PREF_SUGGEST_PUNCTUATION,
         if (prefs.getBoolean(Settings.PREF_SUGGEST_PUNCTUATION, Defaults.PREF_SUGGEST_PUNCTUATION))
@@ -238,6 +242,12 @@ fun createCorrectionSettings(context: Context) = listOf(
         R.string.learn_roman_typing_title, R.string.learn_roman_typing_summary
     ) {
         SwitchPreference(it, Defaults.PREF_LEARN_ROMAN_TYPING)
+    },
+    Setting(context, SettingsWithoutKey.EXPORT_LEARNED, R.string.export_learned_words_title, R.string.export_learned_words_summary) {
+        ExportLearnedWordsPreference(it)
+    },
+    Setting(context, SettingsWithoutKey.IMPORT_LEARNED, R.string.import_learned_words_title, R.string.import_learned_words_summary) {
+        ImportLearnedWordsPreference(it)
     },
     Setting(context, SettingsWithoutKey.CLEAR_LEARNED, R.string.clear_learned_words_title, R.string.clear_learned_words_summary) {
         var show by rememberSaveable { mutableStateOf(false) }

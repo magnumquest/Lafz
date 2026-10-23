@@ -75,6 +75,8 @@ object SettingsWithoutKey {
     const val HIDDEN_FEATURES = "hidden_features"
     const val FUTO_SWIPE = "futo_swipe"
     const val CLEAR_LEARNED = "clear_learned_words"
+    const val EXPORT_LEARNED = "export_learned_words"
+    const val IMPORT_LEARNED = "import_learned_words"
     const val SWIPE_DIAGNOSTICS = "swipe_diagnostics"
     const val GITHUB = "github"
     const val SAVE_LOG = "save_log"
