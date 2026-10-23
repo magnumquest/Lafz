@@ -9,7 +9,7 @@
   Type <code>mein kal aonga</code>, get <span dir="rtl">میں کل آؤں گا</span>.
 </p>
 
-<p align="center"><b>Latest: version 0.4.3.</b> Offline swipe typing for English, Roman Urdu and Roman Arabic, contextual emoji suggestions and a redesigned Settings screen. See the <a href="RELEASE_NOTES.md">release notes</a>.</p>
+<p align="center"><b>Latest: version 0.5.0.</b> Learns from your typing on the device, a smart clipboard for codes and numbers, contacts in Roman Urdu and Arabic, and backup of learned words. See the <a href="RELEASE_NOTES.md">release notes</a>.</p>
 
 ---
 
@@ -31,6 +31,10 @@ word replaces it as the decoder settles, and space commits what you see. The sug
 - **Learns from you, on the device.** Roman Urdu and Roman Arabic remember the words you commit, which word follows which, and the spellings you
   use. Only the final word you commit (space, punctuation or tapping a suggestion) counts, never keystrokes, and a backspace right after an auto-commit
   takes it back. Nothing is learned in password fields or incognito. Turn it off or clear it in Settings → Text correction.
+- **Smart clipboard.** Codes and numbers inside copied text (OTP and PIN codes, IBAN, card and account numbers) show up as separate chips above the keyboard and in the clipboard history; one tap pastes just that number.
+  An option keeps copied codes out of the history. Everything is a switch in Settings → Text correction.
+- **Contacts.** With "Use contacts" on, names from your contacts are suggested in the Roman Urdu and Roman Arabic layouts too.
+- **Back up what Lafz learned.** Export and import learned words in Settings → Text correction; they are also part of the full backup.
 - **Fast typing.** Suggestions are computed off the UI thread, so keys never wait for the decoder.
 - **Contextual emoji suggestions.** Bundled keywords suggest relevant emoji in English, Urdu, and Arabic, including Roman Urdu and Roman Arabic input. Suggestions work offline.
 
@@ -105,6 +109,9 @@ Back that key up and never commit it: updates must be signed with the same key.
 - [ ] More verb forms (past, continuous, imperative) and slang
 - [ ] Native digits in number/phone fields
 - [x] Settings toggle for the honorific suggestions
+- [x] Smart clipboard (codes and numbers as chips), contacts in Roman Urdu/Arabic, backup of learned words (0.5.0)
+- [ ] Voice typing: research done (`docs/research/voice-typing.md`); Urdu accuracy of small offline models still to be measured
+- [ ] Clipboard history search and filters
 - [ ] Offline-first GIF search (the only feature that would ever need the internet)
 
 ## License and credits
