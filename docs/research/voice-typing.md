@@ -30,7 +30,38 @@ Method: web search and model cards only, **no model has been run yet**. Everythi
 2. int8 size, RAM and seconds-per-sentence on the owner's phone (arm64) for each candidate.
 3. Licence check of the exact checkpoints before shipping (Moonshine upstream card, Phonon-2 CC-BY-4.0 attribution).
 
-## Recommended next step
+
+## Measured results (2026-10-23, desktop; Google FLEURS read speech, clean audio)
+Urdu = `ur_pk` test, 299 clips; Arabic = `ar_eg` test, first 150 clips. CER/WER after normalising punctuation, diacritics and letter variants. RTF = processing time / audio time.
+Scripts: `tools/voice-spike/`. **These are desktop numbers on clean read speech, not a phone and not chat-style speech: expect worse in noise.**
+
+| Language | Model | Params / file | CER | WER | Speed (desktop) | Licence |
+|---|---|---|---|---|---|---|
+| Urdu | **Whisper-small, Urdu fine-tune** (hamza-amin/whisper-small-urdu-v2, Common Voice 16.1) | 244M / ~465 MB fp16 | **9.9 %** | **26.3 %** | RTF 0.012 (GPU) | Apache-2.0 |
+| Urdu | Whisper-small, stock | 244M / ~465 MB | 16.3 % | 40.5 % | RTF 0.013 (GPU) | Apache-2.0 |
+| Urdu | Omnilingual-300M CTC + Devanagari->Roman + Lafz decoder | 1.3 GB fp32 | 21.5 % | 41.1 % | RTF 0.11 (CPU, 4 threads) | Apache-2.0 |
+| Urdu | same, int8 | 328 MB | 29.5 % | 47.6 % | RTF 0.22 (CPU) | Apache-2.0 |
+| Arabic | **Omnilingual-300M CTC, int8** | 328 MB | **4.9 %** | **16.9 %** | RTF 0.22 (CPU, 4 threads) | Apache-2.0 |
+| Arabic | Omnilingual-300M CTC, fp32 | 1.3 GB | 4.8 % | 16.4 % | RTF 0.12 (CPU, 4 threads) | Apache-2.0 |
+| Arabic | Whisper-small, stock | 244M / ~465 MB | 8.3 % | 26.0 % | RTF 0.010 (GPU) | Apache-2.0 |
+| Arabic | Moonshine-tiny-ar | 27M / 108 MB | 13.5 % | 24.0 % | RTF 0.065 (GPU, one clip at a time) | **Moonshine AI Community License** (research / limited commercial; not MIT) |
+
+What this says:
+* **Urdu: use the Urdu Whisper fine-tune.** It writes Urdu script directly, so **no Roman conversion is needed and any keyboard layout (Urdu Pakistan, Roman Urdu, English) can host the mic key**; the text is simply inserted.
+  The Omnilingual CTC model writes Urdu speech in Devanagari (Hindi script), which is why I tried the Roman/Lafz route: it works (21.5 % CER) but is clearly worse, and int8 hurts it further.
+* **Arabic: Omnilingual-300M CTC int8** is the best (4.9 % CER), fast (non-autoregressive) and loses almost nothing from int8. Moonshine-tiny is attractive for its size but its licence is restrictive.
+* English was not measured. Phonon-2 (English only) is the strongest candidate on paper; Whisper-small / Moonshine-tiny-en are the fallbacks.
+
+## Running it on a phone: memory, delivery, speed (estimates, not measured on a phone)
+* **Memory:** a 330-465 MB model loaded only while dictating is fine on a 6 GB+ phone, but working memory adds to the file size (budget ~0.8-1.2 GB peak for Whisper-small). It must run in its own process, not the keyboard's, and be released shortly after use.
+* **Delivery:** too big for the APK, and Lafz has no INTERNET permission. Side-load the model files into app storage (like "Load gesture typing library") or use one explicit opt-in download.
+* **Speed is the open question:** Whisper always processes a 30 s window, so a short sentence still costs a few seconds on a phone CPU; Omnilingual CTC is non-autoregressive and cheaper per second of audio. Needs a timing run on the owner's arm64 phone (USB debugging, or a small test APK).
+* New permission needed: `RECORD_AUDIO`. Everything behind a Settings switch, off by default; model loaded only when the mic key is pressed.
+
+## Verdict
+Feasible for **Arabic** (clearly good) and **Urdu** (good with the Whisper fine-tune, ~26 % WER on clean speech). Next: a phone timing run, then a `VoiceTypingService` prototype behind a switch.
+
+## Original plan (before measuring)
 A throwaway spike on the desktop (RTX 3090 Ti): run Omnilingual-300M and the best Urdu Whisper fine-tune on FLEURS Urdu and Common Voice Urdu test clips, report CER/WER; then, only if Urdu is good enough (target: CER under ~10-15 %), a sherpa-onnx int8 build timed on the emulator and the phone. If Urdu fails the gate, ship Arabic + English voice (Moonshine) and leave Urdu to Option A.
 
 ## Sources
