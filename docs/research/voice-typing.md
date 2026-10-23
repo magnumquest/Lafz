@@ -85,6 +85,17 @@ whisper.cpp built on the desktop, models converted with `convert-h5-to-ggml.py` 
 * q5_1 loses nothing measurable against the unquantised models (25.6 % / 8.1 %), so q8_0 was not tested (rule: only if q5 were clearly worse).
 * Decision: engine = whisper.cpp; ship sizes are 190 MB (Urdu) and 60 MB (English), side-loaded like the Arabic model. Phone speed is still unmeasured: RTF 0.35 on a desktop CPU means a phone may be several times slower for Urdu, so the small model needs a phone timing run before it is called usable.
 
+### Whisper in the app (whisper.cpp, emulator speed test, 2026-10-24)
+`:whisper` module (vendored whisper.cpp 1.9.5, ggml CPU backends built per instruction-set level and picked at run time), model type `whisper_cpp` in `model.json`. x86_64 emulator, 4 threads, 10 s sample clip, not a phone:
+
+| Model | Load | 10 s clip | Peak memory over baseline | Error on the clip |
+|---|---|---|---|---|
+| English base.en q5_1 (56 MB) | 0.1 s | 1.6 s (x0.16) | 118 MB | 0 % |
+| Urdu small q5_1 (181 MB), beam 5 | 0.2 s | 7.5 s (x0.75) | 435 MB | 7 % |
+| Urdu small q5_1, greedy (`"beam": 1`) | 0.2 s | 5.4 s (x0.54) | 318 MB | 7 % (same text) |
+
+Memory is fully released after unloading. Greedy is the likely default for dictation; the choice needs a real-phone run and a WER check with beam 1.
+
 What this says:
 * **Urdu: use the Urdu Whisper fine-tune.** It writes Urdu script directly, so **no Roman conversion is needed and any keyboard layout (Urdu Pakistan, Roman Urdu, English) can host the mic key**; the text is simply inserted.
   The Omnilingual CTC model writes Urdu speech in Devanagari (Hindi script), which is why I tried the Roman/Lafz route: it works (21.5 % CER) but is clearly worse, and int8 hurts it further.
