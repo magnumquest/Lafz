@@ -99,6 +99,8 @@ fun TextCorrectionScreen(
         if (prefs.getBoolean(Settings.PREF_SUGGEST_PUNCTUATION, Defaults.PREF_SUGGEST_PUNCTUATION))
             Settings.PREF_PUNCTUATION_SUGGESTIONS else null,
         Settings.PREF_SUGGEST_CLIPBOARD_CONTENT,
+        Settings.PREF_SMART_CLIPBOARD,
+        if (prefs.getBoolean(Settings.PREF_SMART_CLIPBOARD, Defaults.PREF_SMART_CLIPBOARD)) Settings.PREF_CLIPBOARD_SKIP_CODES else null,
         Settings.PREF_USE_CONTACTS,
         Settings.PREF_USE_APPS,
         if (prefs.getBoolean(Settings.PREF_KEY_USE_PERSONALIZED_DICTS, Defaults.PREF_KEY_USE_PERSONALIZED_DICTS))
@@ -278,6 +280,12 @@ fun createCorrectionSettings(context: Context) = listOf(
         R.string.center_suggestion_text_to_enter, R.string.center_suggestion_text_to_enter_summary
     ) {
         SwitchPreference(it, Defaults.PREF_CENTER_SUGGESTION_TEXT_TO_ENTER)
+    },
+    Setting(context, Settings.PREF_SMART_CLIPBOARD, R.string.smart_clipboard_title, R.string.smart_clipboard_summary) {
+        SwitchPreference(it, Defaults.PREF_SMART_CLIPBOARD)
+    },
+    Setting(context, Settings.PREF_CLIPBOARD_SKIP_CODES, R.string.clipboard_skip_codes_title, R.string.clipboard_skip_codes_summary) {
+        SwitchPreference(it, Defaults.PREF_CLIPBOARD_SKIP_CODES)
     },
     Setting(context, Settings.PREF_SUGGEST_CLIPBOARD_CONTENT,
         R.string.suggest_clipboard_content, R.string.suggest_clipboard_content_summary

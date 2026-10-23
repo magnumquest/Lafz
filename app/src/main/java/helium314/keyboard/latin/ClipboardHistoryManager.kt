@@ -23,7 +23,10 @@ import helium314.keyboard.event.Event
 import helium314.keyboard.event.HapticEvent
 import helium314.keyboard.keyboard.internal.KeyboardIconsSet
 import helium314.keyboard.keyboard.internal.keyboard_parser.floris.KeyCode
+import helium314.keyboard.keyboard.clipboard.CodeChips
 import helium314.keyboard.latin.common.ColorType
+import helium314.keyboard.latin.utils.FoundCode
+import helium314.keyboard.latin.utils.SmartCodeExtractor
 import helium314.keyboard.latin.common.Constants
 import helium314.keyboard.latin.common.isValidNumber
 import helium314.keyboard.latin.database.ClipboardDao
@@ -81,10 +84,22 @@ class ClipboardHistoryManager(
         if (description.hasMimeType("text/*")) {
             val content = clipItem.coerceToText(latinIME)
             if (TextUtils.isEmpty(content)) return
+            val settings = latinIME.mSettings.current
+            if (settings.mSmartClipboard && settings.mClipboardSkipCodes && codesIn(content).isNotEmpty()) return // kept out of the history on purpose
             clipboardDao?.addClip(timeStamp, false, content.toString())
         } else if (maySaveFromUri(clipItem.uri, latinIME)) {
             clipboardDao?.addClipUri(timeStamp, false, clipItem.uri, description, latinIME)
         }
+    }
+
+    // the extraction runs once per distinct clip, not each time the suggestion bar is rebuilt
+    private var codesFor: String? = null
+    private var codes: List<FoundCode> = emptyList()
+
+    private fun codesIn(content: CharSequence): List<FoundCode> {
+        val s = content.toString()
+        if (s != codesFor) { codes = SmartCodeExtractor.find(s); codesFor = s }
+        return codes
     }
 
     fun getPrimaryClipIfText(): String? {
@@ -204,6 +219,30 @@ class ClipboardHistoryManager(
         clipIcon?.setBounds(0, 0, textView.lineHeight, textView.lineHeight) // scale the icon to the text
         textView.setCompoundDrawablesRelative(clipIcon, null, null, null)
         val inputType = editorInfo?.inputType ?: InputType.TYPE_NULL
+        val foundCodes = if (hasText && latinIME.mSettings.current.mSmartClipboard) codesIn(content) else emptyList()
+        if (foundCodes.isNotEmpty()) {
+            // a code or number inside a longer text: offer the values on their own instead of the whole text
+            val colors = latinIME.mSettings.current.mColors
+            val chips = binding.clipboardSuggestionChips
+            textView.visibility = View.GONE
+            chips.visibility = View.VISIBLE
+            CodeChips.fill(chips, foundCodes, colors.get(ColorType.KEY_TEXT), colors.get(ColorType.KEY_BACKGROUND), textView.textSize,
+                isClipSensitive(inputType)) { value ->
+                dontShowCurrentSuggestion = true
+                latinIME.onTextInput(value)
+                AudioAndHapticFeedbackManager.getInstance().performHapticAndAudioFeedback(KeyCode.NOT_SPECIFIED, chips, HapticEvent.KEY_PRESS)
+                binding.root.isGone = true
+            }
+            val closeButton = binding.clipboardSuggestionClose
+            closeButton.setImageDrawable(KeyboardIconsSet.instance.getIconDrawable(ToolbarKey.CLOSE_HISTORY.name.lowercase()))
+            closeButton.layoutParams.width = textView.lineHeight
+            closeButton.layoutParams.height = textView.lineHeight
+            closeButton.setOnClickListener { removeClipboardSuggestion() }
+            colors.setColor(closeButton, ColorType.REMOVE_SUGGESTION_ICON)
+            colors.setBackground(binding.root, ColorType.CLIPBOARD_SUGGESTION_BACKGROUND)
+            clipboardSuggestionView = binding.root
+            return clipboardSuggestionView
+        }
         if (hasText) {
             if (TextUtils.isEmpty(content)) return null
             if (InputTypeUtils.isNumberInputType(inputType) && !content.isValidNumber()) return null

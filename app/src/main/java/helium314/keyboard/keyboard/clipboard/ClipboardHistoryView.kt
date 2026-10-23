@@ -226,6 +226,14 @@ class ClipboardHistoryView @JvmOverloads constructor(
             keyboardActionListener.onCodeInput(KeyCode.ALPHA, Constants.NOT_A_COORDINATE, Constants.NOT_A_COORDINATE, false)
     }
 
+    override fun onValue(text: String) {
+        keyboardActionListener.onPressKey(KeyCode.NOT_SPECIFIED, 0, 1, HapticEvent.KEY_PRESS)
+        keyboardActionListener.onTextInput(text)
+        keyboardActionListener.onReleaseKey(KeyCode.NOT_SPECIFIED, false)
+        if (Settings.getValues().mAlphaAfterClipHistoryEntry)
+            keyboardActionListener.onCodeInput(KeyCode.ALPHA, Constants.NOT_A_COORDINATE, Constants.NOT_A_COORDINATE, false)
+    }
+
     override fun onClipInserted(position: Int) {
         clipboardAdapter.notifyItemInserted(position)
         clipboardRecyclerView.smoothScrollToPosition(position)

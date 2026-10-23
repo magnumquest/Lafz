@@ -119,6 +119,8 @@ object Defaults {
     const val PREF_BIGRAM_PREDICTIONS = true
     const val PREF_SUGGEST_PUNCTUATION = false
     const val PREF_SUGGEST_CLIPBOARD_CONTENT = true
+    const val PREF_SMART_CLIPBOARD = true // codes and numbers in copied text are offered on their own
+    const val PREF_CLIPBOARD_SKIP_CODES = false // keep copied codes out of the history
     const val PREF_GESTURE_INPUT = false
     /** one of [GESTURE_ENGINE_FUTO], [GESTURE_ENGINE_GOOGLE], [GESTURE_ENGINE_LAFZ] */
     const val PREF_GESTURE_ENGINE = "futo"

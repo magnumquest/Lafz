@@ -23,6 +23,14 @@
         android:ellipsize="end"
         android:textStyle="bold"
         style="?android:attr/textAppearanceSmall" />
+    <LinearLayout
+        android:id="@+id/clipboard_suggestion_chips"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="match_parent"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:visibility="gone" />
     <ImageView
         android:id="@+id/clipboard_suggestion_image"
         android:adjustViewBounds="true"

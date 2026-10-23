@@ -17,6 +17,7 @@ import helium314.keyboard.latin.ClipboardHistoryManager
 import helium314.keyboard.latin.R
 import helium314.keyboard.latin.common.ColorType
 import helium314.keyboard.latin.settings.Settings
+import helium314.keyboard.latin.utils.SmartCodeExtractor
 
 class ClipboardAdapter(
        val clipboardLayoutParams: ClipboardLayoutParams,
@@ -52,6 +53,7 @@ class ClipboardAdapter(
         private val pinnedIconView: ImageView
         private val contentTextView: TextView
         private val contentImageView: ImageView
+        private val chipsView: android.widget.LinearLayout
 
         init {
             view.apply {
@@ -72,6 +74,7 @@ class ClipboardAdapter(
                 setTextSize(TypedValue.COMPLEX_UNIT_PX, itemTextSize)
             }
             contentImageView = view.findViewById(R.id.clipboard_entry_image_content)
+            chipsView = view.findViewById(R.id.clipboard_entry_chips)
             clipboardLayoutParams.setItemProperties(view)
             val colors = Settings.getValues().mColors
             colors.setColor(pinnedIconView, ColorType.CLIPBOARD_PIN)
@@ -88,6 +91,21 @@ class ClipboardAdapter(
             pinnedIconView.visibility = if (historyEntry.isPinned) View.VISIBLE else View.GONE
             contentImageView.visibility = if (historyEntry.filename != null) View.VISIBLE else View.GONE
             contentTextView.visibility = if (contentTextView.text.isNullOrEmpty()) View.GONE else View.VISIBLE
+            setChips(historyEntry)
+        }
+
+        // codes and numbers found in the entry, each pasted on its own; nothing is done (and nothing costs) when the setting is off
+        private fun setChips(entry: ClipboardHistoryEntry) {
+            chipsView.visibility = View.GONE
+            val settings = Settings.getValues() ?: return
+            val text = entry.text
+            if (!settings.mSmartClipboard || entry.filename != null || text == null) return
+            val codes = SmartCodeExtractor.find(text)
+            if (codes.isEmpty()) return
+            CodeChips.fill(chipsView, codes, itemTextColor, settings.mColors.get(ColorType.KEY_BACKGROUND), itemTextSize * 0.9f, false) {
+                keyEventListener.onValue(it)
+            }
+            chipsView.visibility = View.VISIBLE
         }
 
         @SuppressLint("ClickableViewAccessibility")

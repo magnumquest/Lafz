@@ -169,6 +169,10 @@
     <!-- Option to enable using next word suggestions. After the user types a space, with this option on, the keyboard will try to predict the next word. -->
     <string name="bigram_prediction">Next-word suggestions</string>
     <!-- Title for the switch that shows Urdu or Arabic script in the text field while Roman letters are typed. -->
+    <string name="smart_clipboard_title">Smart clipboard</string>
+    <string name="smart_clipboard_summary">Offer codes and numbers (OTP, PIN, IBAN, card and account numbers) found in copied text on their own, so you can paste just the number</string>
+    <string name="clipboard_skip_codes_title">Keep codes out of clipboard history</string>
+    <string name="clipboard_skip_codes_summary">Copied text that contains such a code is not saved in the history. It is still offered above the keyboard for a few minutes</string>
     <string name="learn_roman_typing_title">Learn from my typing</string>
     <string name="learn_roman_typing_summary">In Roman Urdu and Roman Arabic, remember the words, word pairs and spellings you use. Stays on this device</string>
     <string name="export_learned_words_title">Export learned words</string>

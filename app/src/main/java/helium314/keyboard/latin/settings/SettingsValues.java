@@ -163,6 +163,8 @@ public class SettingsValues {
     public final boolean mSuggestionsEnabled;
     private final boolean mOverrideShowingSuggestions;
     public final boolean mSuggestClipboardContent;
+    public final boolean mSmartClipboard;
+    public final boolean mClipboardSkipCodes;
     public final boolean mIncognitoModeEnabled;
     public final boolean mLongPressSymbolsForNumpad;
 
@@ -250,6 +252,8 @@ public class SettingsValues {
         mLearnRomanTyping = prefs.getBoolean(Settings.PREF_LEARN_ROMAN_TYPING, Defaults.PREF_LEARN_ROMAN_TYPING);
         mSuggestPunctuation = prefs.getBoolean(Settings.PREF_SUGGEST_PUNCTUATION, Defaults.PREF_SUGGEST_PUNCTUATION);
         mSuggestClipboardContent = prefs.getBoolean(Settings.PREF_SUGGEST_CLIPBOARD_CONTENT, Defaults.PREF_SUGGEST_CLIPBOARD_CONTENT);
+        mSmartClipboard = prefs.getBoolean(Settings.PREF_SMART_CLIPBOARD, Defaults.PREF_SMART_CLIPBOARD);
+        mClipboardSkipCodes = prefs.getBoolean(Settings.PREF_CLIPBOARD_SKIP_CODES, Defaults.PREF_CLIPBOARD_SKIP_CODES);
         mDoubleSpacePeriodTimeout = 1100; // ms
         mHasHardwareKeyboard = Settings.readHasHardwareKeyboard(res.getConfiguration());
         boolean isLandscape = mDisplayOrientation == Configuration.ORIENTATION_LANDSCAPE;

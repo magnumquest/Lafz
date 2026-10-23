@@ -9,13 +9,13 @@ Owner rules: every feature behind a Settings switch, original behaviour and spee
 - [x] Settings: "Export learned words" / "Import learned words" (merge)
 
 ### Task 2: Smart code extractor
-- [ ] `SmartCodeExtractor` (OTP / PIN, IBAN, card numbers with Luhn, account numbers) pure Kotlin + unit tests
+- [x] `SmartCodeExtractor` (OTP / PIN, IBAN, card numbers with Luhn, account numbers) pure Kotlin + unit tests
 
 ### Task 3: Smart clipboard suggestion and history chips
-- [ ] Settings switch "Smart clipboard (codes and numbers)"
-- [ ] clipboard suggestion shows the extracted values as chips, tap pastes just that value
-- [ ] clipboard history entries show chips, tap pastes the value
-- [ ] Settings switch "Keep copied codes out of history" (default off)
+- [x] Settings switch "Smart clipboard (codes and numbers)"
+- [x] clipboard suggestion shows the extracted values as chips, tap pastes just that value
+- [x] clipboard history entries show chips, tap pastes the value
+- [x] Settings switch "Keep copied codes out of history" (default off)
 
 ### Task 4: Clipboard history improvements
 - [ ] decide from use on the emulator, keep each behind a switch
