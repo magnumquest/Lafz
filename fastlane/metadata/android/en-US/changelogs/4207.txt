@@ -1,0 +1,1 @@
+Swipe typing now loads nothing when it is switched off, and releases its engines when you turn it off.

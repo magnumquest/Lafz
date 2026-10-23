@@ -9,7 +9,7 @@
   Type <code>mein kal aonga</code>, get <span dir="rtl">میں کل آؤں گا</span>.
 </p>
 
-<p align="center"><b>Version 0.3.0 is in progress.</b> It adds offline contextual emoji suggestions and a redesigned Settings screen.</p>
+<p align="center"><b>Latest: version 0.4.3.</b> Offline swipe typing for English, Roman Urdu and Roman Arabic, contextual emoji suggestions and a redesigned Settings screen. See the <a href="RELEASE_NOTES.md">release notes</a>.</p>
 
 ---
 
@@ -25,6 +25,9 @@ word replaces it as the decoder settles, and space commits what you see. The sug
   `innama alamalu binniyyat` → إنما الأعمال بالنيات. Prefixes like و ف ب ل ال join the next word automatically.
 - **Native numerals and punctuation** on the symbol page: Arabic-Indic digits ٠١٢٣ with ، ؛ ؟ for Arabic, Urdu digits ۰۱۲۳ with ۔ ، ؟ for Urdu.
   (Number/phone fields still show Western digits.)
+- **Swipe typing, offline.** Glide across the letters in English, Roman Urdu or Roman Arabic. Decoding uses [FUTO Swipe](https://github.com/futo-org/swipe-library)
+  on the device. Settings → Gesture typing lets you pick the engine, and has a diagnostics page to share if swiping misbehaves.
+  With swipe typing switched off, none of its engines or word lists are loaded, and anything loaded earlier is released.
 - **Fast typing.** Suggestions are computed off the UI thread, so keys never wait for the decoder.
 - **Contextual emoji suggestions.** Bundled keywords suggest relevant emoji in English, Urdu, and Arabic, including Roman Urdu and Roman Arabic input. Suggestions work offline.
 
@@ -91,6 +94,10 @@ Back that key up and never commit it: updates must be signed with the same key.
 
 ## Roadmap
 
+- [x] Offline swipe typing (FUTO Swipe) for English, Roman Urdu and Roman Arabic (0.4.x)
+- [x] Swipe engines fully unloaded when swipe typing is off (0.4.3)
+- [ ] Swipe quality: double-letter words (`hello`), less common Arabic words, a user-dictionary trie
+- [ ] Learning from your typing (next-word habits) for Urdu and Arabic
 - [ ] Better casual-chat accuracy (conversational training data, optional on-device learning)
 - [ ] More verb forms (past, continuous, imperative) and slang
 - [ ] Native digits in number/phone fields
@@ -102,6 +109,8 @@ Back that key up and never commit it: updates must be signed with the same key.
 Lafz is licensed under the **GNU GPL v3.0**, like HeliBoard. See [LICENSE](LICENSE); the Apache 2.0 and CC BY-SA 4.0 notices for AOSP and the icon are in
 [LICENSE-Apache-2.0](LICENSE-Apache-2.0) and [LICENSE-CC-BY-SA-4.0](LICENSE-CC-BY-SA-4.0).
 
+- Swipe decoding uses [FUTO Swipe](https://github.com/futo-org/swipe-library) (powered by FUTO Swipe), build recipe in [`tools/futo-swipe/`](tools/futo-swipe/README.md).
+  Google's proprietary gesture library is deliberately not bundled.
 - Built on [HeliBoard](https://github.com/Helium314/HeliBoard), itself based on OpenBoard and the Android Open Source Project keyboard. Thanks to their authors.
 - The transliteration model is trained on the [Dakshina dataset](https://github.com/google-research-datasets/dakshina) (Google, CC BY-SA 4.0).
   The model file `urdu_translit.bin` is derived from it and carries the same license.
