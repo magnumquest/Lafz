@@ -74,6 +74,17 @@ Same method; English = LibriSpeech-style FLEURS `en_us` test, first 200 clips. W
 * Skipped on purpose (too large to ship, no value as a ceiling): whisper-large-v3-turbo-urdu (3 GB), XLS-R 300M Urdu and xlsr-53 English (language-model files broken).
 * **Conclusion:** Whisper is the engine family for Urdu (small fine-tune, quantised) and English (base.en). Arabic stays on Omnilingual CTC int8.
 
+### whisper.cpp (GGML) quantised: accuracy holds (2026-10-24)
+whisper.cpp built on the desktop, models converted with `convert-h5-to-ggml.py` (needs `tools/voice-spike/convert_run.py` here because of the CUDA-12 flash_attn import) and quantised with `whisper-quantize`. Evaluated with `tools/voice-spike/eval_ggml.py` on the same FLEURS sets, CPU only, 8 threads, whisper-cli defaults (beam search).
+
+| Language | Model | File | CER | WER | Desktop CPU RTF |
+|---|---|---|---|---|---|
+| Urdu | whisper-small-urdu, **q5_1** | **190 MB** (f16 488 MB) | 9.5 % | **25.2 %** | 0.35 |
+| English | base.en, **q5_1** | **60 MB** (f16 148 MB) | 3.7 % | **7.3 %** | 0.07 |
+
+* q5_1 loses nothing measurable against the unquantised models (25.6 % / 8.1 %), so q8_0 was not tested (rule: only if q5 were clearly worse).
+* Decision: engine = whisper.cpp; ship sizes are 190 MB (Urdu) and 60 MB (English), side-loaded like the Arabic model. Phone speed is still unmeasured: RTF 0.35 on a desktop CPU means a phone may be several times slower for Urdu, so the small model needs a phone timing run before it is called usable.
+
 What this says:
 * **Urdu: use the Urdu Whisper fine-tune.** It writes Urdu script directly, so **no Roman conversion is needed and any keyboard layout (Urdu Pakistan, Roman Urdu, English) can host the mic key**; the text is simply inserted.
   The Omnilingual CTC model writes Urdu speech in Devanagari (Hindi script), which is why I tried the Roman/Lafz route: it works (21.5 % CER) but is clearly worse, and int8 hurts it further.
