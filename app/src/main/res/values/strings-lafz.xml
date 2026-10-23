@@ -9,6 +9,10 @@
     <string name="lafz_correction_description">Autocorrect, live transliteration and emoji suggestions</string>
     <string name="lafz_preferences_description">Sound, vibration, keys and gestures</string>
     <string name="lafz_gesture_description">Type by gliding between letters</string>
+    <string name="lafz_setup_intro">Type English, Roman Urdu and Roman Arabic, fully offline. Setup takes two quick steps.</string>
+    <string name="lafz_futo_swipe_title">Swipe typing by FUTO Swipe</string>
+    <string name="lafz_futo_swipe_summary">Powered by FUTO Swipe technology. Models under the FUTO Model Weights License 1.0, decoder library under GPL-3.0 or later. Runs fully offline.</string>
+    <string name="lafz_setup_ready">Start typing</string>
     <string name="lafz_dictionary_description">Manage dictionaries and your saved words</string>
     <string name="lafz_layouts_description">Symbols, number rows and alternate layouts</string>
     <string name="lafz_advanced_description">Fine tuning, backups and app behavior</string>

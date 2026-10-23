@@ -996,7 +996,9 @@ public class LatinIME extends InputMethodService implements
             }
         }
 
-        mainKeyboardView.setMainDictionaryAvailability(mDictionaryFacilitator.hasAtLeastOneInitializedMainDictionary());
+        // Roman Urdu/Arabic have no main dictionary; their swipes are decoded by the built-in decoder instead.
+        mainKeyboardView.setMainDictionaryAvailability(mDictionaryFacilitator.hasAtLeastOneInitializedMainDictionary()
+                || RomanScript.of(mDictionaryFacilitator.getMainLocale()) != null);
         mainKeyboardView.setKeyPreviewPopupEnabled(currentSettingsValues.mKeyPreviewPopupOn);
         mainKeyboardView.setSlidingKeyInputPreviewEnabled(currentSettingsValues.mSlidingKeyInputPreviewEnabled);
         mainKeyboardView.setGestureHandlingEnabledByUser(

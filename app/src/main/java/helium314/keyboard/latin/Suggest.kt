@@ -5,6 +5,7 @@
  */
 package helium314.keyboard.latin
 
+import android.content.Context
 import android.text.TextUtils
 import com.android.inputmethod.latin.utils.BinaryDictionaryUtils
 import helium314.keyboard.keyboard.Keyboard
@@ -33,6 +34,10 @@ import helium314.keyboard.latin.urdu.EmojiKeywords
 import helium314.keyboard.keyboard.emoji.SupportedEmojis
 import java.io.InputStreamReader
 import helium314.keyboard.latin.urdu.RomanScript
+import helium314.keyboard.latin.gesture.FutoSwipe
+import helium314.keyboard.latin.gesture.SwipeDecoder
+import helium314.keyboard.latin.urdu.RomanTransliterator
+import helium314.keyboard.latin.utils.JniUtils
 import java.util.Locale
 import kotlin.math.max
 import kotlin.math.min
@@ -45,6 +50,7 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
     private var mAutoCorrectionThreshold = 0f
     private val mPlausibilityThreshold = 0f
     private val nextWordSuggestionsCache = HashMap<NgramContext, SuggestionResults>()
+    private val swipeWords = HashMap<RomanScript, Map<String, Int>>()
 
     // cache cleared whenever LatinIME.loadSettings is called, notably on changing layout and switching input fields
     fun clearNextWordSuggestionsCache() = nextWordSuggestionsCache.clear()
@@ -403,6 +409,13 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
         settingsValuesForSuggestion: SettingsValuesForSuggestion,
         inputStyle: Int, isCorrectionEnabled: Boolean, sequenceNumber: Int
     ): SuggestedWords {
+        val romanScript = RomanScript.of(mDictionaryFacilitator.mainLocale)
+        if (!JniUtils.sHaveGestureLib || romanScript != null) {
+            val builtIn = getBuiltInSwipeSuggestions(wordComposer, ngramContext, keyboard, inputStyle,
+                sequenceNumber, romanScript)
+            // an empty English result falls through to the dictionary facilitator
+            if (builtIn != null || romanScript != null) return builtIn ?: SuggestedWords.getEmptyBatchInstance()
+        }
         val suggestionResults = mDictionaryFacilitator.getSuggestionResults(
             wordComposer.composedDataSnapshot, ngramContext, keyboard,
             settingsValuesForSuggestion, SESSION_ID_GESTURE, inputStyle
@@ -473,6 +486,50 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
         val autocorrectCapitalization = addCapitalizedSuggestion && Settings.getValues().mAutoCorrectCapitalizedSuggestion && isCorrectionEnabled && !wordComposer.isCursorFrontOrMiddleOfComposingWord
         return SuggestedWords(suggestionsList, suggestionResults.mRawSuggestions, pseudoTypedWordInfo, true,
             autocorrectCapitalization, false, inputStyle, sequenceNumber)
+    }
+
+    private fun getBuiltInSwipeSuggestions(wordComposer: WordComposer, ngramContext: NgramContext,
+                                           keyboard: Keyboard, inputStyle: Int, sequenceNumber: Int,
+                                           script: RomanScript?): SuggestedWords? {
+        val context = Settings.getCurrentContext() ?: return null
+        val engine = script?.engine(context)
+        val previous = if (ngramContext.isBeginningOfSentenceContext || ngramContext.prevWordCount == 0)
+            null else ngramContext.getNthPrevWord(1)?.toString()?.filter { it != '\u200f' && it != '\u200e' }
+        val matches = recognizeSwipe(context, keyboard, wordComposer, script, engine, previous)
+        if (matches.isEmpty()) return null
+        val candidates = LinkedHashSet<String>()
+        for (match in matches) {
+            if (engine != null) {
+                engine.suggest(match, previous, previous == null, 2).forEach { candidates.add(it.text) }
+            }
+            candidates.add(match)
+            if (candidates.size >= 8) break
+        }
+        val locale = mDictionaryFacilitator.mainLocale
+        val caps = getCapsModeForGesture(wordComposer, keyboard)
+        val results = ArrayList<SuggestedWordInfo>()
+        candidates.take(8).forEachIndexed { index, word ->
+            val output = if (script == null) capitalize(word, caps, locale) else word
+            results.add(SuggestedWordInfo(output, "", 1000 - index,
+                SuggestedWordInfo.KIND_CORRECTION, Dictionary.DICTIONARY_USER_TYPED,
+                SuggestedWordInfo.NOT_AN_INDEX, SuggestedWordInfo.NOT_A_CONFIDENCE))
+        }
+        return SuggestedWords(results, null, results.first(), true, false, false, inputStyle, sequenceNumber)
+    }
+
+    /** Roman words for the swipe: FUTO Swipe when it loads, otherwise the simple built-in path matcher. */
+    private fun recognizeSwipe(context: Context, keyboard: Keyboard, wordComposer: WordComposer,
+                               script: RomanScript?, engine: RomanTransliterator?, previous: String?): List<String> {
+        val english by lazy { SwipeDecoder.englishWords(context) }
+        if (!FutoSwipe.unavailable) {
+            val request = FutoSwipe.Request(script?.name?.lowercase() ?: "en", { engine?.swipeSpellings() ?: emptyMap() }, previous)
+            FutoSwipe.recognize(context, keyboard, wordComposer.inputPointers, request, { english }, 8)
+                ?.let { return it }
+        }
+        val words = if (script != null && engine != null) swipeWords.getOrPut(script) {
+            HashMap<String, Int>(english).apply { putAll(engine.swipeSpellings()) }
+        } else english
+        return SwipeDecoder.match(keyboard, wordComposer.inputPointers, words, 8).map { it.word }
     }
 
     private fun useDefaultEmojiSkinTone(suggestionsList: ArrayList<SuggestedWordInfo>) {

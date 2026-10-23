@@ -1,15 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-    icon from pictogrammers.com
-    SPDX-License-Identifier: Apache-2.0
--->
-<!-- TODO: create "sym_keyboard_clipboard_lxx" as a vector image, use it and change the size in the code to be able to delete this file -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:height="32dp"
-    android:width="32dp"
-    android:viewportWidth="24"
-    android:viewportHeight="24">
-    <path
-        android:fillColor="#FFF"
-        android:pathData="M19,3H14.82C14.25,1.44 12.53,0.64 11,1.2C10.14,1.5 9.5,2.16 9.18,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3M12,3A1,1 0 0,1 13,4A1,1 0 0,1 12,5A1,1 0 0,1 11,4A1,1 0 0,1 12,3M7,7H17V5H19V19H5V5H7V7M17,11H7V9H17V11M15,15H7V13H15V15Z"/>
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="@android:color/transparent"
+        android:strokeColor="#FFFFFF" android:strokeWidth="1.8"
+        android:strokeLineCap="round" android:strokeLineJoin="round"
+        android:pathData="M8,5H6a2,2 0,0 0,-2 2v12a2,2 0,0 0,2 2h12a2,2 0,0 0,2 -2V7a2,2 0,0 0,-2 -2h-2 M9,3h6a1,1 0,0 1,1 1v2a1,1 0,0 1,-1 1H9a1,1 0,0 1,-1 -1V4a1,1 0,0 1,1 -1 M8,11h8 M8,15h8 M8,19h5"/>
 </vector>
