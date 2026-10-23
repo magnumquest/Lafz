@@ -524,7 +524,10 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
         if (!FutoSwipe.unavailable) {
             val request = FutoSwipe.Request(script?.name?.lowercase() ?: "en", { engine?.swipeSpellings() ?: emptyMap() }, previous)
             FutoSwipe.recognize(context, keyboard, wordComposer.inputPointers, request, { english }, 8)
-                ?.let { return it }
+                ?.let {
+                    if (BuildConfig.DEBUG) Log.d("LafzSwipe", "futo ${request.language} -> $it")
+                    return it
+                }
         }
         val words = if (script != null && engine != null) swipeWords.getOrPut(script) {
             HashMap<String, Int>(english).apply { putAll(engine.swipeSpellings()) }

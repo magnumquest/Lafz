@@ -24,6 +24,9 @@ object FutoSwipe {
     private const val LETTERS = "abcdefghijklmnopqrstuvwxyz"
     private val wordRegex = Regex("[a-z']+")
 
+    /** Dictionary weights for [English words, language spellings]; tuned on 50 Roman Urdu swipes (40/50 vs 38/50 unweighted). */
+    private val ROMAN_WEIGHTS = floatArrayOf(0.5f, 1.0f)
+
     private val lock = Any()
     private var failed = false
     private var dir: File? = null
@@ -64,7 +67,9 @@ object FutoSwipe {
             }
             engine.setContext(listOfNotNull(request.previousWord))
             val (x, y, t) = layout.normalize(pointers)
-            engine.recognize(x, y, t, topK = limit).map { it.word }
+            // Roman Urdu/Arabic: favour the language's own spellings over plain English words (see ROMAN_WEIGHTS)
+            val weights = if (isEnglish) null else ROMAN_WEIGHTS
+            engine.recognize(x, y, t, topK = limit, trieWeights = weights).map { it.word }
         } catch (e: Throwable) {
             Log.e(TAG, "FUTO swipe unavailable", e)
             failed = true
