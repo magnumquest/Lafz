@@ -15,7 +15,7 @@ night) $A shell cmd uimode night "$2" ;;
 boot)
   adb devices | grep -q $S || nohup emulator -avd Pixel_API36 -port 5580 -read-only -no-snapshot -no-audio -no-window -gpu swiftshader_indirect > /tmp/emu.log 2>&1 &
   for i in $(seq 1 60); do $A shell getprop sys.boot_completed 2>/dev/null | grep -q 1 && break; sleep 5; done; $A shell getprop sys.boot_completed ;;
-install) $A install -r "${2:-$HERE/app/build/outputs/apk/debug/Lafz_0.3.0-debug.apk}" | tail -1
+install) $A install -r "${2:-$HERE/app/build/outputs/apk/debug/Lafz_0.4.0-debug.apk}" | tail -1
   $A shell ime enable $IME >/dev/null; $A shell ime set $IME ;;
 subtype) # writes enabled/selected subtype into the debug app's device-protected prefs (app is force-stopped first)
   F=/data/user_de/0/$P/shared_prefs/${P}_preferences.xml
