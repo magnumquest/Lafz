@@ -501,7 +501,7 @@ class DictionaryFacilitatorImpl : DictionaryFacilitator {
         suggestionsArray[0] = getSuggestions(composedData, ngramContext, settingsValuesForSuggestion, sessionId,
             proximityInfoHandle, weightOfLangModelVsSpatialModel, dictionaryGroups[0])
         val suggestionResults = SuggestionResults(
-            SuggestedWords.MAX_SUGGESTIONS, ngramContext.isBeginningOfSentenceContext, false
+            SuggestedWords.MAX_SUGGESTIONS, ngramContext, false
         )
         waitForOtherDicts?.await()
 
@@ -599,21 +599,10 @@ class DictionaryFacilitatorImpl : DictionaryFacilitator {
         return dictionaryGroups.joinToString(", ") { "${it.locale} ${it.confidence}" }
     }
 
-    override fun dumpDictionaryForDebug(dictName: String) {
-        val dictToDump = dictionaryGroups[0].getSubDict(dictName)
-        if (dictToDump == null) {
-            Log.e(TAG, ("Cannot dump $dictName. The dictionary is not being used for suggestion or cannot be dumped."))
-            return
-        }
-        dictToDump.dumpAllWordsForDebug()
-    }
-
     override fun getDictionaryStats(context: Context): List<DictionaryStats> =
         DictionaryFacilitator.DYNAMIC_DICTIONARY_TYPES.flatMap { dictType ->
             dictionaryGroups.mapNotNull { it.getSubDict(dictType)?.dictionaryStats }
         }
-
-    override fun dump(context: Context) = getDictionaryStats(context).joinToString("\n")
 
     companion object {
         private val TAG = DictionaryFacilitatorImpl::class.java.simpleName
@@ -675,7 +664,7 @@ class DictionaryFacilitatorImpl : DictionaryFacilitator {
                 ++nonEmojiNonTypedWordCount
                 if (nonEmojiNonTypedWordCount >= 2) return
             }
-            val allResults = SuggestionResults(Int.MAX_VALUE, false, false)
+            val allResults = SuggestionResults(Int.MAX_VALUE, NgramContext.EMPTY_PREV_WORDS_INFO, false)
             suggestionsArray.forEach {
                 if (it == null) return@forEach
                 allResults.addAll(it)

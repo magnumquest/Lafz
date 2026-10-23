@@ -24,8 +24,6 @@ import helium314.keyboard.latin.utils.DictionaryInfoUtils.getLocalesWithEmojiDic
 import helium314.keyboard.latin.utils.InputTypeUtils
 import helium314.keyboard.latin.utils.Log
 import helium314.keyboard.latin.utils.ResourceUtils
-import helium314.keyboard.latin.utils.ScriptUtils
-import helium314.keyboard.latin.utils.ScriptUtils.script
 import helium314.keyboard.latin.utils.SubtypeLocaleUtils.clearSubtypeDisplayNameCache
 import java.lang.ref.SoftReference
 
@@ -37,8 +35,6 @@ import java.lang.ref.SoftReference
  * [EditorInfo].
  */
 class KeyboardLayoutSet internal constructor(private val mContext: Context, private val mParams: Params) {
-    val script = mParams.script
-
     /**
      * Represents an internal action that overrides the action provided by the input field.
      * @param code to send on action key press
@@ -109,7 +105,6 @@ class KeyboardLayoutSet internal constructor(private val mContext: Context, priv
         var mode = KeyboardMode.TEXT
         var disableTouchPositionCorrectionDataForTest: Boolean = false // remove
 
-        // TODO: Use {@link InputAttributes} instead of these variables.
         lateinit var editorInfo: EditorInfo
         lateinit var subtype: RichInputMethodSubtype
         var settingsValues: SettingsValues? = null
@@ -118,22 +113,17 @@ class KeyboardLayoutSet internal constructor(private val mContext: Context, priv
         var isSpellChecker = false
         var keyboardWidth = 0
         var keyboardHeight = 0
-        var script = ScriptUtils.SCRIPT_LATIN
         var internalAction: InternalAction? = null
         var emojiSearchAvailable = false
 
-        // Indicates if the user has enabled the split-layout preference and the required ProductionFlags are enabled.
-        var isSplitLayoutEnabled = false
     }
 
     class Builder(private val mContext: Context, ei: EditorInfo?, settingsValues: SettingsValues?) {
         private val params = Params()
 
         init {
-            val editorInfo = ei ?: EMPTY_EDITOR_INFO
-            params.mode = getKeyboardMode(editorInfo)
-            // TODO: Consolidate those with {@link InputAttributes}.
-            params.editorInfo = editorInfo
+            params.mode = getKeyboardMode(settingsValues?.mInputAttributes?.mInputType ?: ei?.inputType ?: InputType.TYPE_NULL)
+            params.editorInfo = ei ?: EMPTY_EDITOR_INFO
             params.settingsValues = settingsValues
         }
 
@@ -167,7 +157,6 @@ class KeyboardLayoutSet internal constructor(private val mContext: Context, priv
         }
 
         fun build(): KeyboardLayoutSet {
-            params.script = params.subtype.locale.script()
             return KeyboardLayoutSet(mContext, params)
         }
 
@@ -186,8 +175,7 @@ class KeyboardLayoutSet internal constructor(private val mContext: Context, priv
                 return builder.build()
             }
 
-            private fun getKeyboardMode(editorInfo: EditorInfo): KeyboardMode {
-                val inputType = editorInfo.inputType
+            private fun getKeyboardMode(inputType: Int): KeyboardMode {
                 val variation = inputType and InputType.TYPE_MASK_VARIATION
 
                 return when (inputType and InputType.TYPE_MASK_CLASS) {

@@ -708,6 +708,16 @@ private object AppUpgrade {
                 prefs.edit { remove("emoji_recent_keys")  }
             }
         }
+        // Lafz 0.2.0 uses version 4202. Migrate by key presence, independently of upstream versions.
+        if (prefs.contains("delete_swipe")) {
+            if (!prefs.contains(Settings.PREF_DELETE_SWIPE)) {
+                val old = prefs.getBoolean("delete_swipe", true)
+                prefs.edit {
+                    putInt(Settings.PREF_DELETE_SWIPE, if (old) 1 else 0)
+                }
+            }
+            prefs.edit { remove("delete_swipe") }
+        }
         upgradeToolbarPrefs(prefs)
         LayoutUtilsCustom.onLayoutFileChanged() // just to be sure
         prefs.edit { putInt(Settings.PREF_VERSION_CODE, BuildConfig.VERSION_CODE) }
