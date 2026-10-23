@@ -21,5 +21,5 @@ Owner rules: every feature behind a Settings switch, original behaviour and spee
 - [ ] decide from use on the emulator, keep each behind a switch
 
 ### Task 5: Voice typing research
-- [ ] `docs/research/voice-typing.md`: models, sizes, Urdu/Arabic quality, integration options, verdict
+- [x] `docs/research/voice-typing.md`: models, sizes, Urdu/Arabic quality, integration options, verdict
 - [ ] if feasible: spike on the emulator before any mic key
