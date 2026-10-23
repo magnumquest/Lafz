@@ -48,6 +48,9 @@ object VoiceModels {
 
     fun root(context: Context) = File(context.filesDir, "voice_models")
 
+    /** test clips copied from a folder called "tests" next to the models: `<language>_<n>.wav` with the spoken text in `<language>_<n>.txt` */
+    fun testsDir(context: Context) = File(context.filesDir, "voice_tests")
+
     fun dir(context: Context, info: VoiceModelInfo) = File(root(context), info.dirName)
 
     fun installed(context: Context): List<VoiceModelInfo> =
@@ -79,7 +82,7 @@ object VoiceModels {
 
     fun delete(context: Context, info: VoiceModelInfo) { dir(context, info).deleteRecursively() }
 
-    fun deleteAll(context: Context) { root(context).deleteRecursively() }
+    fun deleteAll(context: Context) { root(context).deleteRecursively(); testsDir(context).deleteRecursively() }
 
     class ImportResult(val imported: List<String>, val problems: List<String>)
 
@@ -102,6 +105,27 @@ object VoiceModels {
 
     private fun safeName(s: String) = s.replace(Regex("[^A-Za-z0-9._-]"), "_").take(60).ifEmpty { "model" }
 
+    private fun copyFile(context: Context, tree: Uri, f: Doc, target: File, progress: (String) -> Unit) {
+        val dest = File(target, safeName(f.name))
+        val src = DocumentsContract.buildDocumentUriUsingTree(tree, f.id)
+        val size = context.contentResolver.query(src, arrayOf(DocumentsContract.Document.COLUMN_SIZE), null, null, null)
+            ?.use { if (it.moveToFirst()) it.getLong(0) else -1L } ?: -1L
+        if (dest.isFile && size >= 0 && dest.length() == size) { progress("${target.name}/${f.name}: already here"); return }
+        val part = File(target, dest.name + ".part")
+        var copied = 0L; var lastReport = 0L
+        context.contentResolver.openInputStream(src)!!.use { input ->
+            part.outputStream().use { output ->
+                val buf = ByteArray(1 shl 20)
+                while (true) {
+                    val n = input.read(buf); if (n < 0) break
+                    output.write(buf, 0, n); copied += n
+                    if (copied - lastReport >= 32L shl 20) { lastReport = copied; progress("${target.name}/${f.name}: ${copied shr 20} MB") }
+                }
+            }
+        }
+        dest.delete(); part.renameTo(dest)
+    }
+
     /**
      * Copies the model folders found in [tree] (either one model folder, or a folder with one sub folder per model) into the app's own storage,
      * where the native runtime can read them by path. Already copied files of the same size are kept. Run on a background thread.
@@ -117,31 +141,23 @@ object VoiceModels {
             val target = File(root(context), safeName(name))
             try {
                 target.mkdirs()
-                for (f in files.filter { !it.isDir }) {
-                    val dest = File(target, safeName(f.name))
-                    val src = DocumentsContract.buildDocumentUriUsingTree(tree, f.id)
-                    val size = context.contentResolver.query(src, arrayOf(DocumentsContract.Document.COLUMN_SIZE), null, null, null)
-                        ?.use { if (it.moveToFirst()) it.getLong(0) else -1L } ?: -1L
-                    if (dest.isFile && size >= 0 && dest.length() == size) { progress("${target.name}/${f.name}: already here"); continue }
-                    val part = File(target, dest.name + ".part")
-                    var copied = 0L; var lastReport = 0L
-                    context.contentResolver.openInputStream(src)!!.use { input ->
-                        part.outputStream().use { output ->
-                            val buf = ByteArray(1 shl 20)
-                            while (true) {
-                                val n = input.read(buf); if (n < 0) break
-                                output.write(buf, 0, n); copied += n
-                                if (copied - lastReport >= 32L shl 20) { lastReport = copied; progress("${target.name}/${f.name}: ${copied shr 20} MB") }
-                            }
-                        }
-                    }
-                    dest.delete(); part.renameTo(dest)
-                }
+                for (f in files.filter { !it.isDir }) copyFile(context, tree, f, target, progress)
                 if (read(target) != null) { imported.add(target.name); progress("${target.name}: ready") }
                 else { problems.add("${target.name}: $DESCRIPTOR or the files it names are missing"); target.deleteRecursively() }
             } catch (e: Exception) {
                 Log.w(TAG, "import of $name failed", e)
                 problems.add("$name: ${e.message}"); target.deleteRecursively()
+            }
+        }
+        top.firstOrNull { it.isDir && it.name == "tests" }?.let { testDir ->
+            try {
+                val target = testsDir(context).also { it.mkdirs() }
+                val clips = children(context, tree, testDir.id).filter { !it.isDir }
+                for (f in clips) copyFile(context, tree, f, target, progress)
+                progress("tests: ${clips.count { it.name.endsWith(".wav") }} clips")
+            } catch (e: Exception) {
+                Log.w(TAG, "import of the test clips failed", e)
+                problems.add("tests: ${e.message}")
             }
         }
         return ImportResult(imported, problems)

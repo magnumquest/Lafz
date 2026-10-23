@@ -12,16 +12,16 @@ interface SpeechEngine : AutoCloseable {
 
     companion object {
         /** loads the model described by [info]; throws if it cannot run on this device */
-        fun create(context: Context, info: VoiceModelInfo, dir: File, threads: Int): SpeechEngine = when (info.type) {
+        fun create(context: Context, info: VoiceModelInfo, dir: File, threads: Int, beamSize: Int = info.beamSize): SpeechEngine = when (info.type) {
             VoiceModels.TYPE_CTC_ONNX -> CtcOnnxEngine(info, dir, threads)
-            VoiceModels.TYPE_WHISPER_CPP -> WhisperEngine(context, info, dir, threads)
+            VoiceModels.TYPE_WHISPER_CPP -> WhisperEngine(context, info, dir, threads, beamSize)
             else -> throw IllegalArgumentException("unknown model type ${info.type}")
         }
     }
 }
 
 /** Whisper through whisper.cpp (GGML model file, e.g. q5_1 quantised). The native libraries are loaded the first time one is created. */
-class WhisperEngine(context: Context, private val info: VoiceModelInfo, dir: File, private val threads: Int) : SpeechEngine {
+class WhisperEngine(context: Context, private val info: VoiceModelInfo, dir: File, private val threads: Int, private val beamSize: Int) : SpeechEngine {
     private val model: WhisperLib.Model
 
     init {
@@ -29,7 +29,7 @@ class WhisperEngine(context: Context, private val info: VoiceModelInfo, dir: Fil
         model = WhisperLib.Model(File(dir, info.modelFile))
     }
 
-    override fun transcribe(samples: FloatArray): String = model.transcribe(samples, info.language, threads, info.beamSize)
+    override fun transcribe(samples: FloatArray): String = model.transcribe(samples, info.language, threads, beamSize)
 
     override fun close() = model.close()
 }

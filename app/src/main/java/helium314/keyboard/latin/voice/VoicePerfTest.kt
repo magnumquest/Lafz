@@ -4,38 +4,9 @@ package helium314.keyboard.latin.voice
 import android.content.Context
 import java.io.File
 
-/** The speed test in Settings: loads a model, transcribes the bundled sample clip of its language twice, reports time, memory and error rate. */
+/** Helpers for [VoiceBenchmark]: memory reading, WAV parsing and a simple error rate. */
 object VoicePerfTest {
-    fun run(context: Context, info: VoiceModelInfo, log: (String) -> Unit) {
-        val threads = Runtime.getRuntime().availableProcessors().coerceIn(1, 4)
-        log("${info.name} (${info.language}, ${info.sizeBytes shr 20} MB, $threads threads)")
-        val samples = (context.assets.list("voice_samples") ?: emptyArray()).filter { it.startsWith(info.language + "_") && it.endsWith(".wav") }
-        if (samples.isEmpty()) { log("  no sample clip for '${info.language}' in the app"); return }
-        val rssBefore = residentMb()
-        val t0 = System.nanoTime()
-        val engine = try { SpeechEngine.create(context, info, VoiceModels.dir(context, info), threads) } catch (t: Throwable) { log("  could not load: ${t.message}"); return }
-        engine.use {
-            log("  loaded in ${ms(t0)} ms, memory ${residentMb() - rssBefore} MB more than before")
-            for (name in samples) {
-                val audio = readWav(context.assets.open("voice_samples/$name").readBytes())
-                val seconds = audio.size.toDouble() / info.sampleRate
-                val reference = context.assets.open("voice_samples/${name.removeSuffix(".wav")}.txt").bufferedReader().readText()
-                for (run in 1..2) {
-                    val t = System.nanoTime()
-                    val text = try { engine.transcribe(audio.copyOf()) } catch (e: Throwable) { log("  failed: ${e.message}"); return }
-                    val took = (System.nanoTime() - t) / 1e9
-                    log("  ${name} ${"%.1f".format(seconds)} s of audio, run $run: ${"%.2f".format(took)} s (x${"%.2f".format(took / seconds)} real time), " +
-                        "peak memory ${residentMb() - rssBefore} MB, error ${"%.0f".format(100 * characterErrorRate(reference, text))} %")
-                    if (run == 2) log("  heard: $text")
-                }
-            }
-        }
-        log("  memory after unloading: ${residentMb() - rssBefore} MB more than before")
-    }
-
-    private fun ms(since: Long) = (System.nanoTime() - since) / 1_000_000
-
-    private fun residentMb(): Long = try {
+    fun residentMb(): Long = try {
         File("/proc/self/status").readLines().firstOrNull { it.startsWith("VmRSS:") }?.filter { it.isDigit() }?.toLong()?.div(1024) ?: 0L
     } catch (e: Exception) { 0L }
 

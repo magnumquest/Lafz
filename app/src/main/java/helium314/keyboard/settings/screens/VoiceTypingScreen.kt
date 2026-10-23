@@ -30,7 +30,7 @@ import helium314.keyboard.latin.settings.Settings
 import helium314.keyboard.latin.utils.ExecutorUtils
 import helium314.keyboard.latin.utils.prefs
 import helium314.keyboard.latin.voice.VoiceModels
-import helium314.keyboard.latin.voice.VoicePerfTest
+import helium314.keyboard.latin.voice.VoiceBenchmark
 import helium314.keyboard.settings.SearchSettingsScreen
 import helium314.keyboard.settings.preferences.Preference
 import helium314.keyboard.settings.preferences.PreferenceCategory
@@ -52,7 +52,7 @@ fun VoiceTypingScreen(onClickBack: () -> Unit) {
         }
         return
     }
-    fun append(line: String) { log = (log + line + "\n").takeLast(6000) }
+    fun append(line: String) { log = (log + line + "\n").takeLast(12000) }
 
     fun importFrom(uri: Uri) {
         if (busy) return
@@ -70,7 +70,8 @@ fun VoiceTypingScreen(onClickBack: () -> Unit) {
 
     val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         val uri = result.data?.data ?: return@rememberLauncherForActivityResult
-        try { ctx.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION) } catch (_: Exception) {}
+        try { ctx.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION) }
+        catch (_: Exception) { try { ctx.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION) } catch (_: Exception) {} }
         prefs.edit { putString(Settings.PREF_VOICE_MODELS_FOLDER, uri.toString()) }
         importFrom(uri)
     }
@@ -82,7 +83,7 @@ fun VoiceTypingScreen(onClickBack: () -> Unit) {
             PreferenceCategory(stringResource(R.string.voice_models_category))
             Preference(name = stringResource(R.string.voice_choose_folder_title), description = stringResource(R.string.voice_choose_folder_summary), onClick = {
                 if (!busy) folderPicker.launch(Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).addFlags(
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION))
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION))
             })
             val saved = prefs.getString(Settings.PREF_VOICE_MODELS_FOLDER, null)
             if (saved != null)
@@ -93,16 +94,21 @@ fun VoiceTypingScreen(onClickBack: () -> Unit) {
             for (m in models)
                 Preference(name = m.name, description = "${m.language} · ${m.sizeBytes shr 20} MB", onClick = {})
             PreferenceCategory(stringResource(R.string.voice_test_category))
-            Preference(name = stringResource(R.string.voice_test_title), description = stringResource(R.string.voice_test_summary), onClick = {
-                if (busy || models.isEmpty()) return@Preference
+            fun runTest(full: Boolean) {
+                if (busy || models.isEmpty()) return
                 busy = true; log = ""
                 ExecutorUtils.getBackgroundExecutor(ExecutorUtils.KEYBOARD).execute {
-                    try { for (m in models) VoicePerfTest.run(ctx, m) { append(it) } }
-                    catch (t: Throwable) { append("test failed: ${t.message}") }
-                    append("done")
+                    val report = StringBuilder()
+                    fun both(line: String) { report.append(line).append('\n'); append(line) }
+                    try { VoiceBenchmark.run(ctx, models, full) { both(it) } }
+                    catch (t: Throwable) { both("test failed: ${t.message}") }
+                    val tree = prefs.getString(Settings.PREF_VOICE_MODELS_FOLDER, null)?.let { Uri.parse(it) }
+                    for (where in VoiceBenchmark.save(ctx, report.toString(), tree)) append("saved: $where")
                     busy = false
                 }
-            })
+            }
+            Preference(name = stringResource(R.string.voice_test_title), description = stringResource(R.string.voice_test_summary), onClick = { runTest(false) })
+            Preference(name = stringResource(R.string.voice_test_full_title), description = stringResource(R.string.voice_test_full_summary), onClick = { runTest(true) })
             if (models.isNotEmpty())
                 Preference(name = stringResource(R.string.voice_remove_title), description = stringResource(R.string.voice_remove_summary), onClick = {
                     if (!busy) { VoiceModels.deleteAll(ctx); models = VoiceModels.installed(ctx); log = "" }

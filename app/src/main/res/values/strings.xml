@@ -184,7 +184,9 @@
     <string name="voice_no_models">No models imported yet.</string>
     <string name="voice_test_category">Test</string>
     <string name="voice_test_title">Test speed</string>
-    <string name="voice_test_summary">Loads each model, transcribes a sample clip and shows time, memory and error rate</string>
+    <string name="voice_test_summary">Loads each model, transcribes 3 test clips and shows time, memory and error rate. The result is saved as a text file</string>
+    <string name="voice_test_full_title">Full test</string>
+    <string name="voice_test_full_summary">All test clips with several settings (Whisper: beam search or greedy, 4 or all threads). Takes a few minutes. The result is saved as a text file</string>
     <string name="voice_remove_title">Remove imported models</string>
     <string name="voice_remove_summary">Frees the storage; your original folder is not touched</string>
     <string name="voice_needs_android_7">Voice typing needs Android 7 or newer.</string>
