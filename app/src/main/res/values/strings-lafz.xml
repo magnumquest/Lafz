@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lafz_search_settings">Search settings</string>
+    <string name="lafz_home_headline">Your keyboard,\nyour way.</string>
+    <string name="lafz_home_description">Write naturally in English, Urdu and Arabic. All on your device.</string>
+    <string name="lafz_section_personalize">Make it yours</string>
+    <string name="lafz_section_typing">Words &amp; expression</string>
+    <string name="lafz_section_more">More controls</string>
+    <string name="lafz_appearance_description">Themes, colors, fonts and keyboard size</string>
+    <string name="lafz_toolbar_description">Shortcuts for the things you use most</string>
+    <string name="lafz_correction_description">Autocorrect, live transliteration and emoji suggestions</string>
+    <string name="lafz_preferences_description">Sound, vibration, keys and gestures</string>
+    <string name="lafz_gesture_description">Type by gliding between letters</string>
+    <string name="lafz_dictionary_description">Manage dictionaries and your saved words</string>
+    <string name="lafz_layouts_description">Symbols, number rows and alternate layouts</string>
+    <string name="lafz_advanced_description">Fine tuning, backups and app behavior</string>
+    <string name="lafz_about_description">Version, credits and open source licenses</string>
+    <string name="lafz_try_keyboard">Try your keyboard</string>
+    <string name="lafz_try_description">Test your changes here. Try “love” or “hug” for emoji suggestions.</string>
+    <string name="lafz_try_hint">Type a little something…</string>
+    <string name="lafz_emoji_summary">Suggest emoji for words like love, hug and happy, while typing and after a space. Includes English, Urdu and Arabic. Works offline.</string>
+    <string name="lafz_no_search_results">No settings found</string>
+    <string name="lafz_search_help">Try a different word, such as theme, language or emoji.</string>
+    <string name="lafz_section_geometry">Size &amp; layout</string>
+    <string name="lafz_section_type">Text &amp; emoji</string>
+    <string name="lafz_section_background">Background</string>
+    <string name="lafz_section_feedback">Sound &amp; touch</string>
+    <string name="lafz_section_gestures">Gestures &amp; shortcuts</string>
+    <string name="lafz_section_behavior">Keyboard behavior</string>
+    <string name="lafz_section_privacy">Privacy</string>
+    <string name="lafz_section_backup">Backup &amp; troubleshooting</string>
+    <string name="lafz_section_project">Lafz</string>
+    <string name="lafz_section_help">Help &amp; community</string>
+</resources>

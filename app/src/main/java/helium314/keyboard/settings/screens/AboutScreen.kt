@@ -52,9 +52,11 @@ fun AboutScreen(
     onClickBack: () -> Unit,
 ) {
     val items = listOf(
+        R.string.lafz_section_project,
         SettingsWithoutKey.APP,
         SettingsWithoutKey.VERSION,
         SettingsWithoutKey.LICENSE,
+        R.string.lafz_section_help,
         SettingsWithoutKey.HIDDEN_FEATURES,
         SettingsWithoutKey.GITHUB_WIKI,
         SettingsWithoutKey.COMMUNITY_LINKS,

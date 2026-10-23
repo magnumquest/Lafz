@@ -9,6 +9,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.edit
+import helium314.keyboard.latin.utils.NextScreenIcon
 import helium314.keyboard.latin.utils.prefs
 import helium314.keyboard.settings.Setting
 import helium314.keyboard.settings.dialogs.ListPickerDialog
@@ -30,7 +31,7 @@ fun <T: Any> ListPreference(
         name = setting.title,
         description = selected?.first,
         onClick = { showDialog = true }
-    )
+    ) { NextScreenIcon() }
     if (showDialog) {
         ListPickerDialog(
             onDismissRequest = { showDialog = false },

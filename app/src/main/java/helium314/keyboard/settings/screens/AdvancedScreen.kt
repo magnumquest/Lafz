@@ -59,7 +59,9 @@ fun AdvancedSettingsScreen(
     if ((b?.value ?: 0) < 0)
         Log.v("irrelevant", "stupid way to trigger recomposition on preference change")
     val items = listOf(
+        R.string.lafz_section_privacy,
         Settings.PREF_ALWAYS_INCOGNITO_MODE,
+        R.string.lafz_section_gestures,
         Settings.PREF_KEY_LONGPRESS_TIMEOUT,
         Settings.PREF_SPACE_HORIZONTAL_SWIPE,
         Settings.PREF_SPACE_VERTICAL_SWIPE,
@@ -71,6 +73,7 @@ fun AdvancedSettingsScreen(
         if (Settings.readVerticalSpaceSwipe(prefs) == KeyboardActionListener.SwipeAction.TOUCHPAD_MODE)
             Settings.PREF_TOUCHPAD_EDGE_SCROLL else null,
         Settings.PREF_DELETE_SWIPE,
+        R.string.lafz_section_behavior,
         Settings.PREF_SPACE_TO_CHANGE_LANG,
         Settings.PREFS_LONG_PRESS_SYMBOLS_FOR_NUMPAD,
         Settings.PREF_ENABLE_EMOJI_ALT_PHYSICAL_KEY,
@@ -82,6 +85,7 @@ fun AdvancedSettingsScreen(
         Settings.PREF_CUSTOM_CURRENCY_KEY,
         Settings.PREF_MORE_POPUP_KEYS,
         Settings.PREF_TIMESTAMP_FORMAT,
+        R.string.lafz_section_backup,
         SettingsWithoutKey.BACKUP_RESTORE,
         if (BuildConfig.DEBUG || prefs.getBoolean(DebugSettings.PREF_SHOW_DEBUG_SETTINGS, Defaults.PREF_SHOW_DEBUG_SETTINGS))
             SettingsWithoutKey.DEBUG_SETTINGS else null,

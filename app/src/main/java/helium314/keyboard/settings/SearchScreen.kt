@@ -3,6 +3,15 @@ package helium314.keyboard.settings
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.Alignment
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -46,6 +55,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import helium314.keyboard.latin.R
@@ -59,49 +69,49 @@ fun SearchSettingsScreen(
     onClickBack: () -> Unit,
     title: String,
     settings: List<Any?>,
+    home: Boolean = false,
     content: @Composable (ColumnScope.() -> Unit)? = null // overrides settings if not null
 ) {
     SearchScreen(
         onClickBack = onClickBack,
         title = { Text(title) },
+        home = home,
         content = {
             if (content != null) content()
             else {
                 Scaffold(
                     contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom)
                 ) { innerPadding ->
+                    val groups = mutableListOf<Pair<Int?, MutableList<Any>>>()
+                    settings.filterNotNull().forEach { item ->
+                        if (item is Int) groups.add(item to mutableListOf())
+                        else {
+                            if (groups.isEmpty()) groups.add(null to mutableListOf())
+                            groups.last().second.add(item)
+                        }
+                    }
                     Column(
-                        Modifier.verticalScroll(rememberScrollState()).then(Modifier.padding(innerPadding))
+                        Modifier.verticalScroll(rememberScrollState()).padding(innerPadding)
+                            .padding(horizontal = 16.dp).padding(bottom = 24.dp)
+                            .widthIn(max = 840.dp),
                     ) {
-                        settings.forEach {
-                            if (it is Int) {
-                                PreferenceCategory(stringResource(it))
-                            } else {
-                                // this only animates appearing prefs
-                                // a solution would be using a list(visible to key)
-                                AnimatedVisibility(visible = it != null) {
-                                    if (it != null)
-                                        SettingsActivity.settingsContainer[it]?.Preference()
+                        groups.forEach { (heading, entries) ->
+                            if (entries.isNotEmpty()) {
+                                if (heading != null) PreferenceCategory(stringResource(heading))
+                                else Spacer(Modifier.height(16.dp))
+                                Surface(
+                                    shape = RoundedCornerShape(24.dp),
+                                    color = MaterialTheme.colorScheme.surfaceContainerLowest,
+                                ) {
+                                    Column {
+                                        entries.forEach { key ->
+                                            SettingsActivity.settingsContainer[key]?.Preference()
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
-                    // lazyColumn has janky scroll for a while (not sure why compose gets smoother after a while)
-                    // maybe related to unnecessary recompositions? but even for just displaying text it's there
-                    // didn't manage to improve things with @Immutable list wrapper and other lazy list hints
-                    // so for now: just use "normal" Column
-                    //  even though it takes up to ~50% longer to load it's much better UX
-                    //  and the missing appear animations could be added
-    //                LazyColumn {
-    //                    items(prefs.filterNotNull(), key = { it }) {
-    //                        Box(Modifier.animateItem()) {
-    //                            if (it is Int)
-    //                                PreferenceCategory(stringResource(it))
-    //                            else
-    //                                SettingsActivity.settingsContainer[it]!!.Preference()
-    //                        }
-    //                    }
-    //                }
                 }
             }
         },
@@ -117,6 +127,7 @@ fun <T: Any?> SearchScreen(
     title: @Composable () -> Unit,
     filteredItems: (String) -> List<T>,
     itemContent: @Composable (T) -> Unit,
+    home: Boolean = false,
     icon: @Composable (() -> Unit)? = null,
     menu: List<Pair<String, () -> Unit>>? = null,
     content: @Composable (ColumnScope.() -> Unit)? = null,
@@ -139,22 +150,23 @@ fun <T: Any?> SearchScreen(
                 else onClickBack()
             }
             Surface(
-                color = MaterialTheme.colorScheme.surfaceContainer,
+                color = MaterialTheme.colorScheme.background,
             ) {
                 Column {
                     TopAppBar(
                         title = title,
+                        colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
                         windowInsets = WindowInsets(0),
                         navigationIcon = {
-                            BackButton {
+                            if (!home || showSearch) BackButton {
                                 if (showSearch) setShowSearch(false)
                                 else onClickBack()
                             }
                         },
                         actions = {
-                            if (icon == null)
+                            if (icon == null && (!home || showSearch))
                                 IconButton(onClick = { setShowSearch(!showSearch) }) { SearchIcon() }
-                            else
+                            else if (icon != null)
                                 icon()
                             if (menu != null)
                                 Box {
@@ -176,6 +188,19 @@ fun <T: Any?> SearchScreen(
                                 }
                         },
                     )
+                    if (home && !showSearch) {
+                        Surface(
+                            onClick = { setShowSearch(true) },
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
+                            shape = RoundedCornerShape(28.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        ) {
+                            Row(Modifier.padding(18.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                SearchIcon()
+                                Text(stringResource(R.string.lafz_search_settings), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
                     ExpandableSearchField(
                         expanded = showSearch,
                         onDismiss = { setShowSearch(false) },
@@ -192,7 +217,7 @@ fun <T: Any?> SearchScreen(
             }
             CompositionLocalProvider(LocalTextStyle provides MaterialTheme.typography.bodyLarge) {
                 if (searchText.text.isBlank() && content != null) {
-                    Column {
+                    Column(Modifier.weight(1f)) {
                         content()
                     }
                 } else {
@@ -200,9 +225,20 @@ fun <T: Any?> SearchScreen(
                     Scaffold(
                         contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom)
                     ) { innerPadding ->
-                        LazyColumn(contentPadding = innerPadding) {
+                        if (items.isEmpty() && searchText.text.isNotBlank()) {
+                            Column(Modifier.padding(32.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(stringResource(R.string.lafz_no_search_results), style = MaterialTheme.typography.titleMedium)
+                                Text(stringResource(R.string.lafz_search_help), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        } else LazyColumn(
+                            modifier = Modifier.padding(innerPadding),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
                             items(items) {
-                                itemContent(it)
+                                Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surfaceContainerLowest) {
+                                    Box(Modifier.fillMaxWidth()) { itemContent(it) }
+                                }
                             }
                         }
                     }
@@ -233,6 +269,8 @@ fun ExpandableSearchField(
             value = search,
             onValueChange = onSearchChange,
             modifier = modifier.focusRequester(focusRequester),
+            placeholder = { Text(stringResource(R.string.lafz_search_settings)) },
+            shape = RoundedCornerShape(24.dp),
             leadingIcon = { SearchIcon() },
             trailingIcon = { IconButton(onClick = {
                 if (search.text.isBlank()) onDismiss()
@@ -241,7 +279,7 @@ fun ExpandableSearchField(
             singleLine = true,
             colors = colors,
             textStyle = contentTextDirectionStyle,
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search)
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search, keyboardType = KeyboardType.Uri, autoCorrectEnabled = false)
         )
     }
 }
