@@ -2,6 +2,7 @@ import subprocess, sys, os, json, urllib.request, time
 R = '../models/sweep'
 os.makedirs(R, exist_ok=True)
 CANDS = [  # (eval script, repo, lang, n)
+  ('whisper',   'humairmunirawn/whisper-urdu-base', 'ur', 0),
  ('whisper',   'kingabzpro/whisper-tiny-urdu', 'ur', 0),
  ('whisper',   'sharjeel103/whisper-tiny-urdu', 'ur', 0),
  ('whisper',   'kingabzpro/whisper-base-urdu-full', 'ur', 0),

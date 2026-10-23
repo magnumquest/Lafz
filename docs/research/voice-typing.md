@@ -54,6 +54,7 @@ Same method; English = LibriSpeech-style FLEURS `en_us` test, first 200 clips. W
 | Urdu | khawajaaliarshad/whisper-small-urdu | 967 MB | **9.6 %** | **25.6 %** |
 | Urdu | hamza-amin/whisper-small-urdu-v2 (above) | ~967 MB | 9.9 % | 26.3 % |
 | Urdu | kingabzpro/whisper-base-urdu-full | 290 MB | 15.2 % | 39.3 % |
+| Urdu | humairmunirawn/whisper-urdu-base | 290 MB | 21.7 % | 50.2 % |
 | Urdu | sharjeel103/whisper-tiny-urdu | 151 MB | 19.7 % | 47.1 % |
 | Urdu | kingabzpro/whisper-tiny-urdu | 151 MB | 19.0 % | 47.5 % |
 | Urdu | UmarRamzan/w2v2-bert-urdu (CTC) | 2.4 GB | 98.2 % | 99.9 % (unusable as published) |
