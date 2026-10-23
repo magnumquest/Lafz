@@ -74,7 +74,8 @@ public final class WordComposer {
         refreshTypedWordCache();
     }
 
-    /** creates a copy of the internal state (currently reuses mInputPointers though, so don't use this for other purpose than getting suggestions) */
+    /** creates a copy of the internal state, only meant for getting suggestions; the input pointers are copied so a
+     *  decode running on another thread never reads points that a new gesture is still writing */
     public WordComposer copy() {
         return new WordComposer(this);
     }
@@ -82,7 +83,8 @@ public final class WordComposer {
     @SuppressWarnings("CopyConstructorMissesField")
     private WordComposer(WordComposer other) {
         mEvents = null;
-        mInputPointers = other.mInputPointers; // ideally we would have an actual copy, but for current use it should be ok
+        mInputPointers = new InputPointers(MAX_WORD_LENGTH);
+        mInputPointers.copy(other.mInputPointers);
         mAutoCorrection = other.mAutoCorrection;
         mIsResumed = other.mIsResumed;
         mIsBatchMode = other.mIsBatchMode;

@@ -594,6 +594,14 @@ public class LatinIME extends InputMethodService implements
         final RomanScript romanScript = RomanScript.of(locale);
         if (romanScript != null) romanScript.engine(this);
         final SettingsValues currentSettingsValues = mSettings.getCurrent();
+        // swipe typing: load the decoder in the background now, never on the first swipe. With swipe off nothing of it
+        // is loaded, and anything loaded earlier is released.
+        if (currentSettingsValues.mGestureInputEnabled) {
+            helium314.keyboard.latin.gesture.SwipeDiagnostics.INSTANCE.init(this);
+            Suggest.preloadSwipeEngine(this, locale, currentSettingsValues.mGestureEngine);
+        } else {
+            mInputLogic.mSuggest.releaseSwipeEngine();
+        }
         AudioAndHapticFeedbackManager.getInstance().onSettingsChanged(currentSettingsValues);
         // This method is called on startup and language switch, before the new layout has
         // been displayed. Opening dictionaries never affects responsivity as dictionaries are
@@ -621,7 +629,9 @@ public class LatinIME extends InputMethodService implements
     public void onUpdateMainDictionaryAvailability(final boolean isMainDictionaryAvailable) {
         final MainKeyboardView mainKeyboardView = mKeyboardSwitcher.getMainKeyboardView();
         if (mainKeyboardView != null) {
-            mainKeyboardView.setMainDictionaryAvailability(isMainDictionaryAvailable);
+            // Roman Urdu/Arabic have no main dictionary but decode swipes with their own engines
+            mainKeyboardView.setMainDictionaryAvailability(isMainDictionaryAvailable
+                    || RomanScript.of(mDictionaryFacilitator.getMainLocale()) != null);
         }
         if (mHandler.hasPendingWaitForDictionaryLoad()) {
             mHandler.cancelWaitForDictionaryLoad();
@@ -996,7 +1006,9 @@ public class LatinIME extends InputMethodService implements
             }
         }
 
-        mainKeyboardView.setMainDictionaryAvailability(mDictionaryFacilitator.hasAtLeastOneInitializedMainDictionary());
+        // Roman Urdu/Arabic have no main dictionary; their swipes are decoded by the built-in decoder instead.
+        mainKeyboardView.setMainDictionaryAvailability(mDictionaryFacilitator.hasAtLeastOneInitializedMainDictionary()
+                || RomanScript.of(mDictionaryFacilitator.getMainLocale()) != null);
         mainKeyboardView.setKeyPreviewPopupEnabled(currentSettingsValues.mKeyPreviewPopupOn);
         mainKeyboardView.setSlidingKeyInputPreviewEnabled(currentSettingsValues.mSlidingKeyInputPreviewEnabled);
         mainKeyboardView.setGestureHandlingEnabledByUser(

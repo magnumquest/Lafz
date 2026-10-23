@@ -118,7 +118,9 @@ object Defaults {
     const val PREF_BIGRAM_PREDICTIONS = true
     const val PREF_SUGGEST_PUNCTUATION = false
     const val PREF_SUGGEST_CLIPBOARD_CONTENT = true
-    const val PREF_GESTURE_INPUT = true
+    const val PREF_GESTURE_INPUT = false
+    /** one of [GESTURE_ENGINE_FUTO], [GESTURE_ENGINE_GOOGLE], [GESTURE_ENGINE_LAFZ] */
+    const val PREF_GESTURE_ENGINE = "futo"
     const val PREF_VIBRATION_DURATION_SETTINGS = -1
     const val PREF_KEYPRESS_SOUND_VOLUME = -0.01f
     const val PREF_KEY_LONGPRESS_TIMEOUT = 300
@@ -169,7 +171,11 @@ object Defaults {
     const val PREF_ADD_TO_PERSONAL_DICTIONARY = false
     @JvmField
     val PREF_NAVBAR_COLOR = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
-    const val PREF_ENABLED_SUBTYPES = ""
+    // First install: make Lafz's three primary keyboards available without language setup.
+    // An explicit saved preference still takes precedence, including an empty one.
+    const val PREF_ENABLED_SUBTYPES = "en-US${Separators.SET}${Separators.SETS}" +
+            "ur-Latn${Separators.SET}${Separators.SETS}" +
+            "ar-Latn${Separators.SET}"
     const val PREF_SELECTED_SUBTYPE = ""
     const val PREF_URL_DETECTION = false
     const val PREF_LIVE_TRANSLITERATION = true
@@ -204,3 +210,7 @@ object Defaults {
     const val PREF_SPELLCHECK_SUGGEST = true
     const val PREF_SHOW_ONLY_TOOLBAR_WITH_HARDWARE_KEYBOARD = false
 }
+
+const val GESTURE_ENGINE_FUTO = "futo"
+const val GESTURE_ENGINE_GOOGLE = "google"
+const val GESTURE_ENGINE_LAFZ = "lafz"

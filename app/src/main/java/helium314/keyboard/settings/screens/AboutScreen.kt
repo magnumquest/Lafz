@@ -56,6 +56,7 @@ fun AboutScreen(
         SettingsWithoutKey.APP,
         SettingsWithoutKey.VERSION,
         SettingsWithoutKey.LICENSE,
+        SettingsWithoutKey.FUTO_SWIPE,
         R.string.lafz_section_help,
         SettingsWithoutKey.HIDDEN_FEATURES,
         SettingsWithoutKey.GITHUB,
@@ -69,6 +70,9 @@ fun AboutScreen(
 }
 
 fun createAboutSettings(context: Context) = listOf(
+    Setting(context, SettingsWithoutKey.FUTO_SWIPE, R.string.lafz_futo_swipe_title, R.string.lafz_futo_swipe_summary) {
+        Preference(name = it.title, description = it.description, onClick = { }, icon = R.drawable.ic_settings_gesture)
+    },
     Setting(context, SettingsWithoutKey.APP, R.string.english_ime_name, R.string.app_slogan) {
         Preference(
             name = it.title,
@@ -158,7 +162,7 @@ fun createAboutSettings(context: Context) = listOf(
                     os.writer().use { writer ->
                         val logcat = Runtime.getRuntime().exec("logcat -d -b all *:W").inputStream.use { it.reader().readText() }
                         val internal = Log.getLog().joinToString("\n")
-                        writer.write(logcat + "\n\n" + internal)
+                        writer.write(logcat + "\n\n" + internal + "\n\n" + helium314.keyboard.latin.gesture.SwipeDiagnostics.report(ctx, helium314.keyboard.latin.gesture.FutoSwipe.status()))
                     }
                 }
             }

@@ -23,6 +23,10 @@ class InputLogicHandler implements Handler.Callback {
     final InputLogic mInputLogic;
     private final Object mLock = new Object();
     private boolean mInBatchInput; // synchronized using {@link #mLock}.
+    // Both synchronized using mLock. A slow decoder can still be busy with a swipe when the next one starts, so results
+    // are tied to the gesture (generation) and to the newest update of it (token) instead of to this single flag.
+    private int mBatchGeneration;
+    private int mLatestUpdateToken;
 
     private static final int MSG_GET_SUGGESTED_WORDS = 1;
 
@@ -54,6 +58,7 @@ class InputLogicHandler implements Handler.Callback {
     // Called on the UI thread by InputLogic.
     public void onStartBatchInput() {
         synchronized (mLock) {
+            ++mBatchGeneration;
             mInBatchInput = true;
         }
     }
@@ -76,21 +81,37 @@ class InputLogicHandler implements Handler.Callback {
     // the UI thread.
     private void updateBatchInput(final InputPointers batchPointers,
             final int sequenceNumber, final boolean isTailBatchInput) {
+        // The pointers passed in are a shared buffer that the next gesture keeps writing to, but decoding happens
+        // later on another thread: decode a private copy.
+        final InputPointers snapshot = new InputPointers(Math.max(1, batchPointers.getPointerSize()));
+        snapshot.copy(batchPointers);
+        final int generation;
+        final int token;
         synchronized (mLock) {
             if (!mInBatchInput) {
                 // Batch input has ended or canceled while the message was being delivered.
                 return;
             }
-            mInputLogic.mWordComposer.setBatchInputPointers(batchPointers);
-            getSuggestedWords(() -> mInputLogic.getSuggestedWords(
-                isTailBatchInput ? SuggestedWords.INPUT_STYLE_TAIL_BATCH : SuggestedWords.INPUT_STYLE_UPDATE_BATCH, sequenceNumber,
-                suggestedWords -> showGestureSuggestionsWithPreviewVisuals(suggestedWords, isTailBatchInput))
-            );
+            generation = mBatchGeneration;
+            token = isTailBatchInput ? mLatestUpdateToken : ++mLatestUpdateToken;
+            mInputLogic.mWordComposer.setBatchInputPointers(snapshot);
         }
+        getSuggestedWords(() -> {
+            if (!isTailBatchInput) {
+                synchronized (mLock) {
+                    // a newer update, or the next gesture, makes this one obsolete: don't spend time decoding it
+                    if (generation != mBatchGeneration || token != mLatestUpdateToken) return;
+                }
+            }
+            mInputLogic.getSuggestedWords(
+                isTailBatchInput ? SuggestedWords.INPUT_STYLE_TAIL_BATCH : SuggestedWords.INPUT_STYLE_UPDATE_BATCH, sequenceNumber,
+                suggestedWords -> showGestureSuggestionsWithPreviewVisuals(suggestedWords, isTailBatchInput, generation),
+                snapshot);
+        });
     }
 
     private void showGestureSuggestionsWithPreviewVisuals(final SuggestedWords suggestedWordsForBatchInput,
-            final boolean isTailBatchInput) {
+            final boolean isTailBatchInput, final int generation) {
         final SuggestedWords suggestedWordsToShowSuggestions;
         // We're now inside the callback. This always runs on the Non-UI thread,
         // no matter what thread updateBatchInput was originally called on.
@@ -105,7 +126,10 @@ class InputLogicHandler implements Handler.Callback {
         }
         mLatinIMEHandler.showGesturePreviewAndSetSuggestions(suggestedWordsToShowSuggestions, isTailBatchInput);
         if (isTailBatchInput) {
-            mInBatchInput = false;
+            synchronized (mLock) {
+                // only end the swipe this result belongs to, a newer one may already be running
+                if (generation == mBatchGeneration) mInBatchInput = false;
+            }
             // The following call schedules onEndBatchInputInternal
             // to be called on the UI thread.
             mLatinIMEHandler.showTailBatchInputResult(suggestedWordsToShowSuggestions);

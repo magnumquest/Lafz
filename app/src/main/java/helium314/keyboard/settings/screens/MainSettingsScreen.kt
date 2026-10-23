@@ -61,9 +61,8 @@ fun MainSettingsScreen(
                         stringResource(R.string.lafz_correction_description), onClickTextCorrection)
                     HomeRow(R.string.settings_screen_preferences, R.drawable.ic_settings_preferences,
                         stringResource(R.string.lafz_preferences_description), onClickPreferences)
-                    if (JniUtils.sHaveGestureLib)
-                        HomeRow(R.string.settings_screen_gesture, R.drawable.ic_settings_gesture,
-                            stringResource(R.string.lafz_gesture_description), onClickGestureTyping)
+                    HomeRow(R.string.settings_screen_gesture, R.drawable.ic_settings_gesture,
+                        stringResource(R.string.lafz_gesture_description), onClickGestureTyping)
                     HomeRow(R.string.dictionary_settings_category, R.drawable.ic_dictionary,
                         stringResource(R.string.lafz_dictionary_description), onClickDictionaries)
                 }
