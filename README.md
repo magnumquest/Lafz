@@ -91,6 +91,14 @@ Back that key up and never commit it: updates must be signed with the same key.
 
 ## Roadmap
 
+Shipped in **0.3.0**:
+
+- [x] Offline contextual emoji suggestions for English, Urdu, and Arabic
+- [x] Redesigned Settings and search
+- [x] Bundled native Urdu dictionary
+
+Planned:
+
 - [ ] Better casual-chat accuracy (conversational training data, optional on-device learning)
 - [ ] More verb forms (past, continuous, imperative) and slang
 - [ ] Native digits in number/phone fields
