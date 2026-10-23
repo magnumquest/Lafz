@@ -1,0 +1,13 @@
+// Local, offline validation: exclude HTTP link probes and the five cases upstream explicitly skips in its runTests variant.
+allprojects {
+    tasks.withType(Test).configureEach {
+        exclude '**/XLinkTest.class'
+        filter {
+            excludeTestsMatching '*CharacterIteratorTest.firstGraphemeFails'
+            excludeTestsMatching '*CharacterIteratorTest.lastGraphemeFails'
+            excludeTestsMatching '*StringUtilsTest.isEmojiFails'
+            excludeTestsMatching '*StringUtilsTest.detectEmojiAtStartFails'
+            excludeTestsMatching '*InputLogicTest.insertLetterIntoWordHangulFails'
+        }
+    }
+}

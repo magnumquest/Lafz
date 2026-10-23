@@ -22,8 +22,6 @@ import android.os.Bundle;
 import android.os.Debug;
 import android.os.Message;
 import android.os.Process;
-import android.util.PrintWriterPrinter;
-import android.util.Printer;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.Window;
@@ -94,8 +92,6 @@ import helium314.keyboard.latin.utils.ToolbarMode;
 import helium314.keyboard.settings.SettingsActivity2;
 import kotlin.Unit;
 
-import java.io.FileDescriptor;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -159,9 +155,6 @@ public class LatinIME extends InputMethodService implements
     // Object for reacting to adding/removing a dictionary pack.
     private final BroadcastReceiver mDictionaryPackInstallReceiver =
             new DictionaryPackInstallBroadcastReceiver(this);
-
-    private final BroadcastReceiver mDictionaryDumpBroadcastReceiver =
-            new DictionaryDumpBroadcastReceiver(this);
 
     FoldableUtils.FoldableObserver foldableObserver;
 
@@ -264,9 +257,7 @@ public class LatinIME extends InputMethodService implements
                     }
                     break;
                 case MSG_RESUME_SUGGESTIONS:
-                    latinIme.mInputLogic.restartSuggestionsOnWordTouchedByCursor(
-                            latinIme.mSettings.getCurrent(),
-                            latinIme.mKeyboardSwitcher.getCurrentKeyboardScript());
+                    latinIme.mInputLogic.restartSuggestionsOnWordTouchedByCursor(latinIme.mSettings.getCurrent());
                     break;
                 case MSG_REOPEN_DICTIONARIES:
                     // We need to re-evaluate the currently composing word in case the script has
@@ -581,10 +572,6 @@ public class LatinIME extends InputMethodService implements
         // RECEIVER_EXPORTED is necessary because apparently Android 15 (and others?) don't recognize if the sender and receiver are the same app, see https://github.com/HeliBorg/HeliBoard/pull/1756
         ContextCompat.registerReceiver(this, mDictionaryPackInstallReceiver, newDictFilter, ContextCompat.RECEIVER_EXPORTED);
 
-        final IntentFilter dictDumpFilter = new IntentFilter();
-        dictDumpFilter.addAction(DictionaryDumpBroadcastReceiver.DICTIONARY_DUMP_INTENT_ACTION);
-        ContextCompat.registerReceiver(this, mDictionaryDumpBroadcastReceiver, dictDumpFilter, ContextCompat.RECEIVER_NOT_EXPORTED);
-
         final IntentFilter restartAfterUnlockFilter = new IntentFilter();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
             restartAfterUnlockFilter.addAction(Intent.ACTION_USER_UNLOCKED);
@@ -716,7 +703,6 @@ public class LatinIME extends InputMethodService implements
             foldableObserver.unregister(this);
         unregisterReceiver(mRingerModeChangeReceiver);
         unregisterReceiver(mDictionaryPackInstallReceiver);
-        unregisterReceiver(mDictionaryDumpBroadcastReceiver);
         unregisterReceiver(mRestartAfterDeviceUnlockReceiver);
         unregisterReceiver(mEmojiSearchReceiver);
         mStatsUtilsManager.onDestroy(this /* context */);
@@ -1435,10 +1421,8 @@ public class LatinIME extends InputMethodService implements
         if (KeyCode.VOICE_INPUT == event.getKeyCode()) {
             mRichImm.switchToShortcutIme(this);
         }
-        final InputTransaction completeInputTransaction =
-                mInputLogic.onCodeInput(mSettings.getCurrent(), event,
-                        mKeyboardSwitcher.getKeyboardCapsMode(),
-                        mKeyboardSwitcher.getCurrentKeyboardScript(), mHandler);
+        InputTransaction completeInputTransaction =
+                mInputLogic.onCodeInput(mSettings.getCurrent(), event, mKeyboardSwitcher.getKeyboardCapsMode(), mHandler);
         updateStateAfterInputTransaction(completeInputTransaction);
         mKeyboardSwitcher.onEvent(event, getCurrentAutoCapsState(), getCurrentRecapitalizeState());
     }
@@ -1450,7 +1434,7 @@ public class LatinIME extends InputMethodService implements
         InputTransaction completeInputTransaction = mInputLogic.onTextInput(mSettings.getCurrent(),
             event, mKeyboardSwitcher.getKeyboardCapsMode(), mHandler);
         updateStateAfterInputTransaction(completeInputTransaction);
-        mInputLogic.restartSuggestionsOnWordTouchedByCursor(mSettings.getCurrent(), mKeyboardSwitcher.getCurrentKeyboardScript());
+        mInputLogic.restartSuggestionsOnWordTouchedByCursor(mSettings.getCurrent());
         mKeyboardSwitcher.onEvent(event, getCurrentAutoCapsState(), getCurrentRecapitalizeState());
     }
 
@@ -1556,12 +1540,9 @@ public class LatinIME extends InputMethodService implements
     // Called from {@link SuggestionStripView} through the {@link SuggestionStripView#Listener}
     // interface
     @Override
-    public void pickSuggestionManually(final SuggestedWordInfo suggestionInfo) {
-        final InputTransaction completeInputTransaction = mInputLogic.onPickSuggestionManually(
-                mSettings.getCurrent(), suggestionInfo,
-                mKeyboardSwitcher.getKeyboardCapsMode(),
-                mKeyboardSwitcher.getCurrentKeyboardScript(),
-                mHandler);
+    public void pickSuggestionManually(SuggestedWordInfo suggestionInfo) {
+        InputTransaction completeInputTransaction = mInputLogic.onPickSuggestionManually(
+                mSettings.getCurrent(), suggestionInfo, mKeyboardSwitcher.getKeyboardCapsMode(), mHandler);
         updateStateAfterInputTransaction(completeInputTransaction);
     }
 
@@ -1788,36 +1769,6 @@ public class LatinIME extends InputMethodService implements
 
     private int getEmojiSearchActivityHeight() {
         return EmojiSearchActivity.Companion.decodePrivateImeOptions(getCurrentInputEditorInfo()).height();
-    }
-
-    public void dumpDictionaryForDebug(final String dictName) {
-        if (!mDictionaryFacilitator.isActive()) {
-            resetDictionaryFacilitatorIfNecessary();
-        }
-        mDictionaryFacilitator.dumpDictionaryForDebug(dictName);
-    }
-
-    public void debugDumpStateAndCrashWithException(final String context) {
-        final SettingsValues settingsValues = mSettings.getCurrent();
-        String s = settingsValues.toString() + "\nAttributes : " + settingsValues.mInputAttributes +
-                "\nContext : " + context;
-        throw new RuntimeException(s);
-    }
-
-    @Override
-    protected void dump(final FileDescriptor fd, final PrintWriter fout, final String[] args) {
-        super.dump(fd, fout, args);
-
-        Printer p = new PrintWriterPrinter(fout);
-        p.println("LatinIME state :");
-        p.println("  VersionCode = " + BuildConfig.VERSION_CODE);
-        p.println("  VersionName = " + BuildConfig.VERSION_NAME);
-        Keyboard keyboard = mKeyboardSwitcher.getKeyboard();
-        KeyboardMode keyboardMode = keyboard != null ? keyboard.mId.getMode() : null;
-        p.println("  Keyboard mode = " + keyboardMode);
-        SettingsValues settingsValues = mSettings.getCurrent();
-        p.println(settingsValues.dump());
-        p.println(mDictionaryFacilitator.dump(this));
     }
 
     // slightly modified from Simple Keyboard: https://github.com/rkkr/simple-keyboard/blob/master/app/src/main/java/rkr/simplekeyboard/inputmethod/latin/LatinIME.java

@@ -21,11 +21,9 @@ import helium314.keyboard.latin.common.FileUtils;
 import helium314.keyboard.latin.define.DecoderSpecificConstants;
 import helium314.keyboard.latin.makedict.DictionaryHeader;
 import helium314.keyboard.latin.makedict.FormatSpec;
-import helium314.keyboard.latin.makedict.UnsupportedFormatException;
 import helium314.keyboard.latin.makedict.WordProperty;
 import helium314.keyboard.latin.settings.SettingsValuesForSuggestion;
 import helium314.keyboard.latin.utils.AsyncResultHolder;
-import helium314.keyboard.latin.utils.CombinedFormatUtils;
 import helium314.keyboard.latin.utils.ExecutorUtils;
 
 import java.io.File;
@@ -101,10 +99,6 @@ abstract public class ExpandableBinaryDictionary extends Dictionary {
      * Abstract method for loading initial contents of a given dictionary.
      */
     protected abstract void loadInitialContentsLocked();
-
-    static boolean matchesExpectedBinaryDictFormatVersionForThisType(final int formatVersion) {
-        return formatVersion == FormatSpec.VERSION4;
-    }
 
     private static boolean needsToMigrateDictionary(final int formatVersion) {
         // When we bump up the dictionary format version, the old version should be added to here
@@ -528,10 +522,8 @@ abstract public class ExpandableBinaryDictionary extends Dictionary {
                 } else if (getBinaryDictionary() == null) {
                     // Otherwise, load the existing dictionary.
                     loadBinaryDictionaryLocked();
-                    final BinaryDictionary binaryDictionary = getBinaryDictionary();
-                    if (binaryDictionary != null && !(isValidDictionaryLocked()
-                            // TODO: remove the check below
-                            && matchesExpectedBinaryDictFormatVersionForThisType(binaryDictionary.getFormatVersion()))) {
+                    BinaryDictionary binaryDictionary = getBinaryDictionary();
+                    if (binaryDictionary != null && !(isValidDictionaryLocked())) {
                         // Binary dictionary or its format version is not valid. Regenerate
                         // the dictionary file. createNewDictionaryLocked will remove the
                         // existing files if appropriate.
@@ -576,68 +568,5 @@ abstract public class ExpandableBinaryDictionary extends Dictionary {
             }
         });
         return result.get(null /* defaultValue */, TIMEOUT_FOR_READ_OPS_IN_MILLISECONDS);
-    }
-
-    public void dumpAllWordsForDebug() {
-        reloadDictionaryIfRequired();
-        final String tag = TAG;
-        final String dictName = mDictName;
-        asyncExecuteTaskWithLock(mLock.readLock(), () -> {
-            Log.d(tag, "Dump dictionary: " + dictName + " for " + mLocale);
-            final BinaryDictionary binaryDictionary = getBinaryDictionary();
-            if (binaryDictionary == null) {
-                return;
-            }
-            try {
-                final DictionaryHeader header = binaryDictionary.getHeader();
-                Log.d(tag, "Format version: " + binaryDictionary.getFormatVersion());
-                Log.d(tag, CombinedFormatUtils.formatAttributeMap(header.mDictionaryOptions.mAttributes));
-            } catch (final UnsupportedFormatException e) {
-                Log.d(tag, "Cannot fetch header information.", e);
-            }
-            int token = 0;
-            do {
-                final BinaryDictionary.GetNextWordPropertyResult result =
-                        binaryDictionary.getNextWordProperty(token);
-                final WordProperty wordProperty = result.mWordProperty;
-                if (wordProperty == null) {
-                    Log.d(tag, " dictionary is empty.");
-                    break;
-                }
-                Log.d(tag, wordProperty.toString());
-                token = result.mNextToken;
-            } while (token != 0);
-        });
-    }
-
-    /**
-     * Returns dictionary content required for syncing.
-     */
-    public WordProperty[] getWordPropertiesForSyncing() {
-        reloadDictionaryIfRequired();
-        final AsyncResultHolder<WordProperty[]> result =
-                new AsyncResultHolder<>("WordPropertiesForSync");
-        asyncExecuteTaskWithLock(mLock.readLock(), () -> {
-            final ArrayList<WordProperty> wordPropertyList = new ArrayList<>();
-            final BinaryDictionary binaryDictionary = getBinaryDictionary();
-            if (binaryDictionary == null) {
-                return;
-            }
-            int token = 0;
-            do {
-                // TODO: We need a new API that returns *new* un-synced data.
-                final BinaryDictionary.GetNextWordPropertyResult nextWordPropertyResult =
-                        binaryDictionary.getNextWordProperty(token);
-                final WordProperty wordProperty = nextWordPropertyResult.mWordProperty;
-                if (wordProperty == null) {
-                    break;
-                }
-                wordPropertyList.add(wordProperty);
-                token = nextWordPropertyResult.mNextToken;
-            } while (token != 0);
-            result.set(wordPropertyList.toArray(new WordProperty[0]));
-        });
-        // TODO: Figure out the best timeout duration for this API.
-        return result.get(DEFAULT_WORD_PROPERTIES_FOR_SYNC, TIMEOUT_FOR_READ_OPS_IN_MILLISECONDS);
     }
 }

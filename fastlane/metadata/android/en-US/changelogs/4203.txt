@@ -1,0 +1,4 @@
+* Add offline contextual emoji suggestions for English, Urdu, and Arabic, including Roman Urdu and Roman Arabic input
+* Redesign Settings with clearer groups and improved search
+* Bundle a native Urdu dictionary for Urdu keyboard suggestions
+* Merge HeliBoard 4.3 improvements and fixes

@@ -29,6 +29,9 @@ import helium314.keyboard.latin.utils.WordData
 import helium314.keyboard.latin.utils.useBackgroundGathering
 import helium314.keyboard.latin.urdu.Honorifics
 import helium314.keyboard.latin.urdu.ReligiousShortcuts
+import helium314.keyboard.latin.urdu.EmojiKeywords
+import helium314.keyboard.keyboard.emoji.SupportedEmojis
+import java.io.InputStreamReader
 import helium314.keyboard.latin.urdu.RomanScript
 import java.util.Locale
 import kotlin.math.max
@@ -126,7 +129,7 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
             else suggestionsContainer
 
         val inputStyle = if (resultsArePredictions) {
-            if (suggestionResults.mIsBeginningOfSentence) SuggestedWords.INPUT_STYLE_BEGINNING_OF_SENTENCE_PREDICTION
+            if (suggestionResults.mNgramContext.isBeginningOfSentenceContext) SuggestedWords.INPUT_STYLE_BEGINNING_OF_SENTENCE_PREDICTION
             else SuggestedWords.INPUT_STYLE_PREDICTION
         } else {
             inputStyleIfNotPrediction
@@ -159,6 +162,8 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
         // two slots are taken (correction and typed word), so honorifics must never become the auto-correction target
         addHonorificSuggestions(suggestionsList, typedWordString, ngramContext, resultsArePredictions,
             if (resultsArePredictions) 0 else if (hasAutoCorrection || correctToCapitalizedWord) 3 else 1, null)
+        addContextEmoji(suggestionsList, typedWordString, ngramContext, resultsArePredictions,
+            if (resultsArePredictions) 1 else if (hasAutoCorrection || correctToCapitalizedWord) 3 else 2)
         val isTypedWordValid = firstOccurrenceOfTypedWordInSuggestions > -1 || (!resultsArePredictions && !allowsToBeAutoCorrected)
         return SuggestedWords(suggestionsList, suggestionResults.mRawSuggestions, typedWordInfo,
             isTypedWordValid, hasAutoCorrection || correctToCapitalizedWord, false, inputStyle, sequenceNumber)
@@ -189,6 +194,7 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
                     SuggestedWordInfo.NOT_AN_INDEX, SuggestedWordInfo.NOT_A_CONFIDENCE))
             }
             addHonorificSuggestions(list, typed, ngramContext, true, 0, script.honorificScript)
+            addContextEmoji(list, typed, ngramContext, true, 1)
             return SuggestedWords(list, null, null, false, false, false,
                 if (atStart) SuggestedWords.INPUT_STYLE_BEGINNING_OF_SENTENCE_PREDICTION else SuggestedWords.INPUT_STYLE_PREDICTION,
                 sequenceNumber)
@@ -216,7 +222,32 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
         val romanChoice = SuggestedWordInfo(typed, "", 500, SuggestedWordInfo.KIND_CORRECTION, source,
             SuggestedWordInfo.NOT_AN_INDEX, SuggestedWordInfo.NOT_A_CONFIDENCE)
         list.add(3.coerceAtMost(list.size), romanChoice)
+        addContextEmoji(list, typed, ngramContext, false, 2)
         return SuggestedWords(list, null, typedInfo, false, willAutoCorrect, false, inputStyleIfNotPrediction, sequenceNumber)
+    }
+
+    private val emojiSource = Dictionary.PhonyDictionary("lafz_emoji_keywords")
+
+    private fun addContextEmoji(list: ArrayList<SuggestedWordInfo>, typed: String, context: NgramContext,
+                               prediction: Boolean, insertIndex: Int) {
+        val settings = Settings.getValues() ?: return
+        if (!settings.mSuggestEmojis || settings.mInputAttributes.mIsPasswordField) return
+        val keywords = bundledEmojiKeywords ?: return
+        val previous = if (context.prevWordCount > 0 && !context.isBeginningOfSentenceContext)
+            context.getNthPrevWord(1)?.toString() else null
+        val query = if (prediction) previous ?: return else typed
+        if (query.isBlank()) return
+        val matches = linkedSetOf<String>()
+        if (!prediction && previous != null) matches.addAll(keywords.suggest("$previous $typed", 2))
+        matches.addAll(keywords.suggest(query, 2))
+        // Keep the typed word and the automatic correction protected. Emoji are explicit choices only.
+        var index = insertIndex.coerceAtMost(list.size)
+        matches.filterNot { SupportedEmojis.isUnsupported(it) }.take(2).forEach { emoji ->
+            val info = useDefaultEmojiSkinTone(SuggestedWordInfo(emoji, "", 850,
+                SuggestedWordInfo.KIND_PREDICTION, emojiSource,
+                SuggestedWordInfo.NOT_AN_INDEX, SuggestedWordInfo.NOT_A_CONFIDENCE))
+            if (list.none { it.mWord == info.mWord }) list.add(index++, info)
+        }
     }
 
     private val honorificsDictionary = Dictionary.PhonyDictionary("honorifics")
@@ -462,6 +493,19 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
     }
 
     companion object {
+        // First access is on the existing suggestion worker. No disk reads on the UI keystroke path.
+        private val bundledEmojiKeywords: EmojiKeywords? by lazy {
+            val ctx = Settings.getCurrentContext()
+            try {
+                ctx?.assets?.open("emoji_keywords.tsv")?.use { input ->
+                    InputStreamReader(input, Charsets.UTF_8).use { EmojiKeywords.load(it) }
+                }
+            } catch (e: java.io.IOException) {
+                Log.e("Suggest", "Could not load bundled emoji keywords", e)
+                null
+            }
+        }
+
         private val TAG: String = Suggest::class.java.simpleName
 
         // Source of the Roman -> Urdu / Arabic decoder candidates (SuggestedWordInfo.mSourceDict). InputLogic uses it

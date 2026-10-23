@@ -274,9 +274,9 @@ fun createCorrectionSettings(context: Context) = listOf(
         SwitchPreference(setting, Defaults.PREF_USE_APPS)
     },
     Setting(
-        context, Settings.PREF_SUGGEST_EMOJIS, R.string.suggest_emojis, R.string.suggest_emojis_summary
+        context, Settings.PREF_SUGGEST_EMOJIS, R.string.suggest_emojis, R.string.lafz_emoji_summary
     ) {
-        SwitchPreferenceWithEmojiDictWarning(it, Defaults.PREF_SUGGEST_EMOJIS)
+        SwitchPreference(it, Defaults.PREF_SUGGEST_EMOJIS)
     },
     Setting(
         context, Settings.PREF_INLINE_EMOJI_SEARCH, R.string.inline_emoji_search, R.string.inline_emoji_search_summary) {
