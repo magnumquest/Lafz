@@ -13,7 +13,7 @@ import kotlin.math.sqrt
  * Nothing is loaded until an engine is created, and [close] gives all of the memory back.
  * The model folder is described by a [VoiceModelInfo] (see [VoiceModels]).
  */
-class CtcOnnxEngine(private val info: VoiceModelInfo, dir: File, threads: Int) : AutoCloseable {
+class CtcOnnxEngine(private val info: VoiceModelInfo, dir: File, threads: Int) : SpeechEngine {
     private val env = OrtEnvironment.getEnvironment()
     private val session: OrtSession
     private val inputName: String
@@ -34,7 +34,7 @@ class CtcOnnxEngine(private val info: VoiceModelInfo, dir: File, threads: Int) :
     }
 
     /** [samples]: mono audio at the model's sample rate, values in -1..1. Long audio is processed in 30 s pieces. */
-    fun transcribe(samples: FloatArray): String {
+    override fun transcribe(samples: FloatArray): String {
         val piece = 30 * info.sampleRate
         val parts = ArrayList<String>()
         var start = 0

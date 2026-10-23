@@ -30,6 +30,7 @@ android {
             isJniDebuggable = false
         }
         create("nouserlib") { // same as release, but does not allow the user to provide a library
+            matchingFallbacks += "release" // library modules only have debug and release
             isMinifyEnabled = true
             isShrinkResources = false
             isDebuggable = false
@@ -43,10 +44,12 @@ android {
             applicationIdSuffix = ".debug"
         }
         create("runTests") { // build variant for running tests on CI that skips tests known to fail
+            matchingFallbacks += "debug"
             isMinifyEnabled = false
             isJniDebuggable = false
         }
         create("debugNoMinify") { // for faster builds in IDE
+            matchingFallbacks += "debug"
             isDebuggable = true
             isMinifyEnabled = false
             isJniDebuggable = false
@@ -125,6 +128,7 @@ dependencies {
     // kotlin
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
     implementation("com.microsoft.onnxruntime:onnxruntime-android:1.23.2") // voice typing models; loaded only when voice typing is used
+    implementation(project(":whisper")) // whisper.cpp for offline voice typing; native libraries load only when a Whisper model is used
 
     // compose
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")

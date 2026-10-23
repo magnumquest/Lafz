@@ -19,6 +19,8 @@ import java.io.File
  * `model.json` that says how to run it, see tools/voice-spike/README.md:
  * {"name": "Arabic (Omnilingual 300M)", "language": "ar", "type": "ctc_onnx", "model": "model.int8.onnx", "tokens": "tokens.txt",
  *  "blank_id": 1, "skip_ids": [0, 2, 3], "normalize": true, "sample_rate": 16000}
+ * or a Whisper model for whisper.cpp (GGML file, e.g. quantised to q5_1; "beam" 1 is greedy and fastest, default 5):
+ * {"name": "Urdu (Whisper small)", "language": "ur", "type": "whisper_cpp", "model": "ggml-small-urdu-q5_1.bin", "beam": 5}
  */
 data class VoiceModelInfo(
     val dirName: String,
@@ -27,6 +29,7 @@ data class VoiceModelInfo(
     val type: String,
     val modelFile: String,
     val tokensFile: String,
+    val beamSize: Int,
     val blankId: Int,
     val skipIds: Set<Int>,
     val normalize: Boolean,
@@ -37,6 +40,7 @@ data class VoiceModelInfo(
 object VoiceModels {
     const val DESCRIPTOR = "model.json"
     const val TYPE_CTC_ONNX = "ctc_onnx"
+    const val TYPE_WHISPER_CPP = "whisper_cpp"
     private const val TAG = "VoiceModels"
 
     /** the speech runtime needs Android 7 */
@@ -58,14 +62,16 @@ object VoiceModels {
             language = o["language"]!!.jsonPrimitive.content,
             type = o["type"]?.jsonPrimitive?.contentOrNull ?: TYPE_CTC_ONNX,
             modelFile = o["model"]!!.jsonPrimitive.content,
-            tokensFile = o["tokens"]!!.jsonPrimitive.content,
+            tokensFile = o["tokens"]?.jsonPrimitive?.contentOrNull ?: "",
+            beamSize = o["beam"]?.jsonPrimitive?.intOrNull ?: 5,
             blankId = o["blank_id"]?.jsonPrimitive?.intOrNull ?: 0,
             skipIds = o["skip_ids"]?.jsonArray?.mapNotNull { it.jsonPrimitive.intOrNull }?.toSet() ?: emptySet(),
             normalize = o["normalize"]?.jsonPrimitive?.booleanOrNull ?: true,
             sampleRate = o["sample_rate"]?.jsonPrimitive?.intOrNull ?: 16000,
             sizeBytes = dir.listFiles()?.sumOf { it.length() } ?: 0L,
         )
-        if (info.type == TYPE_CTC_ONNX && File(dir, info.modelFile).isFile && File(dir, info.tokensFile).isFile) info else null
+        val files = File(dir, info.modelFile).isFile && (info.type != TYPE_CTC_ONNX || File(dir, info.tokensFile).isFile)
+        if ((info.type == TYPE_CTC_ONNX || info.type == TYPE_WHISPER_CPP) && files) info else null
     } catch (e: Exception) {
         Log.w(TAG, "invalid model folder ${dir.name}", e)
         null

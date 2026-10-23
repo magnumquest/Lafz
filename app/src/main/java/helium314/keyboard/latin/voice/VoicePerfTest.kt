@@ -13,7 +13,7 @@ object VoicePerfTest {
         if (samples.isEmpty()) { log("  no sample clip for '${info.language}' in the app"); return }
         val rssBefore = residentMb()
         val t0 = System.nanoTime()
-        val engine = try { CtcOnnxEngine(info, VoiceModels.dir(context, info), threads) } catch (t: Throwable) { log("  could not load: ${t.message}"); return }
+        val engine = try { SpeechEngine.create(context, info, VoiceModels.dir(context, info), threads) } catch (t: Throwable) { log("  could not load: ${t.message}"); return }
         engine.use {
             log("  loaded in ${ms(t0)} ms, memory ${residentMb() - rssBefore} MB more than before")
             for (name in samples) {

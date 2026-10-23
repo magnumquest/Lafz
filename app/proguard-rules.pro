@@ -18,3 +18,5 @@
 
 # ONNX Runtime (voice typing): its native code finds these Java classes and methods by name
 -keep class ai.onnxruntime.** { *; }
+# whisper.cpp wrapper (voice typing): JNI binds the native methods by name
+-keep class app.lafz.whisper.** { *; }
