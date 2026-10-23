@@ -15,3 +15,6 @@
 
 # FUTO Swipe: classes and members are used from native code via JNI
 -keep class org.futo.ml.inference.** { *; }
+
+# ONNX Runtime (voice typing): its native code finds these Java classes and methods by name
+-keep class ai.onnxruntime.** { *; }

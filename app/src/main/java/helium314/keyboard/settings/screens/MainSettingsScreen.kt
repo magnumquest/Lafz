@@ -31,6 +31,7 @@ fun MainSettingsScreen(
     onClickPreferences: () -> Unit,
     onClickToolbar: () -> Unit,
     onClickGestureTyping: () -> Unit,
+    onClickVoiceTyping: () -> Unit,
     onClickDataGathering: () -> Unit,
     onClickAdvanced: () -> Unit,
     onClickAppearance: () -> Unit,
@@ -63,6 +64,8 @@ fun MainSettingsScreen(
                         stringResource(R.string.lafz_preferences_description), onClickPreferences)
                     HomeRow(R.string.settings_screen_gesture, R.drawable.ic_settings_gesture,
                         stringResource(R.string.lafz_gesture_description), onClickGestureTyping)
+                    HomeRow(R.string.voice_typing_title, R.drawable.sym_keyboard_voice_rounded,
+                        stringResource(R.string.voice_typing_description), onClickVoiceTyping)
                     HomeRow(R.string.dictionary_settings_category, R.drawable.ic_dictionary,
                         stringResource(R.string.lafz_dictionary_description), onClickDictionaries)
                 }

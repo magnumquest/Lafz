@@ -8,6 +8,9 @@ SPDX-License-Identifier: Apache-2.0 AND GPL-3.0-only
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- ONNX Runtime (voice typing models) needs Android 7; it is only touched there (VoiceModels.isSupported), the rest of the app still runs on Android 5 -->
+    <uses-sdk tools:overrideLibrary="ai.onnxruntime" />
+
     <uses-permission android:name="android.permission.READ_USER_DICTIONARY" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.VIBRATE" />

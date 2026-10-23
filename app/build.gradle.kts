@@ -124,6 +124,7 @@ dependencies {
 
     // kotlin
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.23.2") // voice typing models; loaded only when voice typing is used
 
     // compose
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
