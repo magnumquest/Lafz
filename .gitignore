@@ -18,3 +18,9 @@ tools/*.txt
 dist/
 data/
 tools/arabic/work2/
+
+# local-only working files (never commit)
+CLAUDE.md
+resume.md
+commit.md
+screenshots/
