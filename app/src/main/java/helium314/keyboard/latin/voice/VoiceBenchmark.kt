@@ -56,11 +56,11 @@ object VoiceBenchmark {
             log("== ${info.name} (${info.language}, ${info.type}, ${info.sizeBytes shr 20} MB), ${clips.size} clips, ${"%.0f".format(clips.sumOf { it.audio.size }.toDouble() / info.sampleRate)} s of audio")
             if (clips.isEmpty()) { log("  no test clips for '${info.language}'"); continue }
             val whisper = info.type == VoiceModels.TYPE_WHISPER_CPP
-            val four = minOf(4, cores)
-            val settings = if (!full) listOf(Setting("beam ${info.beamSize}, $four threads".takeIf { whisper } ?: "$four threads", info.beamSize, four))
+            val four = VoiceModels.defaultThreads
+            val settings = if (!full) listOf(Setting((if (info.beamSize > 1) "beam ${info.beamSize}" else "greedy") + ", $four threads", info.beamSize, four).takeIf { whisper } ?: Setting("$four threads", 0, four))
             else if (whisper) listOfNotNull(
-                Setting("beam ${info.beamSize}, $four threads", info.beamSize, four),
                 Setting("greedy, $four threads", 1, four),
+                Setting("beam 5, $four threads", 5, four),
                 Setting("greedy, $cores threads", 1, cores).takeIf { cores != four },
             ) else listOfNotNull(Setting("$four threads", 0, four), Setting("$cores threads", 0, cores).takeIf { cores != four })
             for (s in settings) runSetting(context, info, clips, s, log)

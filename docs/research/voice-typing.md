@@ -83,7 +83,7 @@ whisper.cpp built on the desktop, models converted with `convert-h5-to-ggml.py` 
 | English | base.en, **q5_1** | **60 MB** (f16 148 MB) | 3.7 % | **7.3 %** | 0.07 |
 
 * q5_1 loses nothing measurable against the unquantised models (25.6 % / 8.1 %), so q8_0 was not tested (rule: only if q5 were clearly worse).
-* Decision: engine = whisper.cpp; ship sizes are 190 MB (Urdu) and 60 MB (English), side-loaded like the Arabic model. Phone speed is still unmeasured: RTF 0.35 on a desktop CPU means a phone may be several times slower for Urdu, so the small model needs a phone timing run before it is called usable.
+* Decision: engine = whisper.cpp; ship sizes are 190 MB (Urdu) and 60 MB (English), side-loaded like the Arabic model. Phone speed: see "Phone results" below (Urdu x0.79, usable but the slowest).
 
 ### Whisper in the app (whisper.cpp, emulator speed test, 2026-10-24)
 `:whisper` module (vendored whisper.cpp 1.9.5, ggml CPU backends built per instruction-set level and picked at run time), model type `whisper_cpp` in `model.json`. x86_64 emulator, 4 threads, 10 s sample clip, not a phone:
@@ -95,6 +95,32 @@ whisper.cpp built on the desktop, models converted with `convert-h5-to-ggml.py` 
 | Urdu small q5_1, greedy (`"beam": 1`) | 0.2 s | 5.4 s (x0.54) | 318 MB | 7 % (same text) |
 
 Memory is fully released after unloading. Greedy is the likely default for dictation; the choice needs a real-phone run and a WER check with beam 1.
+
+### Phone results (Nothing A059, Android 16, arm64, 8 cores, 11.4 GB RAM, 2026-10-24)
+Full test, 8 FLEURS clips per language (~80 s of audio each), file `lafz_voice_results_20261024_122718.txt`. whisper.cpp picked the best CPU variant (NEON, FP16, DOTPROD, MATMUL_INT8).
+
+| Model | Setting | Speed (x real time) | WER / CER | Peak memory over baseline |
+|---|---|---|---|---|
+| Arabic Omnilingual-300M int8 | 4 threads | x0.18 | 20.0 % / 6.6 % | +771 MB |
+| Arabic | 8 threads | x0.24 | 20.0 % / 6.6 % | +673 MB |
+| English base.en q5_1 | beam 5, 4 threads | x0.22 | 9.5 % / 2.2 % | +129 MB |
+| English | greedy, 4 threads | x0.19 | 9.5 % / 2.2 % | +127 MB |
+| English | greedy, 8 threads | x0.47 | 9.5 % / 2.2 % | +138 MB |
+| Urdu small q5_1 | beam 5, 4 threads | x0.98 | 24.6 % / 7.5 % | +430 MB |
+| Urdu | greedy, 4 threads | x0.79 | 25.0 % / 7.6 % | +315 MB |
+| Urdu | greedy, 8 threads | x5.12 | 23.7 % / 7.3 % | +331 MB |
+
+* **4 threads beat 8 for every model** (Urdu 8 threads: x5.1, probably work landing on the slow cores). Memory returns to baseline after unloading.
+* **Greedy is as accurate as beam 5** (Urdu 25.0 vs 24.6 %, English identical) and 20-25 % faster.
+* **Defaults chosen:** greedy (`"beam": 1`, `VoiceModels.DEFAULT_BEAM`) and 4 threads (`VoiceModels.defaultThreads`). The full test now compares greedy against beam 5.
+* **Urdu is the limit:** x0.79 means a 10 s dictation takes ~8 s after the user stops talking. Arabic and English are comfortable. Ideas, not tried: 2-3 threads, transcribing in chunks while the user speaks.
+
+### Is there something better for this phone? (web check, 2026-10-24, model-card numbers are self-reported)
+* Urdu fine-tunes on Hugging Face: [BuzzASR/urdu](https://huggingface.co/BuzzASR/urdu) (Whisper large-v3, ~2B params) FLEURS 21.8 % WER / 7.5 % CER; [kingabzpro/whisper-large-v3-turbo-urdu](https://huggingface.co/kingabzpro/whisper-large-v3-turbo-urdu) 26.2 % on Common Voice 17; [ihanif/whisper-medium-urdu](https://huggingface.co/ihanif/whisper-medium-urdu) 27.0 % on Common Voice 11; [hamza-amin/whisper-small-urdu-v2](https://huggingface.co/hamza-amin/whisper-small-urdu-v2) 35.4 % on Common Voice 16 (our measurement on FLEURS: 26.3 %).
+  Our small fine-tune (25 % WER on FLEURS) is within ~3 points of the best large model, which is 4-10x bigger (turbo ~800M, large-v3 ~1.5-2B) and would not run in real time on this phone, since the small model already needs x0.79. No Urdu model that is both smaller than Whisper-small and better was found.
+* [mahwizzzz/aurix-v1](https://huggingface.co/mahwizzzz/aurix-v1) (turbo size) outputs IPA phonemes and has 40 % WER on FLEURS: not usable.
+* Moonshine flavours ([paper](https://arxiv.org/abs/2509.02523)) cover Arabic, Chinese, Japanese, Korean, Ukrainian, Vietnamese: no Urdu. No Arabic or English model found that beats the current ones at this size; English small.en (3.0 / 6.1 % on desktop) would be the upgrade if more accuracy than base.en is wanted (about 3x the compute).
+* Conclusion: current choices are the best available for this device. Revisit when a distilled or turbo-size Urdu fine-tune, or an Urdu Moonshine, appears.
 
 What this says:
 * **Urdu: use the Urdu Whisper fine-tune.** It writes Urdu script directly, so **no Roman conversion is needed and any keyboard layout (Urdu Pakistan, Roman Urdu, English) can host the mic key**; the text is simply inserted.

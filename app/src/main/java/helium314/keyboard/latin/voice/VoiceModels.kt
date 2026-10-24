@@ -19,8 +19,8 @@ import java.io.File
  * `model.json` that says how to run it, see tools/voice-spike/README.md:
  * {"name": "Arabic (Omnilingual 300M)", "language": "ar", "type": "ctc_onnx", "model": "model.int8.onnx", "tokens": "tokens.txt",
  *  "blank_id": 1, "skip_ids": [0, 2, 3], "normalize": true, "sample_rate": 16000}
- * or a Whisper model for whisper.cpp (GGML file, e.g. quantised to q5_1; "beam" 1 is greedy and fastest, default 5):
- * {"name": "Urdu (Whisper small)", "language": "ur", "type": "whisper_cpp", "model": "ggml-small-urdu-q5_1.bin", "beam": 5}
+ * or a Whisper model for whisper.cpp (GGML file, e.g. quantised to q5_1; "beam" 1 is greedy and fastest = the default, chosen from the phone test):
+ * {"name": "Urdu (Whisper small)", "language": "ur", "type": "whisper_cpp", "model": "ggml-small-urdu-q5_1.bin", "beam": 1}
  */
 data class VoiceModelInfo(
     val dirName: String,
@@ -42,6 +42,11 @@ object VoiceModels {
     const val TYPE_CTC_ONNX = "ctc_onnx"
     const val TYPE_WHISPER_CPP = "whisper_cpp"
     private const val TAG = "VoiceModels"
+
+    /** greedy decoding and 4 threads: on the test phone (8 cores) beam 5 was no more accurate, and 8 threads was slower than 4 (Urdu x5.1 vs x0.8 real time) */
+    const val DEFAULT_BEAM = 1
+    const val DEFAULT_THREADS = 4
+    val defaultThreads get() = minOf(DEFAULT_THREADS, Runtime.getRuntime().availableProcessors().coerceAtLeast(1))
 
     /** the speech runtime needs Android 7 */
     val isSupported get() = android.os.Build.VERSION.SDK_INT >= 24
@@ -66,7 +71,7 @@ object VoiceModels {
             type = o["type"]?.jsonPrimitive?.contentOrNull ?: TYPE_CTC_ONNX,
             modelFile = o["model"]!!.jsonPrimitive.content,
             tokensFile = o["tokens"]?.jsonPrimitive?.contentOrNull ?: "",
-            beamSize = o["beam"]?.jsonPrimitive?.intOrNull ?: 5,
+            beamSize = o["beam"]?.jsonPrimitive?.intOrNull ?: DEFAULT_BEAM,
             blankId = o["blank_id"]?.jsonPrimitive?.intOrNull ?: 0,
             skipIds = o["skip_ids"]?.jsonArray?.mapNotNull { it.jsonPrimitive.intOrNull }?.toSet() ?: emptySet(),
             normalize = o["normalize"]?.jsonPrimitive?.booleanOrNull ?: true,
