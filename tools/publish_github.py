@@ -36,7 +36,7 @@ for tag in tags:
     if git("tag", "-l", tag) != tag:
         sys.exit(f"No tag {tag}.")
     if subprocess.run(["git", "merge-base", "--is-ancestor", tag, "main"]).returncode:
-        sys.exit(f"{tag} is not on main.")
+        print(f"Note: {tag} is not on main; its own history will be pushed with it.")
 
 remote = git("ls-remote", REPO, "refs/heads/main").split()
 remote_sha = remote[0] if remote else None
