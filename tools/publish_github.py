@@ -8,7 +8,7 @@ The 'github' remote has its push URL disabled on purpose; this script pushes to 
 """
 import subprocess, sys
 
-REPO = "https://magnumquest@github.com/magnumquest/lafz.git"
+REPO = "https://magnumquest@github.com/magnumquest/Lafz.git"
 NOREPLY = "users.noreply.github.com"
 
 
