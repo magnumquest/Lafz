@@ -21,8 +21,8 @@ import java.util.Locale
 
 /**
  * The keyboard side of dictation (mic key): tap to start, tap again to stop; the text is handed to [Listener] when it is ready.
- * Everything runs in [VoiceTypingService]; this class only talks to it, and only while dictating (plus a short idle time).
- * Main thread only.
+ * Everything runs in [VoiceTypingService]; this class only talks to it. The service is only bound while dictation is switched on
+ * ([sync]), and then holds the model of the keyboard's current language. Main thread only.
  */
 class VoiceDictation(private val context: Context, private val listener: Listener) {
     interface Listener {
@@ -37,18 +37,20 @@ class VoiceDictation(private val context: Context, private val listener: Listene
     var state = State.IDLE
         private set
 
-    private val main = Handler(Looper.getMainLooper())
     private var service: Messenger? = null
     private var bound = false
     private var pendingStart: String? = null
-    private val unbindLater = Runnable { unbind() }
+    /** the model the service was last asked to load (null: none, dictation is off or has no model for this language) */
+    private var wantedModel: String? = null
 
     private val incoming = Messenger(Handler(Looper.getMainLooper()) { msg -> onMessage(msg); true })
 
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName, binder: IBinder) {
             service = Messenger(binder)
-            pendingStart?.let { pendingStart = null; send(VoiceProtocol.MSG_START, VoiceProtocol.KEY_MODEL_DIR, it) }
+            val start = pendingStart; pendingStart = null
+            if (start != null) send(VoiceProtocol.MSG_START, VoiceProtocol.KEY_MODEL_DIR, start)
+            else wantedModel?.let { send(VoiceProtocol.MSG_LOAD, VoiceProtocol.KEY_MODEL_DIR, it) }
         }
         override fun onServiceDisconnected(name: ComponentName) { // the :voice process died (probably out of memory)
             service = null; bound = false
@@ -74,19 +76,42 @@ class VoiceDictation(private val context: Context, private val listener: Listene
 
     fun destroy() {
         cancel()
+        wantedModel = null
         unbind()
     }
 
+    /**
+     * Makes the loaded model the one for [locale], if dictation is switched on: loads it (the old one is freed first), or frees everything if dictation is off
+     * or there is no model for the language. Call when the keyboard starts, the language changes or the setting changes. Cheap if nothing changed.
+     */
+    fun sync(locale: Locale) {
+        val wanted = if (isEnabled(context)) modelFor(locale)?.dirName else null
+        if (wanted == wantedModel) return
+        wantedModel = wanted
+        if (wanted == null) {
+            if (state != State.IDLE) cancel()
+            if (service != null) send(VoiceProtocol.MSG_UNLOAD)
+            unbind()
+            return
+        }
+        if (state != State.IDLE) return // a recording is running; it uses the model it started with, the next sync/toggle follows up
+        if (service != null) send(VoiceProtocol.MSG_LOAD, VoiceProtocol.KEY_MODEL_DIR, wanted)
+        else if (!bound) bound = context.bindService(VoiceTypingService.intent(context), connection, Context.BIND_AUTO_CREATE)
+    }
+
+    private fun modelFor(locale: Locale): VoiceModelInfo? =
+        VoiceText.modelLanguage(locale)?.let { l -> VoiceModels.installed(context).firstOrNull { it.language == l } }
+
     private fun start(locale: Locale) {
         val language = VoiceText.modelLanguage(locale)
-        val model = language?.let { l -> VoiceModels.installed(context).firstOrNull { it.language == l } }
+        val model = modelFor(locale)
         if (model == null) return listener.onVoiceError(context.getString(
             if (language == null) R.string.voice_dictation_language else R.string.voice_dictation_no_model, locale.displayLanguage))
         if (context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             context.startActivity(Intent(context, VoicePermissionActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             return
         }
-        main.removeCallbacks(unbindLater)
+        wantedModel = model.dirName
         setState(State.LISTENING)
         if (service != null) send(VoiceProtocol.MSG_START, VoiceProtocol.KEY_MODEL_DIR, model.dirName)
         else {
@@ -109,12 +134,10 @@ class VoiceDictation(private val context: Context, private val listener: Listene
             VoiceProtocol.MSG_RESULT -> {
                 val wasCancelled = state == State.IDLE
                 setState(State.IDLE)
-                scheduleUnbind()
                 if (!wasCancelled) msg.data.getString(VoiceProtocol.KEY_TEXT)?.takeIf { it.isNotEmpty() }?.let { listener.onVoiceText(it) }
             }
             VoiceProtocol.MSG_ERROR -> {
                 setState(State.IDLE)
-                scheduleUnbind()
                 listener.onVoiceError(msg.data.getString(VoiceProtocol.KEY_ERROR) ?: context.getString(R.string.voice_dictation_failed))
             }
         }
@@ -124,11 +147,6 @@ class VoiceDictation(private val context: Context, private val listener: Listene
         if (s == state) return
         state = s
         listener.onVoiceStateChanged(s)
-    }
-
-    private fun scheduleUnbind() {
-        main.removeCallbacks(unbindLater)
-        main.postDelayed(unbindLater, VoiceProtocol.IDLE_UNLOAD_MS)
     }
 
     private fun unbind() {

@@ -9,7 +9,7 @@
   Type <code>mein kal aonga</code>, get <span dir="rtl">میں کل آؤں گا</span>.
 </p>
 
-<p align="center"><b>Latest: version 0.5.0.</b> Learns from your typing on the device, a smart clipboard for codes and numbers, contacts in Roman Urdu and Arabic, and backup of learned words. See the <a href="RELEASE_NOTES.md">release notes</a>.</p>
+<p align="center"><b>Latest: version 0.6.0.</b> Optional offline voice typing for Urdu, Arabic and English (microphone key, models you copy to the phone), on top of 0.5.0's on-device learning, smart clipboard and contacts. See the <a href="RELEASE_NOTES.md">release notes</a>.</p>
 
 ---
 
@@ -110,6 +110,7 @@ Back that key up and never commit it: updates must be signed with the same key.
 - [ ] Native digits in number/phone fields
 - [x] Settings toggle for the honorific suggestions
 - [x] Smart clipboard (codes and numbers as chips), contacts in Roman Urdu/Arabic, backup of learned words (0.5.0)
+- [x] Offline voice typing, Urdu/Arabic/English, off by default, models side-loaded (0.6.0)
 - [x] Offline on-device learning for every language with backup and restore (0.5.0): Roman Urdu and Roman Arabic use Lafz's own learning model (export/import file, plus part of the full backup); all other languages learn through the user history dictionary, which the full backup also covers
 - [ ] Voice typing: research done (`docs/research/voice-typing.md`); Urdu accuracy of small offline models still to be measured
 - [ ] Clipboard history search and filters

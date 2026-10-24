@@ -19,7 +19,8 @@ import java.io.File
 
 /**
  * Records from the microphone and runs the speech model, in its own process (`:voice`, see the manifest).
- * The model is loaded while the user is still talking and freed [VoiceProtocol.IDLE_UNLOAD_MS] after the last dictation or when the keyboard unbinds.
+ * Exactly one model is loaded: the one for the keyboard's current language ([VoiceProtocol.MSG_LOAD]); it stays loaded, and is replaced when the language
+ * changes and freed when dictation is switched off or the keyboard unbinds. Nothing is loaded before the keyboard asks.
  * Nothing leaves the device; the service has no network access of any kind.
  */
 class VoiceTypingService : Service() {
@@ -34,7 +35,6 @@ class VoiceTypingService : Service() {
     private var recorder: AudioRecord? = null
     private var recording: Thread? = null
     @Volatile private var stopRequested = false
-    private val unload = Runnable { closeEngine() }
 
     override fun onCreate() {
         super.onCreate()
@@ -58,6 +58,12 @@ class VoiceTypingService : Service() {
 
     private fun handle(msg: Message) {
         when (msg.what) {
+            VoiceProtocol.MSG_LOAD -> {
+                val dir = msg.data.getString(VoiceProtocol.KEY_MODEL_DIR) ?: return
+                // while recording, the model for the recording is the one that counts
+                if (recording == null) VoiceModels.installed(this).firstOrNull { it.dirName == dir }?.let { ensureEngine(it, report = false) }
+            }
+            VoiceProtocol.MSG_UNLOAD -> { cancelRecording(); closeEngine() }
             VoiceProtocol.MSG_START -> {
                 client = msg.replyTo
                 start(msg.data.getString(VoiceProtocol.KEY_MODEL_DIR) ?: return reply(VoiceProtocol.MSG_ERROR, VoiceProtocol.KEY_ERROR, "no model"))
@@ -74,7 +80,6 @@ class VoiceTypingService : Service() {
     }
 
     private fun start(modelDir: String) {
-        handler.removeCallbacks(unload)
         cancelRecording()
         val info = VoiceModels.installed(this).firstOrNull { it.dirName == modelDir } ?: return reply(VoiceProtocol.MSG_ERROR, VoiceProtocol.KEY_ERROR, "model $modelDir not found")
         val pcm = ShortArray(VoiceProtocol.SAMPLE_RATE * VoiceProtocol.MAX_SECONDS)
@@ -117,16 +122,16 @@ class VoiceTypingService : Service() {
     @Volatile private var recorded = 0
     private var samples: ShortArray? = null
 
-    private fun ensureEngine(info: VoiceModelInfo) {
+    private fun ensureEngine(info: VoiceModelInfo, report: Boolean = true) {
         if (engineDir == info.dirName && engine != null) return
         closeEngine()
         try {
             engine = SpeechEngine.create(this, info, VoiceModels.dir(this, info), VoiceModels.defaultThreads)
             engineDir = info.dirName
+            Log.i(TAG, "loaded ${info.dirName}")
         } catch (t: Throwable) {
             Log.e(TAG, "cannot load ${info.name}", t)
-            cancelRecording()
-            reply(VoiceProtocol.MSG_ERROR, VoiceProtocol.KEY_ERROR, "cannot load ${info.name}: ${t.message}")
+            if (report) { cancelRecording(); reply(VoiceProtocol.MSG_ERROR, VoiceProtocol.KEY_ERROR, "cannot load ${info.name}: ${t.message}") }
         }
     }
 
@@ -151,8 +156,6 @@ class VoiceTypingService : Service() {
             Log.e(TAG, "transcribe failed", t)
             reply(VoiceProtocol.MSG_ERROR, VoiceProtocol.KEY_ERROR, "transcribing failed: ${t.message}")
         }
-        handler.removeCallbacks(unload)
-        handler.postDelayed(unload, VoiceProtocol.IDLE_UNLOAD_MS)
     }
 
     private fun cancelRecording() {
@@ -163,6 +166,7 @@ class VoiceTypingService : Service() {
     }
 
     private fun closeEngine() {
+        if (engine != null) Log.i(TAG, "unloaded $engineDir")
         engine?.close(); engine = null; engineDir = null
     }
 

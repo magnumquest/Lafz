@@ -175,7 +175,7 @@
     <string name="clipboard_skip_codes_summary">Copied text that contains such a code is not saved in the history. It is still offered above the keyboard for a few minutes</string>
     <string name="voice_typing_title">Voice typing (experimental)</string>
     <string name="voice_typing_description">Offline speech models and a speed test</string>
-    <string name="voice_typing_intro">Speech recognition models are large, so they are not part of the app. Copy a model folder to your phone, point Lafz at it, and test how fast it runs. Everything stays on the device; nothing is loaded until you run a test.</string>
+    <string name="voice_typing_intro">Speech recognition models are large, so they are not part of the app. Copy a model folder to your phone, point Lafz at it, and test how fast it runs. Everything stays on the device. A model is only loaded while dictation is switched on, and then only the one for your current keyboard language.</string>
     <string name="voice_models_category">Models</string>
     <string name="voice_choose_folder_title">Choose model folder</string>
     <string name="voice_choose_folder_summary">Pick the folder you copied to the phone. It may hold one model or several model folders, each with a model.json</string>

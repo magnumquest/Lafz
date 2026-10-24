@@ -1,5 +1,14 @@
 # Release notes
 
+## 0.6.0
+- **Offline voice typing (experimental, off by default).** Settings → Voice typing → "Dictate with the microphone key". Tap the microphone key in the toolbar, speak, tap it again: the text is typed at the cursor. Urdu, Arabic and English, chosen by the keyboard language you are using. Everything runs on the phone; the audio never leaves it.
+  - The speech models are large and are not part of the app: copy them to the phone and pick the folder in the same Settings screen (Urdu: Whisper small 190 MB, English: Whisper base.en 60 MB, Arabic: Omnilingual 300M 350 MB).
+  - Only the model for the current keyboard language is loaded, it stays loaded while you type, it is swapped when you change the language and freed when you switch dictation off. With the switch off nothing is loaded and no microphone permission is used.
+  - Runs in its own process, so it never slows down typing. The microphone permission is asked for when you switch dictation on.
+  - Measured on a Nothing phone (8 cores): English and Arabic transcribe about 5 times faster than real time, Urdu about 1.3 times faster. Urdu word error rate about 25 % on clean read speech. Details: `docs/research/voice-typing.md`.
+- Settings → Voice typing also has a speed test (quick and full) with the result saved as a text file.
+- If dictation is off, the toolbar microphone key behaves as before (hands over to an installed voice keyboard such as FUTO Voice Input).
+
 ## 0.5.0
 - **Learns from your typing (Roman Urdu and Roman Arabic), on the device only.** Lafz remembers the words you commit, which word follows which and the spellings you use, and ranks suggestions accordingly.
   Only the final word counts (space, punctuation or tapping a suggestion), never keystrokes. A backspace right after an auto-commit takes it back, and a spelling needs to be used twice before it has any effect.

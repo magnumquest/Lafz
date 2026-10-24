@@ -841,6 +841,7 @@ public class LatinIME extends InputMethodService implements
         mSubtypeState.onSubtypeChanged(oldSubtype, subtype);
         StatsUtils.onSubtypeChanged(oldSubtype, subtype);
         mRichImm.onSubtypeChanged(subtype);
+        syncVoiceModel();
         mInputLogic.onSubtypeChanged(SubtypeLocaleUtils.getCombiningRulesExtraValue(subtype),
                 mSettings.getCurrent());
         loadKeyboard();
@@ -881,6 +882,7 @@ public class LatinIME extends InputMethodService implements
         // also wouldn't be consuming gesture data.
         mGestureConsumer = GestureConsumer.NULL_GESTURE_CONSUMER;
         mRichImm.refreshSubtypeCaches();
+        syncVoiceModel(); // dictation switched on/off in Settings, or a model imported
         final KeyboardSwitcher switcher = mKeyboardSwitcher;
 
         // If we are starting input in a different text field from before, we'll have to reload
@@ -1446,6 +1448,12 @@ public class LatinIME extends InputMethodService implements
     }
 
     private VoiceDictation mVoiceDictation;
+
+    /** loads the dictation model for the current language if dictation is on, frees it if not; does nothing (not even creating the helper) while it never was on */
+    private void syncVoiceModel() {
+        if (mVoiceDictation == null && !VoiceDictation.Companion.isEnabled(this)) return;
+        getVoiceDictation().sync(mRichImm.getCurrentSubtypeLocale());
+    }
 
     private VoiceDictation getVoiceDictation() {
         if (mVoiceDictation == null) mVoiceDictation = new VoiceDictation(this, new VoiceDictation.Listener() {
