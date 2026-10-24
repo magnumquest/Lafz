@@ -16,6 +16,8 @@ SPDX-License-Identifier: Apache-2.0 AND GPL-3.0-only
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.WRITE_USER_DICTIONARY" />
     <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <!-- only for the optional offline dictation (Settings > Voice typing); the audio never leaves the device -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <application android:label="@string/english_ime_name"
             android:name="helium314.keyboard.latin.App"
@@ -41,6 +43,17 @@ SPDX-License-Identifier: Apache-2.0 AND GPL-3.0-only
             </intent-filter>
             <meta-data android:name="android.view.im" android:resource="@xml/method_dummy" />
         </service>
+
+        <!-- offline dictation: own process so that the speech model never counts against the keyboard -->
+        <service android:name=".voice.VoiceTypingService"
+                android:process=":voice"
+                android:exported="false" />
+
+        <activity android:name=".voice.VoicePermissionActivity"
+                android:theme="@android:style/Theme.Translucent.NoTitleBar"
+                android:excludeFromRecents="true"
+                android:taskAffinity=""
+                android:exported="false" />
 
         <service android:name=".spellcheck.AndroidSpellCheckerService"
                  android:label="@string/spell_checker_service_name"

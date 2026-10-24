@@ -34,6 +34,8 @@ import helium314.keyboard.latin.voice.VoiceBenchmark
 import helium314.keyboard.settings.SearchSettingsScreen
 import helium314.keyboard.settings.preferences.Preference
 import helium314.keyboard.settings.preferences.PreferenceCategory
+import helium314.keyboard.settings.preferences.SwitchPreference
+import helium314.keyboard.latin.settings.Defaults
 
 /**
  * Voice typing models: copy them to the phone, point Lafz at the folder, import them into the app's storage and test how fast they run.
@@ -80,6 +82,13 @@ fun VoiceTypingScreen(onClickBack: () -> Unit) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
             Text(stringResource(R.string.voice_typing_intro), style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+            val micLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+            PreferenceCategory(stringResource(R.string.voice_dictation_category))
+            SwitchPreference(name = stringResource(R.string.voice_dictation_title), key = Settings.PREF_VOICE_DICTATION, default = Defaults.PREF_VOICE_DICTATION,
+                description = stringResource(R.string.voice_dictation_summary), onCheckedChange = { on ->
+                    if (on && ctx.checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) != android.content.pm.PackageManager.PERMISSION_GRANTED)
+                        micLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
+                })
             PreferenceCategory(stringResource(R.string.voice_models_category))
             Preference(name = stringResource(R.string.voice_choose_folder_title), description = stringResource(R.string.voice_choose_folder_summary), onClick = {
                 if (!busy) folderPicker.launch(Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).addFlags(

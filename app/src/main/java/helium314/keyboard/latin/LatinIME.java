@@ -64,6 +64,8 @@ import helium314.keyboard.latin.define.DebugFlags;
 import helium314.keyboard.latin.inputlogic.InputLogic;
 import helium314.keyboard.latin.personalization.PersonalizationHelper;
 import helium314.keyboard.latin.settings.Settings;
+import helium314.keyboard.latin.voice.VoiceDictation;
+import helium314.keyboard.latin.voice.VoiceText;
 import helium314.keyboard.latin.settings.SettingsSubtype;
 import helium314.keyboard.latin.settings.SettingsValues;
 import helium314.keyboard.latin.suggestions.SuggestionStripView;
@@ -706,6 +708,7 @@ public class LatinIME extends InputMethodService implements
 
     @Override
     public void onDestroy() {
+        if (mVoiceDictation != null) mVoiceDictation.destroy();
         mClipboardHistoryManager.onDestroy();
         mDictionaryFacilitator.closeDictionaries();
         mSettings.onDestroy();
@@ -1056,6 +1059,7 @@ public class LatinIME extends InputMethodService implements
     void onFinishInputViewInternal(final boolean finishingInput) {
         super.onFinishInputView(finishingInput);
         Log.i(TAG, "onFinishInputView");
+        if (mVoiceDictation != null) mVoiceDictation.cancel();
         cleanupInternalStateForFinishInput();
     }
 
@@ -1432,12 +1436,30 @@ public class LatinIME extends InputMethodService implements
     // completely replace #onCodeInput.
     public void onEvent(@NonNull final Event event) {
         if (KeyCode.VOICE_INPUT == event.getKeyCode()) {
-            mRichImm.switchToShortcutIme(this);
+            if (VoiceDictation.Companion.isEnabled(this)) getVoiceDictation().toggle(mRichImm.getCurrentSubtypeLocale());
+            else mRichImm.switchToShortcutIme(this);
         }
         InputTransaction completeInputTransaction =
                 mInputLogic.onCodeInput(mSettings.getCurrent(), event, mKeyboardSwitcher.getKeyboardCapsMode(), mHandler);
         updateStateAfterInputTransaction(completeInputTransaction);
         mKeyboardSwitcher.onEvent(event, getCurrentAutoCapsState(), getCurrentRecapitalizeState());
+    }
+
+    private VoiceDictation mVoiceDictation;
+
+    private VoiceDictation getVoiceDictation() {
+        if (mVoiceDictation == null) mVoiceDictation = new VoiceDictation(this, new VoiceDictation.Listener() {
+            @Override public void onVoiceStateChanged(@NonNull VoiceDictation.State state) {
+                if (mSuggestionStripView != null) mSuggestionStripView.setVoiceListening(state != VoiceDictation.State.IDLE);
+            }
+            @Override public void onVoiceText(@NonNull String text) {
+                onTextInput(VoiceText.INSTANCE.withLeadingSpace(text, mInputLogic.mConnection.getCodePointBeforeCursor()));
+            }
+            @Override public void onVoiceError(@NonNull String message) {
+                android.widget.Toast.makeText(LatinIME.this, message, android.widget.Toast.LENGTH_LONG).show();
+            }
+        });
+        return mVoiceDictation;
     }
 
     public void onTextInput(@Nullable String rawText) {

@@ -190,6 +190,12 @@
     <string name="voice_remove_title">Remove imported models</string>
     <string name="voice_remove_summary">Frees the storage; your original folder is not touched</string>
     <string name="voice_needs_android_7">Voice typing needs Android 7 or newer.</string>
+    <string name="voice_dictation_category">Dictation</string>
+    <string name="voice_dictation_title">Dictate with the microphone key</string>
+    <string name="voice_dictation_summary">Tap the microphone key, speak, tap it again: the text is typed at the cursor. Uses the models below, works offline, needs the microphone permission and is off by default. Urdu, Arabic and English</string>
+    <string name="voice_dictation_failed">Dictation failed</string>
+    <string name="voice_dictation_language">No dictation for %s</string>
+    <string name="voice_dictation_no_model">No %s voice model imported (Settings > Voice typing)</string>
     <string name="voice_working">Working…</string>
     <string name="learn_roman_typing_title">Learn from my typing</string>
     <string name="learn_roman_typing_summary">In Roman Urdu and Roman Arabic, remember the words, word pairs and spellings you use. Stays on this device</string>

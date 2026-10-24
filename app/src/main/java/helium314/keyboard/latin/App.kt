@@ -20,6 +20,7 @@ import kotlinx.coroutines.launch
 class App : Application() {
     override fun onCreate() {
         super.onCreate()
+        if (isVoiceProcess()) return // the dictation service needs none of the keyboard setup (and must not run its upgrades a second time)
         DebugFlags.init(this)
         FoldableUtils.init(this)
         Settings.init(this)
@@ -45,6 +46,12 @@ class App : Application() {
         transferOldPinnedClips(this) // todo: remove in a few months, maybe end 2026
         app = this
         Defaults.initDynamicDefaults(this)
+    }
+
+    private fun isVoiceProcess(): Boolean {
+        val name = if (Build.VERSION.SDK_INT >= 28) getProcessName()
+            else try { java.io.File("/proc/self/cmdline").readText().trim('\u0000') } catch (_: Exception) { null }
+        return name?.endsWith(":voice") == true
     }
 
     companion object {

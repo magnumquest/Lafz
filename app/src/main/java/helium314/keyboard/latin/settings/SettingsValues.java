@@ -27,6 +27,7 @@ import helium314.keyboard.keyboard.internal.keyboard_parser.LocaleKeyboardInfos;
 import helium314.keyboard.latin.InputAttributes;
 import helium314.keyboard.latin.PunctuationSuggestions;
 import helium314.keyboard.latin.R;
+import helium314.keyboard.latin.voice.VoiceDictation;
 import helium314.keyboard.latin.RichInputMethodManager;
 import helium314.keyboard.latin.common.Colors;
 import helium314.keyboard.latin.permissions.PermissionsUtil;
@@ -211,7 +212,8 @@ public class SettingsValues {
         mKeyPreviewPopupOn = prefs.getBoolean(Settings.PREF_POPUP_ON, Defaults.PREF_POPUP_ON);
         mSlidingKeyInputPreviewEnabled = prefs.getBoolean(
                 DebugSettings.PREF_SLIDING_KEY_INPUT_PREVIEW, Defaults.PREF_SLIDING_KEY_INPUT_PREVIEW);
-        mShowsVoiceInputKey = mInputAttributes.mShouldShowVoiceInputKey;
+        mShowsVoiceInputKey = mInputAttributes.mShouldShowVoiceInputKey
+                || (mInputAttributes.mMicrophoneAllowed && VoiceDictation.Companion.isEnabled(context));
         String languagePref = prefs.getString(Settings.PREF_LANGUAGE_SWITCH_KEY, Defaults.PREF_LANGUAGE_SWITCH_KEY);
         mLanguageSwitchKeyToOtherImes = languagePref.equals("input_method") || languagePref.equals("both");
         mLanguageSwitchKeyToOtherSubtypes = mIsLocked || languagePref.equals("internal") || languagePref.equals("both");

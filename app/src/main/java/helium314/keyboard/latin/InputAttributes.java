@@ -37,6 +37,8 @@ public final class InputAttributes {
     final public boolean mApplicationSpecifiedCompletionOn;
     final public boolean mShouldInsertSpacesAutomatically;
     final public boolean mShouldShowVoiceInputKey;
+    /** false for passwords, e-mail addresses and fields that ask for no microphone key; applies to the built-in dictation too */
+    final public boolean mMicrophoneAllowed;
     final public boolean mNoLearning;
     /**
      * Whether the floating gesture preview should be disabled. If true, this should override the
@@ -79,6 +81,7 @@ public final class InputAttributes {
             mApplicationSpecifiedCompletionOn = false;
             mShouldInsertSpacesAutomatically = false;
             mShouldShowVoiceInputKey = false;
+            mMicrophoneAllowed = false;
             mDisableGestureFloatingPreviewText = false;
             mIsGeneralTextInput = false;
             mNoLearning = false;
@@ -98,9 +101,10 @@ public final class InputAttributes {
 
         mShouldInsertSpacesAutomatically = InputTypeUtils.isAutoSpaceFriendlyType(mInputType);
 
-        final boolean noMicrophone = mIsPasswordField
+        mMicrophoneAllowed = !(mIsPasswordField
                 || InputTypeUtils.isEmailVariation(variation)
-                || hasNoMicrophoneKeyOption()
+                || hasNoMicrophoneKeyOption());
+        final boolean noMicrophone = !mMicrophoneAllowed
                 || !RichInputMethodManager.isInitialized() // avoid crash when only using spell checker
                 || !RichInputMethodManager.getInstance().isShortcutImeReady();
         mShouldShowVoiceInputKey = !noMicrophone;

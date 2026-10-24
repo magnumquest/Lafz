@@ -506,6 +506,14 @@ class SuggestionStripView(context: Context, attrs: AttributeSet?, defStyle: Int)
         pinnedKeys.findViewWithTag<View>(ToolbarKey.VOICE)?.isVisible = show
     }
 
+    /** tints the microphone toolbar key while built-in dictation is listening or transcribing */
+    fun setVoiceListening(listening: Boolean) {
+        for (parent in listOf(toolbar, pinnedKeys)) {
+            val view = parent.findViewWithTag<View>(ToolbarKey.VOICE) as? android.widget.ImageView ?: continue
+            if (listening) view.setColorFilter(0xFFE53935.toInt(), android.graphics.PorterDuff.Mode.SRC_IN) else view.clearColorFilter()
+        }
+    }
+
     private fun updateKeys() {
         updateVoiceKey()
         val settingsValues = Settings.getValues()
