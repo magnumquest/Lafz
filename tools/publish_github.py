@@ -6,7 +6,7 @@
 
 The 'github' remote has its push URL disabled on purpose; this script pushes to a URL spelled differently from 'https://github.com/'.
 """
-import subprocess, sys
+import os, subprocess, sys
 
 REPO = "https://magnumquest@github.com/magnumquest/Lafz.git"
 NOREPLY = "users.noreply.github.com"
@@ -59,4 +59,4 @@ if diverged:
     if input("This REPLACES GitHub history. Type 'replace': ").strip() != "replace":
         sys.exit("Cancelled.")
     cmd = ["push", f"--force-with-lease=refs/heads/main:{remote_sha}", *cmd[1:]]
-sys.exit(subprocess.run(["git", *cmd]).returncode)
+sys.exit(subprocess.run(["git", *cmd], env={**os.environ, "LAFZ_PUBLISH_GITHUB": "1"}).returncode)  # lets the global pre-push guard through, for this repo only
