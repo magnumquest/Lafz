@@ -69,6 +69,8 @@ import java.util.WeakHashMap;
 public final class MainKeyboardView extends KeyboardView implements DrawingProxy,
         PopupKeysPanel.Controller {
     private static final String TAG = MainKeyboardView.class.getSimpleName();
+    /** letter size is 55 % of this, i.e. about 27.5sp (Gboard's size, follows the system font size) */
+    private static final float TEXT_KEY_SIZE_SP = 50f;
 
     /** Listener for {@link KeyboardActionListener}. */
     private KeyboardActionListener mKeyboardActionListener;
@@ -313,7 +315,7 @@ public final class MainKeyboardView extends KeyboardView implements DrawingProxy
 
         mSpaceKey = keyboard.getKey(Constants.CODE_SPACE);
         final int keyHeight = keyboard.mMostCommonKeyHeight - keyboard.mVerticalGap;
-        mLanguageOnSpacebarTextSize = keyHeight * mLanguageOnSpacebarTextRatio;
+        mLanguageOnSpacebarTextSize = keyHeight * mLanguageOnSpacebarTextRatio * 0.86f; // Lafz: Gboard's space bar text is smaller
 
         if (AccessibilityUtils.Companion.getInstance().isAccessibilityEnabled()) {
             if (mAccessibilityDelegate == null) {
@@ -699,6 +701,15 @@ public final class MainKeyboardView extends KeyboardView implements DrawingProxy
             }
         }
         invalidateKey(mSpaceKey);
+    }
+
+    /** Lafz: like Gboard, text keeps the same size whatever the row height (e.g. with and without number row) */
+    @Override
+    protected int textKeySize(final int keyHeight) {
+        final Keyboard keyboard = getKeyboard();
+        if (keyboard == null || keyboard.mId.getElement().isEmojiLayout())
+            return super.textKeySize(keyHeight);
+        return (int) (TEXT_KEY_SIZE_SP * getResources().getDisplayMetrics().density * getResources().getConfiguration().fontScale);
     }
 
     @Override

@@ -78,7 +78,7 @@ public final class ResourceUtils {
 
     public static int getDefaultKeyboardHeight(final Resources res, final boolean showsNumberRow) {
         final DisplayMetrics dm = res.getDisplayMetrics();
-        final float keyboardHeight = res.getDimension(R.dimen.config_default_keyboard_height) * (showsNumberRow ? 1.33f : 1f);
+        final float keyboardHeight = res.getDimension(R.dimen.config_default_keyboard_height);
         final float maxKeyboardHeight = res.getFraction(
                 R.fraction.config_max_keyboard_height, dm.heightPixels, dm.heightPixels);
         float minKeyboardHeight = res.getFraction(
@@ -91,7 +91,9 @@ public final class ResourceUtils {
         }
         // Keyboard height will not exceed maxKeyboardHeight and will not be less than
         // minKeyboardHeight.
-        return (int)Math.max(Math.min(keyboardHeight, maxKeyboardHeight), minKeyboardHeight);
+        final int fourRowHeight = (int)Math.max(Math.min(keyboardHeight, maxKeyboardHeight), minKeyboardHeight);
+        // Lafz: like Gboard the number row is an extra row on top, the other rows keep their size
+        return showsNumberRow ? fourRowHeight * 5 / 4 : fourRowHeight;
     }
 
     public static boolean isValidFraction(final float fraction) {

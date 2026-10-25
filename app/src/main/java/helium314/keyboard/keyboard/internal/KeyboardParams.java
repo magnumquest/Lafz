@@ -245,6 +245,12 @@ public class KeyboardParams {
             mRelativeVerticalGap = keyboardAttr.getFraction(
                     R.styleable.Keyboard_verticalGap, 1, 1, 0) * sv.mKeyGapScale;
             mHorizontalGap = (int) (mRelativeHorizontalGap * width);
+            if (mRelativeVerticalGap > 0 && mId.getElement().getTakesFunctionalKeys()) {
+                // Lafz: like Gboard the vertical gap has a fixed size, not a share of the height
+                final float gapDp = 13.5f;
+                final float gap = gapDp * context.getResources().getDisplayMetrics().density * sv.mKeyGapScale;
+                mRelativeVerticalGap = gap / height;
+            }
             mVerticalGap = (int) (mRelativeVerticalGap * height);
 
             mBaseHeight = mOccupiedHeight - mTopPadding - mBottomPadding + mVerticalGap;

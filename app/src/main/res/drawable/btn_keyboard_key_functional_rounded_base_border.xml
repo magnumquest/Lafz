@@ -28,6 +28,6 @@
 
     <!-- Normal keys. -->
     <item android:state_pressed="true"
-          android:drawable="@drawable/btn_keyboard_key_pressed_functional_rounded_base_border" />
-    <item android:drawable="@drawable/btn_keyboard_key_normal_functional_rounded_base_border" />
+          android:drawable="@drawable/btn_keyboard_key_functional_rect_rounded_base_border" />
+    <item android:drawable="@drawable/btn_keyboard_key_functional_rect_rounded_base_border" />
 </selector>

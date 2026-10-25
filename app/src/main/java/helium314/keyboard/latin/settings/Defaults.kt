@@ -47,8 +47,8 @@ object Defaults {
     const val PREF_THEME_STYLE = KeyboardTheme.STYLE_ROUNDED
     fun PREF_ICON_STYLE(prefs: SharedPreferences) = prefs.getString(Settings.PREF_THEME_STYLE, PREF_THEME_STYLE)!!
     const val PREF_ACCENT_SHIFTED_ICON = false
-    const val PREF_THEME_COLORS = KeyboardTheme.THEME_LIGHT
-    const val PREF_THEME_COLORS_NIGHT = KeyboardTheme.THEME_DARK
+    val PREF_THEME_COLORS = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) KeyboardTheme.THEME_DYNAMIC else KeyboardTheme.THEME_LIGHT // Lafz: follows the system (Material You) like Gboard
+    val PREF_THEME_COLORS_NIGHT = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) KeyboardTheme.THEME_DYNAMIC else KeyboardTheme.THEME_DARK
     const val PREF_THEME_KEY_BORDERS = true
     @JvmField
     val PREF_THEME_DAY_NIGHT = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
@@ -90,7 +90,7 @@ object Defaults {
     @JvmField
     // Lafz: portrait (normal and folded) matches Gboard's row pitch, measured side by side on the emulator (1080x2400, 420 dpi: Gboard 154 px per row, 0.96 gives 156 px);
     // landscape unchanged. Index bit 0 = landscape.
-    val PREF_KEYBOARD_HEIGHT_SCALE = arrayOf(0.96f, DEFAULT_SIZE_SCALE, 0.96f, DEFAULT_SIZE_SCALE)
+    val PREF_KEYBOARD_HEIGHT_SCALE = arrayOf(DEFAULT_SIZE_SCALE, DEFAULT_SIZE_SCALE, DEFAULT_SIZE_SCALE, DEFAULT_SIZE_SCALE)
     @JvmField
     val PREF_BOTTOM_ROW_SCALE = Array(4) { DEFAULT_SIZE_SCALE }
     @JvmField
@@ -99,8 +99,8 @@ object Defaults {
     @JvmField
     val PREF_SIDE_PADDING_SCALE = Array(8) { 0f }
     @JvmField
-    val PREF_KEY_GAP_SCALE = arrayOf(1.2f, DEFAULT_SIZE_SCALE, 1.2f, DEFAULT_SIZE_SCALE) // Lafz: Gboard has ~20 % more room between keys in portrait
-    const val PREF_FONT_SCALE = 0.9f // Lafz: slightly smaller key labels, like Gboard
+    val PREF_KEY_GAP_SCALE = Array(4) { DEFAULT_SIZE_SCALE } // Lafz: gap sizes are set to Gboard's in the Rounded style
+    const val PREF_FONT_SCALE = DEFAULT_SIZE_SCALE
     const val PREF_HINT_FONT_SCALE = DEFAULT_SIZE_SCALE
     const val PREF_EMOJI_FONT_SCALE = DEFAULT_SIZE_SCALE
     const val PREF_EMOJI_KEY_FIT = true

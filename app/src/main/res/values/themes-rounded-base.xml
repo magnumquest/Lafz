@@ -24,6 +24,8 @@
     >
         <!-- This should be aligned with KeyboardTheme.THEME_ID_* -->
         <item name="themeId">RoundedBase</item>
+        <!-- Lafz: Gboard's horizontal key gap, 15px of 1080 -->
+        <item name="horizontalGap">1.39%p</item>
     </style>
 
     <style

@@ -132,6 +132,8 @@ public class Key implements Comparable<Key> {
 
     /** Background type that represents different key background visual than normal one. */
     private final int mBackgroundType;
+    private static final int[] PILL_STATE = { android.R.attr.state_checkable };
+    private static final int[] PILL_PRESSED_STATE = { android.R.attr.state_checkable, android.R.attr.state_pressed };
     public static final int BACKGROUND_TYPE_EMPTY = 0;
     public static final int BACKGROUND_TYPE_NORMAL = 1;
     public static final int BACKGROUND_TYPE_FUNCTIONAL = 2;
@@ -938,7 +940,9 @@ public class Key implements Comparable<Key> {
         } else {
             background = keyBackground;
         }
-        final int[] state = KeyBackgroundState.STATES[mBackgroundType].getState(mPressed || mLocked);
+        int[] state = KeyBackgroundState.STATES[mBackgroundType].getState(mPressed || mLocked);
+        if (hasFunctionalBackground() && (mCode == KeyCode.SYMBOL_ALPHA || mCode == KeyCode.ALPHA || mCode == KeyCode.SYMBOL))
+            state = (mPressed || mLocked) ? PILL_PRESSED_STATE : PILL_STATE; // Lafz: ?123 is a pill, other functional keys are rounded rectangles
         background.setState(state);
         return background;
     }

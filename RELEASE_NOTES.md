@@ -1,5 +1,11 @@
 # Release notes
 
+## 0.6.1
+- **UI / Design fixes.** The keyboard now follows Gboard's look and measurements, in dp and sp, so it scales with the system display size and font size like Gboard does.
+  - Key height, row spacing, key gaps, letter size and the space bar text match Gboard. The number row is an extra row on top: the other rows keep their size instead of being squeezed.
+  - Gboard's key structure: flat keys, rounded-rectangle shift, delete, comma and period keys, round `?123` and enter keys.
+  - Colours follow the system (Material You) on Android 12 and newer. Settings you changed yourself (theme, height, gaps, font size) are kept.
+
 ## 0.6.0
 - **Offline voice typing (experimental, off by default).** Settings → Voice typing → "Dictate with the microphone key". Tap the microphone key in the toolbar, speak, tap it again: the text is typed at the cursor. Urdu, Arabic and English, chosen by the keyboard language you are using. Everything runs on the phone; the audio never leaves it.
   - The speech models are large and are not part of the app: copy them to the phone and pick the folder in the same Settings screen (Urdu: Whisper small 190 MB, English: Whisper base.en 60 MB, Arabic: Omnilingual 300M 350 MB).

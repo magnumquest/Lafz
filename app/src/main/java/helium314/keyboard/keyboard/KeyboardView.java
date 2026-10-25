@@ -186,7 +186,7 @@ public class KeyboardView extends View {
         mKeyboard = keyboard;
         mKeyScaleForText = (float) Math.sqrt(1 / Settings.getValues().mKeyboardHeightScale);
         int scale = Math.min(2 * keyboard.mMostCommonKeyWidth, keyboard.mMostCommonKeyHeight - keyboard.mVerticalGap);
-        int scaledKeySize = (int) (scale * mKeyScaleForText);
+        int scaledKeySize = textKeySize(scale);
         mKeyDrawParams.updateParams(scaledKeySize, mKeyVisualAttributes);
         mKeyDrawParams.updateParams(scaledKeySize, keyboard.mKeyVisualAttributes);
         invalidateAllKeys();
@@ -327,6 +327,11 @@ public class KeyboardView extends View {
         mInvalidateAllKeys = false;
     }
 
+    /** key size that text sizes are derived from; scales with the key height by default */
+    protected int textKeySize(final int keyHeight) {
+        return (int) (keyHeight * mKeyScaleForText);
+    }
+
     private void onDrawKey(@NonNull final Key key, @NonNull final Canvas canvas,
             @NonNull final Paint paint) {
         final int keyDrawX = key.getDrawX() + getPaddingLeft();
@@ -335,7 +340,7 @@ public class KeyboardView extends View {
 
         final KeyVisualAttributes attr = key.getVisualAttributes();
         // don't use the raw key height, linear font scaling with height is too extreme
-        final KeyDrawParams params = mKeyDrawParams.mayCloneAndUpdateParams((int) (key.getHeight() * mKeyScaleForText), attr);
+        final KeyDrawParams params = mKeyDrawParams.mayCloneAndUpdateParams(textKeySize(key.getHeight()), attr);
         params.mAnimAlpha = Constants.Color.ALPHA_OPAQUE;
 
         if (!key.isSpacer()) {

@@ -97,6 +97,7 @@ class DynamicColors(context: Context, override val themeStyle: String, override 
     private val background = getBackground(context)
     private val keyBackground = getKeyBackground(context)
     private val functionalKey = getFunctionalKey(context)
+    private val actionKey = getActionKey(context)
     private val spaceBar = getKeyBackground(context)
     private val keyText = getKeyText(context)
     private val keyHintText = getKeyHintText(context)
@@ -106,13 +107,18 @@ class DynamicColors(context: Context, override val themeStyle: String, override 
         else ContextCompat.getColor(context, android.R.color.system_accent1_200)
     private fun getGesture(context: Context) = if (isNight) accent
         else ContextCompat.getColor(context, android.R.color.system_accent1_600)
-    private fun getBackground(context: Context) = if (isNight) ContextCompat.getColor(context, android.R.color.system_neutral1_900)
+    // Lafz: night colors follow Gboard's Material You roles (surface container, tonal keys, secondary container for functional keys)
+    private fun getBackground(context: Context) = if (isNight) ColorUtils.blendARGB(
+            ContextCompat.getColor(context, android.R.color.system_neutral1_900), ContextCompat.getColor(context, android.R.color.system_neutral1_800), 0.2f)
         else ContextCompat.getColor(context, android.R.color.system_neutral1_50)
-    private fun getKeyBackground(context: Context) = if (isNight) ContextCompat.getColor(context, android.R.color.system_neutral1_800)
+    private fun getKeyBackground(context: Context) = if (isNight) ColorUtils.blendARGB(
+            ContextCompat.getColor(context, android.R.color.system_neutral1_800), ContextCompat.getColor(context, android.R.color.system_neutral1_700), 0.4f)
         else  ContextCompat.getColor(context, android.R.color.system_neutral1_0)
-    private fun getFunctionalKey(context: Context) = if (isNight) ContextCompat.getColor(context, android.R.color.system_accent2_300)
+    private fun getFunctionalKey(context: Context) = if (isNight) ContextCompat.getColor(context, android.R.color.system_accent2_700)
         else ContextCompat.getColor(context, android.R.color.system_accent2_100)
-    private fun getKeyText(context: Context) = if (isNight) ContextCompat.getColor(context, android.R.color.system_neutral1_50)
+    /** enter key: same tonal color as the functional keys at night, accent in day mode */
+    private fun getActionKey(context: Context) = if (isNight) getFunctionalKey(context) else getAccent(context)
+    private fun getKeyText(context: Context) = if (isNight) ContextCompat.getColor(context, android.R.color.system_neutral1_100)
         else ContextCompat.getColor(context, android.R.color.system_accent3_900)
     private fun getKeyHintText(context: Context) = if (isNight) keyText
         else ContextCompat.getColor(context, android.R.color.system_accent3_700)
@@ -233,11 +239,11 @@ class DynamicColors(context: Context, override val themeStyle: String, override 
 
             functionalKeyStateList =
                 if (!isNight) pressedStateList(doubleAdjustedFunctionalKey, functionalKey)
-                else pressedStateList(functionalKey, doubleAdjustedKeyBackground)
+                else pressedStateList(brighten(functionalKey), functionalKey)
 
             actionKeyStateList =
                 if (!isNight) pressedStateList(gesture, accent)
-                else pressedStateList(doubleAdjustedAccent, accent)
+                else pressedStateList(brighten(actionKey), actionKey)
 
             spaceBarStateList =
                 if (themeStyle == STYLE_HOLO) pressedStateList(spaceBar, spaceBar)
@@ -271,13 +277,14 @@ class DynamicColors(context: Context, override val themeStyle: String, override 
         actionKeyIconColorFilter = when {
             themeStyle == STYLE_HOLO -> keyTextFilter
             // the white icon may not have enough contrast, and can't be adjusted by the user
-            isBrightColor(accent) -> colorFilter(Color.DKGRAY)
+            isBrightColor(actionKey) -> colorFilter(Color.DKGRAY)
             else -> null
         }
     }
 
     override fun get(color: ColorType): Int = when (color) {
-        TOOL_BAR_KEY_ENABLED_BACKGROUND, EMOJI_CATEGORY_SELECTED, ACTION_KEY_BACKGROUND, CLIPBOARD_PIN -> accent
+        ACTION_KEY_BACKGROUND -> actionKey
+        TOOL_BAR_KEY_ENABLED_BACKGROUND, EMOJI_CATEGORY_SELECTED, CLIPBOARD_PIN -> accent
         SHIFT_KEY_ICON -> if (accentShiftedIcon) accent else keyText
         AUTOFILL_BACKGROUND_CHIP, GESTURE_PREVIEW, POPUP_KEYS_BACKGROUND, MORE_SUGGESTIONS_BACKGROUND, KEY_PREVIEW_BACKGROUND -> adjustedBackground
         TOOL_BAR_EXPAND_KEY_BACKGROUND -> if (!isNight) accent else doubleAdjustedBackground
@@ -287,7 +294,7 @@ class DynamicColors(context: Context, override val themeStyle: String, override 
             EMOJI_SEARCH_TEXT, CLIPBOARD_SUGGESTION_ICON -> keyText
         KEY_HINT_TEXT -> keyHintText
         SPACE_BAR_TEXT -> spaceBarText
-        FUNCTIONAL_KEY_BACKGROUND, EMOJI_SEARCH_BACKGROUND -> if (!isNight) functionalKey else doubleAdjustedKeyBackground
+        FUNCTIONAL_KEY_BACKGROUND, EMOJI_SEARCH_BACKGROUND -> functionalKey
         SPACE_BAR_BACKGROUND -> spaceBar
         MORE_SUGGESTIONS_WORD_BACKGROUND, MAIN_BACKGROUND -> background
         KEY_BACKGROUND -> keyBackground
