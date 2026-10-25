@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="emoji_media_header_height">64dp</dimen>
+    <dimen name="emoji_category_height">48dp</dimen>
+    <item type="id" name="media_emoji" />
+    <item type="id" name="media_gifs" />
+    <item type="id" name="media_stickers" />
+</resources>

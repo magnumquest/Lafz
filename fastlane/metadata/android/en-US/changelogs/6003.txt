@@ -1,0 +1,5 @@
+Optional GIF/sticker search with previews, a local media library and WhatsApp sharing. No key entry needed in this private build; keyless web search is also available.
+Rounded Emoji/GIFs/Stickers tabs and a scrollable category row now match the keyboard theme.
+Create WhatsApp packs from 3–30 local static images.
+Media is off by default and idle while typing. The unavailable adult provider was removed.
+Install over 0.6.2 to keep settings and data.

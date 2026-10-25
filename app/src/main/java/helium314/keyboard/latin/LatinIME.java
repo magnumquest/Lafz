@@ -796,6 +796,7 @@ public class LatinIME extends InputMethodService implements
 
     @Override
     public void onStartInput(final EditorInfo editorInfo, final boolean restarting) {
+        helium314.keyboard.latin.media.MediaInsertion.editorChanged(editorInfo);
         mHandler.onStartInput(editorInfo, restarting);
     }
 
@@ -803,6 +804,8 @@ public class LatinIME extends InputMethodService implements
     public void onStartInputView(final EditorInfo editorInfo, final boolean restarting) {
         mHandler.onStartInputView(editorInfo, restarting);
         mStatsUtilsManager.onStartInputView();
+        if (helium314.keyboard.latin.media.MediaInsertion.hasPending())
+            mHandler.postDelayed(() -> helium314.keyboard.latin.media.MediaInsertion.deliver(this), 250);
     }
 
     @Override

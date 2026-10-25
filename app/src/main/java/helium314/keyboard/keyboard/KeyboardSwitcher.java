@@ -78,6 +78,10 @@ public final class KeyboardSwitcher {
     private TextView mFakeToastView;
     private ImageView mBackgroundGatheringIndicator;
     private LatinIME mLatinIME;
+
+    public void openMedia(String kind) {
+        helium314.keyboard.latin.media.MediaInsertion.open(mLatinIME, kind);
+    }
     private RichInputMethodManager mRichImm;
     private boolean mIsHardwareAcceleratedDrawingEnabled;
 
@@ -645,9 +649,9 @@ public final class KeyboardSwitcher {
             // @see LatinIME#onComputeInset(android.inputmethodservice.InputMethodService.Insets)
             mKeyboardView.setVisibility(View.GONE);
             mSuggestionStripView.setVisibility(View.GONE);
-            mStripContainer.setVisibility(getSecondaryStripVisibility());
+            mStripContainer.setVisibility(View.GONE);
             mClipboardStripScrollView.setVisibility(View.GONE);
-            mEmojiTabStripView.setVisibility(View.VISIBLE);
+            mEmojiTabStripView.setVisibility(View.GONE);
             mClipboardHistoryView.setVisibility(View.GONE);
             mEmojiPalettesView.startEmojiPalettes(mKeyboardView.getKeyVisualAttribute(),
                 mLatinIME.getCurrentInputEditorInfo(), mLatinIME.mKeyboardActionListener);

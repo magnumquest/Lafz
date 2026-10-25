@@ -32,6 +32,7 @@ fun MainSettingsScreen(
     onClickToolbar: () -> Unit,
     onClickGestureTyping: () -> Unit,
     onClickVoiceTyping: () -> Unit,
+    onClickMedia: () -> Unit,
     onClickDataGathering: () -> Unit,
     onClickAdvanced: () -> Unit,
     onClickAppearance: () -> Unit,
@@ -53,6 +54,8 @@ fun MainSettingsScreen(
                         SubtypeSettings.getEnabledSubtypes(true).joinToString(", ") { it.displayName() }, onClickLanguage)
                     HomeRow(R.string.settings_screen_appearance, R.drawable.ic_settings_appearance,
                         stringResource(R.string.lafz_appearance_description), onClickAppearance)
+                    HomeRow(R.string.media_title, R.drawable.ic_toolbar_emoji,
+                        stringResource(R.string.media_description), onClickMedia)
                     HomeRow(R.string.settings_screen_toolbar, R.drawable.ic_settings_toolbar,
                         stringResource(R.string.lafz_toolbar_description), onClickToolbar)
                 }

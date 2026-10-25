@@ -1,4 +1,5 @@
 import com.android.build.api.variant.ApplicationVariant
+import groovy.json.JsonOutput
 
 plugins {
     id("com.android.application")
@@ -6,15 +7,24 @@ plugins {
     kotlin("plugin.compose") version "2.4.0"
 }
 
+// Optional private distribution key; never copy .env into assets or log its contents.
+val bundledGiphyKey = providers.fileContents(rootProject.layout.projectDirectory.file(".env")).asText
+    .orElse("").map { content ->
+        content.lineSequence().map { it.trim().removePrefix("export ").trim() }
+            .firstOrNull { it.startsWith("GIFFY_KEY=") }
+            ?.substringAfter('=')?.trim()?.removeSurrounding("\"")?.removeSurrounding("'").orEmpty()
+    }
+
 android {
     compileSdk = 37
 
     defaultConfig {
+        buildConfigField("String", "GIPHY_API_KEY", JsonOutput.toJson(bundledGiphyKey.get()))
         applicationId = "app.lafz.keyboard"
         minSdk = 21
         targetSdk = 37
-        versionCode = 6002
-        versionName = "0.6.2"
+        versionCode = 6003
+        versionName = "0.6.3"
         ndk {
             abiFilters.clear()
             abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64"))

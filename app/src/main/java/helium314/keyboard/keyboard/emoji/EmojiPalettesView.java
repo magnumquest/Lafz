@@ -20,6 +20,7 @@ import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.HorizontalScrollView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -230,6 +231,7 @@ public final class EmojiPalettesView extends LinearLayout
         final int width = ResourceUtils.getKeyboardWidth(getContext(), Settings.getValues())
                 + getPaddingLeft() + getPaddingRight();
         final int height = ResourceUtils.getSecondaryKeyboardHeight(res, Settings.getValues())
+                + (Settings.getValues().isSecondaryStripVisible() ? res.getDimensionPixelSize(R.dimen.emoji_category_height) : 0)
                 + getPaddingTop() + getPaddingBottom();
         mEmojiCategoryPageIndicatorView.mWidth = width;
         setMeasuredDimension(width, height);
@@ -237,14 +239,16 @@ public final class EmojiPalettesView extends LinearLayout
 
     private void addTab(LinearLayout host, EmojiCategory.Category category) {
         final ImageView iconView = new ImageView(getContext());
-        mColors.setBackground(iconView, ColorType.STRIP_BACKGROUND);
-        mColors.setColor(iconView, ColorType.EMOJI_CATEGORY);
-        iconView.setScaleType(ImageView.ScaleType.CENTER);
+        iconView.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        final int iconPadding = (int) (12 * getResources().getDisplayMetrics().density);
+        iconView.setPadding(iconPadding, iconPadding, iconPadding, iconPadding);
+        iconView.setFocusable(true);
+        EmojiMediaTabsView.styleCategory(iconView, mColors, false);
         iconView.setImageResource(mEmojiCategory.getCategoryTabIcon(category));
         iconView.setContentDescription(mEmojiCategory.getAccessibilityDescription(category));
         iconView.setTag(category);
         host.addView(iconView);
-        iconView.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f));
+        iconView.setLayoutParams(new LinearLayout.LayoutParams(getResources().getDimensionPixelSize(R.dimen.emoji_category_height), ViewGroup.LayoutParams.MATCH_PARENT));
         iconView.setOnClickListener(this);
         if (category == EmojiCategory.Category.RECENTS) {
             iconView.setOnLongClickListener(v -> {
@@ -257,10 +261,10 @@ public final class EmojiPalettesView extends LinearLayout
     }
 
     @SuppressLint("ClickableViewAccessibility")
-    public void initialize() { // needs to be delayed for access to EmojiTabStrip, which is not a child of this view
+    public void initialize() {
         if (initialized) return;
         mEmojiCategory.initialize();
-        mTabStrip = (LinearLayout) KeyboardSwitcher.getInstance().getEmojiTabStrip();
+        mTabStrip = findViewById(R.id.emoji_categories);
         if (Settings.getValues().isSecondaryStripVisible()) {
             for (EmojiCategory.CategoryProperties properties : mEmojiCategory.getShownCategories()) {
                 addTab(mTabStrip, properties.getCategory());
@@ -367,6 +371,21 @@ public final class EmojiPalettesView extends LinearLayout
         final KeyDrawParams params = new KeyDrawParams();
         params.updateParams(mEmojiLayoutParams.getBottomRowKeyboardHeight(), keyVisualAttr);
         new EmojiLayoutParams(getResources()).setEmojiListProperties(mPager); // necessary when floating
+        final boolean mediaEnabled = helium314.keyboard.latin.media.MediaPrefs.INSTANCE.enabled(getContext());
+        final EmojiMediaTabsView mediaTabs = findViewById(R.id.media_tabs);
+        mediaTabs.setVisibility(mediaEnabled ? VISIBLE : GONE);
+        findViewById(R.id.emoji_category_scroll).setVisibility(Settings.getValues().isSecondaryStripVisible() ? VISIBLE : GONE);
+        if (mediaEnabled) {
+            mediaTabs.bind(mColors, kind -> {
+                if (!"EMOJI".equals(kind)) {
+                    AudioAndHapticFeedbackManager.getInstance().performHapticAndAudioFeedback(KeyCode.NOT_SPECIFIED, this, HapticEvent.KEY_PRESS);
+                    KeyboardSwitcher.getInstance().openMedia(kind);
+                }
+            });
+            final ViewGroup.LayoutParams mediaPageParams = mPager.getLayoutParams();
+            mediaPageParams.height = Math.max(1, mediaPageParams.height - getResources().getDimensionPixelSize(R.dimen.emoji_media_header_height));
+            mPager.setLayoutParams(mediaPageParams);
+        }
         mEmojiCategory.reloadRecents(); // in case recents changed from outside emoji keyboards
         setupSidePadding();
         initDictionaryFacilitator();
@@ -457,9 +476,10 @@ public final class EmojiPalettesView extends LinearLayout
                 View current = mTabStrip.findViewWithTag(category);
 
                 if (old instanceof ImageView)
-                    Settings.getValues().mColors.setColor((ImageView) old, ColorType.EMOJI_CATEGORY);
+                    EmojiMediaTabsView.styleCategory((ImageView) old, mColors, false);
                 if (current instanceof ImageView)
-                    Settings.getValues().mColors.setColor((ImageView) current, ColorType.EMOJI_CATEGORY_SELECTED);
+                    EmojiMediaTabsView.styleCategory((ImageView) current, mColors, true);
+                if (current != null) ((HorizontalScrollView) findViewById(R.id.emoji_category_scroll)).requestChildFocus(mTabStrip, current);
             }
         }
     }

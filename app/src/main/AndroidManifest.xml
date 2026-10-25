@@ -11,6 +11,13 @@ SPDX-License-Identifier: Apache-2.0 AND GPL-3.0-only
     <!-- ONNX Runtime (voice typing models) needs Android 7; it is only touched there (VoiceModels.isSupported), the rest of the app still runs on Android 5 -->
     <uses-sdk tools:overrideLibrary="ai.onnxruntime" />
 
+    <!-- Used only by optional media search and downloads. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <queries>
+        <package android:name="com.whatsapp" />
+        <package android:name="com.whatsapp.w4b" />
+    </queries>
+
     <uses-permission android:name="android.permission.READ_USER_DICTIONARY" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.VIBRATE" />
@@ -105,6 +112,18 @@ SPDX-License-Identifier: Apache-2.0 AND GPL-3.0-only
         <activity android:name="helium314.keyboard.keyboard.emoji.EmojiSearchActivity" android:exported="false"
             android:theme="@style/TransparentActivityTheme" android:excludeFromRecents="true" android:noHistory="true"
             android:windowSoftInputMode="adjustResize|stateAlwaysVisible" android:configChanges="orientation|screenSize"/>
+
+        <activity android:name="helium314.keyboard.latin.media.MediaBrowserActivity"
+            android:exported="false" android:excludeFromRecents="true"
+            android:theme="@style/platformActivityTheme"
+            android:windowSoftInputMode="adjustResize" />
+        <provider android:name="helium314.keyboard.latin.media.MediaFileProvider"
+            android:authorities="${applicationId}.media" android:exported="false" android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/media_provider_paths" />
+        </provider>
+        <provider android:name="helium314.keyboard.latin.media.WhatsAppStickerProvider"
+            android:authorities="${applicationId}.stickers" android:exported="true"
+            android:readPermission="com.whatsapp.sticker.READ" />
 
         <!-- Broadcast receivers -->
         <receiver android:name="SystemBroadcastReceiver"

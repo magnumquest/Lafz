@@ -1,5 +1,14 @@
 # Release notes
 
+## 0.6.3
+- **GIFs and stickers, when you want them.** Enable Settings → Emoji, GIFs & stickers, then choose GIFs or Stickers from the emoji panel. Search GIPHY, preview a result and explicitly insert or share it. The private release includes the configured GIPHY key, so recipients do not need an account or key entry. Keyless web search is also available and is used if API requests fail; it shows the website’s initial batch of results.
+- **A refreshed emoji panel.** Rounded Emoji / GIFs / Stickers controls, matching outline icons and ripple feedback follow the keyboard’s colors. Emoji categories sit underneath in a scrollable row with a tonal selection indicator and 48 dp touch targets. Offline emoji remains available with media disabled.
+- **Your local media library.** Import GIF, WebP, PNG and JPEG images, save online reactions for later, preview them and remove saved items. Local media works offline. Selected GIFs can play on Android 9 and newer; grid previews stay static.
+- **WhatsApp sharing and sticker packs.** Insert media into editors that advertise support, or use Android’s share chooser to pick WhatsApp. Export 3–30 local static images as a native WhatsApp sticker pack. Online animated stickers are shared as GIF reactions; animated native sticker packs are not supported yet. WhatsApp receiving and pack import still need confirmation on a phone with WhatsApp installed.
+- **Typing stays offline.** Media is off by default. No provider request runs when opening the emoji panel or during ordinary typing. Searches and downloads run in the separate media browser, with bounded downloads, private URI grants and storage limits. Conversation text is never sent to GIF providers. Internet permission is used for optional media search and downloads.
+- **Connection checks.** GIPHY GIF/sticker searches, previews and complete downloads passed from the Pakistan-connected emulator through both API and keyless web search. The nonworking adult provider has been removed entirely.
+- **In-place upgrade.** Version code 6003, using the same package ID and release signing certificate as 0.6.2. Install the release APK over the existing app to keep settings and data.
+
 ## 0.6.2
 - **A separate, scrollable smart clipboard.** Open the toolbar arrow → clipboard icon to browse pinned clips, detected details and recent history. Phone numbers, IBANs, bank account numbers, cards, verification codes, emails and links appear as individual cards. Tap a card to paste just that detail; hold it to pin it independently of the original copied text.
 - **Clipboard management.** Pinned details survive clearing or expiry of recent clips. Swipe recent clips left to delete them, hold a saved clip to pin or unpin it, and tap the original clip to paste its full text. Duplicate detected values are combined. Reopening the clipboard does not restore a clip deleted during the current keyboard session.

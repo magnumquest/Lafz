@@ -9,7 +9,7 @@
   Type <code>mein kal aonga</code>, get <span dir="rtl">میں کل آؤں گا</span>.
 </p>
 
-<p align="center"><b>Latest: version 0.6.2.</b> A scrollable smart clipboard with separate detected details, pinned clips and recent history, plus refreshed toolbar icons. Includes offline voice typing for Urdu, Arabic and English. See the <a href="RELEASE_NOTES.md">release notes</a>.</p>
+<p align="center"><b>Latest: version 0.6.3.</b> Optional GIF and sticker search, a local media library, WhatsApp sticker packs and a redesigned emoji panel. Includes offline voice typing for Urdu, Arabic and English. See the <a href="RELEASE_NOTES.md">release notes</a>.</p>
 
 ---
 
@@ -48,9 +48,17 @@ word replaces it as the decoder settles, and space commits what you see. The sug
 - **Islamic honorifics and terms**, in English, Roman-Urdu and Urdu: `Umar` → Umar Radiallahu Anhu, `Rasul` → Rasulullah ﷺ,
   bismillah, inshallah, jazakallah and more. (The list in `app/src/main/assets/honorifics/honorifics.tsv` is waiting for review by someone with religious knowledge.)
 - **English typing is unchanged**, and you can switch languages like any other keyboard.
-- **100% offline.** The app does not request the internet permission.
+- **Offline typing.** Typing, suggestions, voice models and emoji work offline. Optional GIF/sticker search uses the internet only when you open media; it is disabled by default.
 - A Gboard-style look (rounded keys, light and dark themes).
 - A redesigned Settings screen groups options by task and makes commonly used settings easier to find.
+
+## GIFs and stickers
+
+Enable **Settings → Emoji, GIFs & stickers → Enable GIFs & stickers**, then open the emoji keyboard and choose GIFs or Stickers from the rounded media tabs. The panel uses the keyboard’s colors, with a scrollable row of emoji categories below. This private build bundles the GIPHY key from the root `.env` entry `GIFFY_KEY=...`, so recipients do not need an account or key entry. Disable **Use GIPHY API with web fallback** to use keyless public-page search; this also acts as a fallback when API requests fail. Keyless search shows the website’s initial batch of results, so refine the query for more. `.env` is ignored by Git and is not copied into APK assets. On the Pakistan-connected emulator, GIF and sticker search, previews and full downloads passed using both the bundled API key and the keyless web path.
+
+Tap a result to preview, then insert into a compatible editor or choose Share and pick WhatsApp. Local accepts imported GIF/WebP/PNG/JPEG files and works offline. To make a native WhatsApp sticker pack, import 3–30 static images and choose **Add local stickers to WhatsApp**. Online animated stickers are delivered as GIF reactions; animated native sticker packs are not yet supported.
+
+The browser opens as a separate screen so searches use the normal keyboard. It makes no requests during ordinary typing, does not send conversation text, and uses bounded downloads and static grid previews. Transfers older than 24 hours are cleaned on the next download; clear them in settings after the receiving app finishes reading. Local media is kept until removed. [Design, sources and validation](docs/media-plan.md).
 
 ## How accurate is it?
 
@@ -118,7 +126,7 @@ Back that key up and never commit it: updates must be signed with the same key.
 - [x] Offline voice model speed and accuracy benchmarks (`docs/research/voice-typing.md`)
 - [ ] Voice typing: improve Urdu accuracy on everyday speech and test noisy recordings
 - [ ] Clipboard history search and filters
-- [ ] Offline-first GIF search (the only feature that would ever need the internet)
+- [x] Optional GIF/sticker browser, local media library and static WhatsApp sticker packs ([setup and limitations](docs/media-plan.md))
 
 ## License and credits
 
