@@ -170,7 +170,19 @@
     <string name="bigram_prediction">Next-word suggestions</string>
     <!-- Title for the switch that shows Urdu or Arabic script in the text field while Roman letters are typed. -->
     <string name="smart_clipboard_title">Smart clipboard</string>
-    <string name="smart_clipboard_summary">Offer codes and numbers (OTP, PIN, IBAN, card and account numbers) found in copied text on their own, so you can paste just the number</string>
+    <string name="smart_clipboard_summary">Extract phone numbers, IBANs, bank accounts, cards, verification codes, emails and links from copied text. Tap a chip to paste just that detail.</string>
+    <string name="clipboard_detected_details">Detected details · hold to pin</string>
+    <string name="clipboard_pinned">Pinned</string>
+    <string name="clipboard_recent">Recent · swipe left to delete</string>
+    <string name="clipboard_paste_full_text">Paste full text</string>
+    <string name="clipboard_value_code">Code</string>
+    <string name="clipboard_value_iban">IBAN</string>
+    <string name="clipboard_value_card">Card</string>
+    <string name="clipboard_value_account">Account</string>
+    <string name="clipboard_value_phone">Phone</string>
+    <string name="clipboard_value_email">Email</string>
+    <string name="clipboard_value_link">Link</string>
+    <string name="clipboard_empty_hint">Your copied text appears here.\nHold a clip to pin it. Swipe left to delete it.</string>
     <string name="clipboard_skip_codes_title">Keep codes out of clipboard history</string>
     <string name="clipboard_skip_codes_summary">Copied text that contains such a code is not saved in the history. It is still offered above the keyboard for a few minutes</string>
     <string name="voice_typing_title">Voice typing (experimental)</string>

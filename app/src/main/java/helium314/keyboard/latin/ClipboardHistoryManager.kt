@@ -18,6 +18,7 @@ import androidx.core.view.inputmethod.InputContentInfoCompat
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
 import helium314.keyboard.keyboard.KeyboardTypeface
+import helium314.keyboard.keyboard.KeyboardSwitcher
 import helium314.keyboard.compat.ClipboardManagerCompat
 import helium314.keyboard.event.Event
 import helium314.keyboard.event.HapticEvent
@@ -26,6 +27,7 @@ import helium314.keyboard.keyboard.internal.keyboard_parser.floris.KeyCode
 import helium314.keyboard.keyboard.clipboard.CodeChips
 import helium314.keyboard.latin.common.ColorType
 import helium314.keyboard.latin.utils.FoundCode
+import helium314.keyboard.latin.utils.CodeKind
 import helium314.keyboard.latin.utils.SmartCodeExtractor
 import helium314.keyboard.latin.common.Constants
 import helium314.keyboard.latin.common.isValidNumber
@@ -63,29 +65,67 @@ class ClipboardHistoryManager(
     }
 
     override fun onPrimaryClipChanged() {
+        if (tempPrimaryClip) return
+        dontShowCurrentSuggestion = false
+        lastClipIdentity = clipIdentity()
         // Make sure we read clipboard content only if history settings is set
         if (latinIME.mSettings.current.mClipboardHistoryEnabled) {
             fetchPrimaryClip()
-            dontShowCurrentSuggestion = false
+        }
+        // Copying with the keyboard open does not restart the input view. Refresh the
+        // strip explicitly, independently of whether the user keeps clipboard history.
+        latinIME.mHandler.post {
+            if (latinIME.isInputViewShown && KeyboardSwitcher.getInstance().mainKeyboardView?.isShown == true) {
+                if (!latinIME.tryShowClipboardSuggestion() && clipboardSuggestionView?.isShown == true)
+                    latinIME.setNeutralSuggestionStrip()
+            }
         }
     }
 
-    // todo for later
-    //  setting whether to store sensitive clip data?
-    //  care about other clip items than first?
+    /** Reconcile clips copied while this IME was stopped or Android withheld callbacks. */
+    fun onStartInputView() {
+        val identity = clipIdentity()
+        if (identity != lastClipIdentity) dontShowCurrentSuggestion = false
+        lastClipIdentity = identity
+        if (latinIME.mSettings.current.mClipboardHistoryEnabled) fetchPrimaryClip()
+    }
+
+    private var lastClipIdentity: Pair<Long, String?>? = null
+    private var lastCapturedClip: Pair<Pair<Long, String?>, Boolean>? = null
+
+    private fun clipIdentity(clip: ClipData? = clipboardManager.primaryClip): Pair<Long, String?>? {
+        clip ?: return null
+        if (clip.itemCount == 0) return null
+        val timestamp = if (android.os.Build.VERSION.SDK_INT >= 26) clip.description.timestamp else 0L
+        val item = clip.getItemAt(0)
+        return timestamp to (item.text?.toString() ?: item.uri?.toString())
+    }
+
+    // TODO: support additional items in a multi-item clip.
     private fun fetchPrimaryClip() {
         if (tempPrimaryClip) return // avoid updating history
         val clipData = clipboardManager.primaryClip ?: return
         if (clipData.itemCount == 0) return
         val clipItem = clipData.getItemAt(0) ?: return
         val description = clipData.description ?: return
+        val settings = latinIME.mSettings.current
+        val identity = clipIdentity(clipData) ?: return
+        val captureKey = identity to (settings.mSmartClipboard && settings.mClipboardSkipCodes)
+        // Reconcile missed copies without resurrecting a clip deleted from history.
+        if (captureKey == lastCapturedClip) return
+        if (clipboardDao == null) clipboardDao = ClipboardDao.getInstance(latinIME)
+        if (clipboardDao == null) return
+        lastCapturedClip = captureKey
+        // Respect the source app's sensitive flag; never persist passwords or secrets.
+        if (ClipboardManagerCompat.getClipSensitivity(description) == true) return
         val timeStamp = ClipboardManagerCompat.getClipTimestamp(clipData)
 
         if (description.hasMimeType("text/*")) {
             val content = clipItem.coerceToText(latinIME)
             if (TextUtils.isEmpty(content)) return
-            val settings = latinIME.mSettings.current
-            if (settings.mSmartClipboard && settings.mClipboardSkipCodes && codesIn(content).isNotEmpty()) return // kept out of the history on purpose
+            if (settings.mSmartClipboard && settings.mClipboardSkipCodes && codesIn(content).any {
+                it.kind in setOf(CodeKind.OTP, CodeKind.IBAN, CodeKind.CARD, CodeKind.ACCOUNT)
+            }) return // kept out of the history on purpose
             clipboardDao?.addClip(timeStamp, false, content.toString())
         } else if (maySaveFromUri(clipItem.uri, latinIME)) {
             clipboardDao?.addClipUri(timeStamp, false, clipItem.uri, description, latinIME)
@@ -153,6 +193,13 @@ class ClipboardHistoryManager(
         }
     }
 
+    fun pinText(text: String) {
+        val dao = clipboardDao ?: return
+        dao.addClip(System.currentTimeMillis(), true, text)
+        val entry = dao.getAll().firstOrNull { it.filename == null && it.text == text } ?: return
+        if (!entry.isPinned) dao.togglePinned(entry.id)
+    }
+
     fun toggleClipPinned(id: Long) {
         clipboardDao?.togglePinned(id)
     }
@@ -176,7 +223,10 @@ class ClipboardHistoryManager(
 
     // We do not want to update history while user is visualizing it, so we check retention only
     // when history is about to be shown
-    fun prepareClipboardHistory() = clipboardDao?.clearOldClips(true)
+    fun prepareClipboardHistory() {
+        if (latinIME.mSettings.current.mClipboardHistoryEnabled) fetchPrimaryClip()
+        clipboardDao?.clearOldClips(true)
+    }
 
     fun getHistorySize() = clipboardDao?.count() ?: 0
 
@@ -189,15 +239,13 @@ class ClipboardHistoryManager(
     }
 
     private fun isClipSensitive(inputType: Int): Boolean {
-        ClipboardManagerCompat.getClipSensitivity(clipboardManager.primaryClip?.description)?.let { return it }
-        return InputTypeUtils.isPasswordInputType(inputType)
+        return ClipboardManagerCompat.getClipSensitivity(clipboardManager.primaryClip?.description) == true ||
+            InputTypeUtils.isPasswordInputType(inputType)
     }
 
     fun getClipboardSuggestionView(editorInfo: EditorInfo?, parent: ViewGroup?): View? {
         // maybe no need to create a new view
         // but a cache has to consider a few possible changes, so better don't implement without need
-        clipboardSuggestionView = null
-
         // get the content, or return null
         if (!latinIME.mSettings.current.mSuggestClipboardContent) return null
         if (dontShowCurrentSuggestion) return null
@@ -219,19 +267,21 @@ class ClipboardHistoryManager(
         clipIcon?.setBounds(0, 0, textView.lineHeight, textView.lineHeight) // scale the icon to the text
         textView.setCompoundDrawablesRelative(clipIcon, null, null, null)
         val inputType = editorInfo?.inputType ?: InputType.TYPE_NULL
-        val foundCodes = if (hasText && latinIME.mSettings.current.mSmartClipboard) codesIn(content) else emptyList()
+        val foundCodes = if (hasText && latinIME.mSettings.current.mSmartClipboard) codesIn(content).filter {
+            !InputTypeUtils.isNumberInputType(inputType) || it.value.isValidNumber()
+        } else emptyList()
         if (foundCodes.isNotEmpty()) {
             // a code or number inside a longer text: offer the values on their own instead of the whole text
             val colors = latinIME.mSettings.current.mColors
             val chips = binding.clipboardSuggestionChips
             textView.visibility = View.GONE
-            chips.visibility = View.VISIBLE
+            binding.clipboardSuggestionScroll.visibility = View.VISIBLE
             CodeChips.fill(chips, foundCodes, colors.get(ColorType.KEY_TEXT), colors.get(ColorType.KEY_BACKGROUND), textView.textSize,
-                isClipSensitive(inputType)) { value ->
+                isClipSensitive(inputType), fullText = content.toString().takeIf { !InputTypeUtils.isNumberInputType(inputType) }) { value ->
                 dontShowCurrentSuggestion = true
                 latinIME.onTextInput(value)
                 AudioAndHapticFeedbackManager.getInstance().performHapticAndAudioFeedback(KeyCode.NOT_SPECIFIED, chips, HapticEvent.KEY_PRESS)
-                binding.root.isGone = true
+                removeClipboardSuggestion()
             }
             val closeButton = binding.clipboardSuggestionClose
             closeButton.setImageDrawable(KeyboardIconsSet.instance.getIconDrawable(ToolbarKey.CLOSE_HISTORY.name.lowercase()))
@@ -256,7 +306,7 @@ class ClipboardHistoryManager(
             else latinIME.onEvent(Event.createSoftwareKeypressEvent(KeyCode.CLIPBOARD_PASTE, 0,
                 Constants.NOT_A_COORDINATE, Constants.NOT_A_COORDINATE, false))
             AudioAndHapticFeedbackManager.getInstance().performHapticAndAudioFeedback(KeyCode.NOT_SPECIFIED, it, HapticEvent.KEY_PRESS)
-            binding.root.isGone = true
+            removeClipboardSuggestion()
         }
         textView.setOnClickListener(onClickListener)
 
@@ -288,6 +338,8 @@ class ClipboardHistoryManager(
         clipboardSuggestionView = binding.root
         return clipboardSuggestionView
     }
+
+    fun isSuggestionVisible() = clipboardSuggestionView?.isShown == true
 
     private fun removeClipboardSuggestion() {
         dontShowCurrentSuggestion = true

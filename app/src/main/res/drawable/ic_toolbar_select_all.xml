@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-only -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M8,3.5H5a1.5,1.5 0,0 0,-1.5 1.5v3 M16,3.5h3a1.5,1.5 0,0 1,1.5 1.5v3 M3.5,16v3A1.5,1.5 0,0 0,5 20.5h3 M20.5,16v3a1.5,1.5 0,0 1,-1.5 1.5h-3 M8,9h8 M8,12h8 M8,15h5" />
+</vector>

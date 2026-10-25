@@ -151,6 +151,7 @@ class ClipboardHistoryView @JvmOverloads constructor(
         historyManager.prepareClipboardHistory()
         historyManager.setHistoryChangeListener(this)
         clipboardAdapter.clipboardHistoryManager = historyManager
+        clipboardAdapter.refresh()
 
         val params = KeyDrawParams()
         params.updateParams(clipboardLayoutParams.bottomRowKeyboardHeight, keyVisualAttr)
@@ -162,7 +163,7 @@ class ClipboardHistoryView @JvmOverloads constructor(
         placeholderView.apply {
             KeyboardTypeface.applyToTextView(this)
             setTextColor(params.mTextColor)
-            setTextSize(TypedValue.COMPLEX_UNIT_PX, params.mLabelSize.toFloat() * 2)
+            setTextSize(TypedValue.COMPLEX_UNIT_PX, params.mLabelSize.toFloat() * 1.1f)
         }
         clipboardRecyclerView.apply {
             adapter = clipboardAdapter
@@ -235,18 +236,16 @@ class ClipboardHistoryView @JvmOverloads constructor(
     }
 
     override fun onClipInserted(position: Int) {
-        clipboardAdapter.notifyItemInserted(position)
-        clipboardRecyclerView.smoothScrollToPosition(position)
+        clipboardAdapter.refresh()
+        clipboardRecyclerView.smoothScrollToPosition(0)
     }
 
     override fun onClipsRemoved(position: Int, count: Int) {
-        clipboardAdapter.notifyItemRangeRemoved(position, count)
+        clipboardAdapter.refresh()
     }
 
     override fun onClipMoved(oldPosition: Int, newPosition: Int) {
-        clipboardAdapter.notifyItemMoved(oldPosition, newPosition)
-        clipboardAdapter.notifyItemChanged(newPosition)
-        if (newPosition < oldPosition) clipboardRecyclerView.smoothScrollToPosition(newPosition)
+        clipboardAdapter.refresh()
     }
 
     override fun onSharedPreferenceChanged(prefs: SharedPreferences?, key: String?) {
@@ -257,7 +256,7 @@ class ClipboardHistoryView @JvmOverloads constructor(
             // Ensure settings are reloaded first
             Settings.getInstance().onSharedPreferenceChanged(prefs, key)
             clipboardHistoryManager.sortHistoryEntries()
-            clipboardAdapter.notifyDataSetChanged()
+            clipboardAdapter.refresh()
         }
     }
 }

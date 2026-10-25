@@ -1,0 +1,5 @@
+Scrollable smart clipboard with separate detected details, pinned clips and recent history.
+Extract phone numbers, IBANs, accounts, cards, codes, emails and links. Tap to paste; hold to pin; swipe recent clips left to delete.
+Clipboard suggestions refresh reliably, scroll, and include full-text paste.
+Sensitive clips are masked and kept out of history.
+Refreshed, theme-aware rounded toolbar icons; custom icons still work.

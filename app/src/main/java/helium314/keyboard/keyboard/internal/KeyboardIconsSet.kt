@@ -18,6 +18,7 @@ class KeyboardIconsSet private constructor() {
     var iconIds = emptyMap<String, Int>()
         private set
     private val iconsByName = HashMap<String, Drawable>(80)
+    private var customIconNames = emptySet<String>()
 
     fun loadIcons(context: Context) {
         val prefs = context.prefs()
@@ -28,6 +29,7 @@ class KeyboardIconsSet private constructor() {
             else -> keyboardIconsMaterial
         }
         val overrideIds = customIconIds(context, prefs)
+        customIconNames = overrideIds.map { it.first }.toSet()
         val ids = if (overrideIds.isEmpty()) defaultIds else defaultIds + overrideIds
         if (!needsReload && ids == iconIds) return
         iconIds = ids
@@ -51,6 +53,14 @@ class KeyboardIconsSet private constructor() {
     /** gets drawable from resources, with mutate (might be necessary to avoid coloring issues...) */
     fun getNewDrawable(name: String?, context: Context): Drawable? = name?.lowercase(Locale.US)?.let { name ->
         (iconIds[name] ?: iconIds[alternativeNames[name]])?.let { ContextCompat.getDrawable(context, it)?.mutate() }
+    }
+
+    /** Use the toolbar set unless the user explicitly selected a custom icon. */
+    fun getToolbarDrawable(name: String, context: Context): Drawable? {
+        val key = name.lowercase(Locale.US)
+        if (key in customIconNames) return getNewDrawable(name, context)
+        val id = ToolbarIcons.resourceIds[key] ?: return getNewDrawable(name, context)
+        return ContextCompat.getDrawable(context, id)?.mutate()
     }
 
     companion object {
@@ -300,6 +310,10 @@ class KeyboardIconsSet private constructor() {
                 }
             }
 
+            // Include the toolbar set in the icon picker alongside the existing styles.
+            ToolbarIcons.resourceIds.forEach { (name, id) ->
+                iconsMap[name]?.let { iconsMap[name] = listOf(id) + it }
+            }
             // add legacy shift icons
             iconsMap[NAME_SHIFT_KEY] = iconsMap[NAME_SHIFT_KEY]!! + R.drawable.sym_keyboard_shift_legacy + R.drawable.sym_keyboard_shift_legacy_rounded
             iconsMap[NAME_SHIFT_KEY_SHIFTED] = iconsMap[NAME_SHIFT_KEY_SHIFTED]!! + R.drawable.sym_keyboard_shift_legacy + R.drawable.sym_keyboard_shift_legacy_rounded

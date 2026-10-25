@@ -1004,6 +1004,7 @@ public class LatinIME extends InputMethodService implements
             switcher.updateShiftState(getCurrentAutoCapsState(), getCurrentRecapitalizeState());
         }
         // Set neutral suggestions and show the toolbar if the "Auto show toolbar" setting is enabled.
+        mClipboardHistoryManager.onStartInputView();
         if (!mHandler.hasPendingResumeSuggestions()) {
             mHandler.cancelUpdateSuggestionStrip();
             setNeutralSuggestionStrip();
@@ -1029,6 +1030,8 @@ public class LatinIME extends InputMethodService implements
     public void onWindowShown() {
         super.onWindowShown();
         if (isInputViewShown()) {
+            mClipboardHistoryManager.onStartInputView();
+            tryShowClipboardSuggestion();
             if (mInputView != null && Settings.getValues().mIsFloatingKeyboard)
                 FloatingKeyboardUtils.setFloating(mInputView);
             setNavigationBarColor();
@@ -1598,6 +1601,7 @@ public class LatinIME extends InputMethodService implements
         View clipboardView = mClipboardHistoryManager.getClipboardSuggestionView(getCurrentInputEditorInfo(), mSuggestionStripView);
         if (clipboardView != null) {
             mSuggestionStripView.setExternalSuggestionView(clipboardView, false);
+            mSuggestionStripView.setToolbarVisibility(false);
             return true;
         }
         return false;

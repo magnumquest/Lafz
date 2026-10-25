@@ -24,7 +24,7 @@ class SmartCodesTest {
     }
 
     @Test fun ordinaryNumbersAreLeftAlone() {
-        for (t in listOf("The meeting is in 2024", "Balance Rs 5000 debited", "call me at 03001234567", "1234", "I have 12345 followers",
+        for (t in listOf("The meeting is in 2024", "Balance Rs 5000 debited", "1234", "I have 12345 followers",
             "Discount 15000% off", "see you on 12/05/2025", "hello world", "", "123")) assertEquals(emptyList(), values(t), t)
     }
 
@@ -55,6 +55,48 @@ class SmartCodesTest {
     @Test fun severalAndInOrder() {
         val found = SmartCodeExtractor.find("Account 0123456789012. Your OTP is 482916.")
         assertEquals(listOf("0123456789012", "482916"), found.map { it.value })
+    }
+
+    @Test fun phonesAndAccountLabels() {
+        assertEquals(listOf("03001234567" to CodeKind.PHONE), values("Call me at 03001234567"))
+        assertEquals(listOf("+923001234567" to CodeKind.PHONE), values("WhatsApp +92 300 1234567"))
+        assertEquals(listOf("4155552671" to CodeKind.PHONE), values("Call (415) 555-2671"))
+        assertEquals(listOf("03001234567" to CodeKind.PHONE), values("موبائل ۰۳۰۰۱۲۳۴۵۶۷"))
+        assertEquals(listOf("03001234567" to CodeKind.ACCOUNT), values("Account 03001234567"))
+        assertEquals(listOf("+442079460958" to CodeKind.PHONE), values("+44 20 7946 0958"))
+        assertEquals(listOf("123456789012345678901234" to CodeKind.ACCOUNT), values("Account: 123456789012345678901234"))
+    }
+
+    @Test fun phoneLabelsDoNotSwallowVerificationCodesOrDates() {
+        assertEquals(listOf("12345678" to CodeKind.OTP, "03001234567" to CodeKind.PHONE),
+            values("Your OTP: 12345678. Phone 03001234567"))
+        assertEquals(emptyList(), values("Call on 2026-10-25"))
+    }
+
+    @Test fun internationalPhoneWithParenthesizedAreaCode() {
+        assertEquals(listOf("+14155552671" to CodeKind.PHONE), values("Phone: +1 (415) 555-2671"))
+        assertEquals(emptyList(), values("IBAN: PK36SCBL0000001123456703"))
+    }
+
+    @Test fun mixedBankDetailsAreSeparateAndCorrectlyLabelled() {
+        assertEquals(listOf("PK36SCBL0000001123456702" to CodeKind.IBAN,
+            "03001234567" to CodeKind.PHONE, "0123456789012" to CodeKind.ACCOUNT),
+            values("IBAN: PK36SCBL0000001123456702 Phone: 03001234567 Account: 0123456789012"))
+        assertEquals(listOf("GB82WEST12345698765432" to CodeKind.IBAN),
+            values("iban: gb82 west 1234 5698 7654 32 THANK YOU"))
+    }
+
+    @Test fun emailsLinksDeduplicationAndLimit() {
+        assertEquals(listOf("hello@example.com" to CodeKind.EMAIL, "https://example.com/pay?id=123456" to CodeKind.LINK),
+            values("Email hello@example.com or https://example.com/pay?id=123456."))
+        assertEquals(listOf("03001234567" to CodeKind.PHONE), values("Call 03001234567. Phone 03001234567."))
+        assertEquals(1, SmartCodeExtractor.find("Call 03001234567. Email hi@example.com", 1).size)
+        assertTrue(SmartCodeExtractor.find("Phone 03001234567", 0).isEmpty())
+    }
+
+    @Test fun numbersInsideIdentifiersAreNotCodes() {
+        assertEquals(emptyList(), values("Your code reference is ABC123456XYZ"))
+        assertEquals(emptyList(), values("Phone balance Rs 12345678"))
     }
 
     @Test fun hugeTextIsCheap() {

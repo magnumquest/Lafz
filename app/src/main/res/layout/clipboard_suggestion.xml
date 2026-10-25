@@ -5,7 +5,7 @@
     android:background="@drawable/clipboard_suggestion_background"
     android:gravity="center"
     android:paddingEnd="12dp"
-    android:layout_width="wrap_content"
+    android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:ignore="RtlSymmetry">
     <TextView
@@ -23,14 +23,23 @@
         android:ellipsize="end"
         android:textStyle="bold"
         style="?android:attr/textAppearanceSmall" />
-    <LinearLayout
-        android:id="@+id/clipboard_suggestion_chips"
+    <HorizontalScrollView
+        android:id="@+id/clipboard_suggestion_scroll"
         android:layout_width="0dp"
         android:layout_weight="1"
         android:layout_height="match_parent"
-        android:orientation="horizontal"
-        android:gravity="center"
-        android:visibility="gone" />
+        android:scrollbars="none"
+        android:fillViewport="true"
+        android:visibility="gone">
+        <LinearLayout
+            android:id="@+id/clipboard_suggestion_chips"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="6dp"
+            android:paddingEnd="6dp" />
+    </HorizontalScrollView>
     <ImageView
         android:id="@+id/clipboard_suggestion_image"
         android:adjustViewBounds="true"

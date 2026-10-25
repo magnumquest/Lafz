@@ -31,7 +31,7 @@ fun createToolbarKey(context: Context, key: ToolbarKey): ImageButton {
     button.tag = key
     button.contentDescription = key.name.lowercase().getStringResourceOrName("", context)
     setToolbarButtonActivatedState(button)
-    button.setImageDrawable(KeyboardIconsSet.instance.getNewDrawable(key.name, context))
+    button.setImageDrawable(KeyboardIconsSet.instance.getToolbarDrawable(key.name, context))
     return button
 }
 

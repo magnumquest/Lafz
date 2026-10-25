@@ -9,7 +9,7 @@
   Type <code>mein kal aonga</code>, get <span dir="rtl">میں کل آؤں گا</span>.
 </p>
 
-<p align="center"><b>Latest: version 0.6.0.</b> Optional offline voice typing for Urdu, Arabic and English (microphone key, models you copy to the phone), on top of 0.5.0's on-device learning, smart clipboard and contacts. See the <a href="RELEASE_NOTES.md">release notes</a>.</p>
+<p align="center"><b>Latest: version 0.6.2.</b> A scrollable smart clipboard with separate detected details, pinned clips and recent history, plus refreshed toolbar icons. Includes offline voice typing for Urdu, Arabic and English. See the <a href="RELEASE_NOTES.md">release notes</a>.</p>
 
 ---
 
@@ -31,8 +31,8 @@ word replaces it as the decoder settles, and space commits what you see. The sug
 - **Learns from you, on the device.** Roman Urdu and Roman Arabic remember the words you commit, which word follows which, and the spellings you
   use. Only the final word you commit (space, punctuation or tapping a suggestion) counts, never keystrokes, and a backspace right after an auto-commit
   takes it back. Nothing is learned in password fields or incognito. Turn it off or clear it in Settings → Text correction.
-- **Smart clipboard.** Codes and numbers inside copied text (OTP and PIN codes, IBAN, card and account numbers) show up as separate chips above the keyboard and in the clipboard history; one tap pastes just that number.
-  An option keeps copied codes out of the history. Everything is a switch in Settings → Text correction.
+- **Smart clipboard.** Open the toolbar arrow → clipboard icon for a scrollable screen with pinned clips, detected details and recent history. Phone numbers, IBANs, bank accounts, cards, verification codes, emails and links are listed separately; tap to paste a detail, hold to pin it, or swipe a recent clip left to delete it.
+  Recently copied details also appear in scrollable chips above the keyboard, with a full-text paste option. Smart clipboard and clipboard suggestions can be switched off in Settings → Text correction; history and retention are in Settings → Preferences. An option keeps copied codes out of history.
 - **Contacts.** With "Use contacts" on, names from your contacts are suggested in the Roman Urdu and Roman Arabic layouts too.
 - **Back up what Lafz learned.** Export and import learned words in Settings → Text correction; they are also part of the full backup.
 - **Fast typing.** Suggestions are computed off the UI thread, so keys never wait for the decoder.
@@ -105,14 +105,18 @@ Back that key up and never commit it: updates must be signed with the same key.
 - [x] Swipe engines fully unloaded when swipe typing is off (0.4.3)
 - [ ] Swipe quality: double-letter words (`hello`), less common Arabic words, a user-dictionary trie
 - [x] Learning from your typing (words, word pairs, spellings) for Urdu and Arabic, on the device only
-- [ ] Better casual-chat accuracy (conversational training data, optional on-device learning)
+- [ ] Better casual-chat accuracy through conversational training data
 - [ ] More verb forms (past, continuous, imperative) and slang
 - [ ] Native digits in number/phone fields
 - [x] Settings toggle for the honorific suggestions
 - [x] Smart clipboard (codes and numbers as chips), contacts in Roman Urdu/Arabic, backup of learned words (0.5.0)
 - [x] Offline voice typing, Urdu/Arabic/English, off by default, models side-loaded (0.6.0)
+- [x] Keyboard sizing, key shapes and Material You colours (0.6.1)
+- [x] Scrollable clipboard screen with separate detected details, pinned clips and recent history; phone, email and link extraction (0.6.2)
+- [x] Reliable clipboard suggestions, individual-detail pinning and consistent rounded toolbar icons (0.6.2)
 - [x] Offline on-device learning for every language with backup and restore (0.5.0): Roman Urdu and Roman Arabic use Lafz's own learning model (export/import file, plus part of the full backup); all other languages learn through the user history dictionary, which the full backup also covers
-- [ ] Voice typing: research done (`docs/research/voice-typing.md`); Urdu accuracy of small offline models still to be measured
+- [x] Offline voice model speed and accuracy benchmarks (`docs/research/voice-typing.md`)
+- [ ] Voice typing: improve Urdu accuracy on everyday speech and test noisy recordings
 - [ ] Clipboard history search and filters
 - [ ] Offline-first GIF search (the only feature that would ever need the internet)
 

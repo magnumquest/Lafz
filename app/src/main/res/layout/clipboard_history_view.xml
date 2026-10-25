@@ -23,8 +23,9 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:visibility="invisible"
-            android:text="¯\\_(ツ)_/¯"
-            tools:ignore="HardcodedText" />
+            android:gravity="center"
+            android:padding="16dp"
+            android:text="@string/clipboard_empty_hint" />
 
         <helium314.keyboard.keyboard.clipboard.ClipboardHistoryRecyclerView
             android:id="@+id/clipboard_list"

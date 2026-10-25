@@ -2018,8 +2018,7 @@ public final class InputLogic {
             return;
         }
         // Same as the sync variant with a non-null result.
-        if (!(suggestedWords.mInputStyle == SuggestedWords.INPUT_STYLE_BEGINNING_OF_SENTENCE_PREDICTION
-                && mLatinIME.tryShowClipboardSuggestion())) {
+        if (!shouldPreferClipboardSuggestion(suggestedWords)) {
             mSuggestionStripViewAccessor.setSuggestions(suggestedWords);
         }
         if (!suggestedWords.isEmpty() && settingsValues.mSuggestionsEnabled && isInlineEmojiSearchAction()) {
@@ -2029,6 +2028,15 @@ public final class InputLogic {
             Log.d("LafzPerf", "async-apply applied latency ms=" + latencyMicros / 1000.0
                     + " typed=" + typedWordAtPost.length());
         }
+    }
+
+    private boolean shouldPreferClipboardSuggestion(final SuggestedWords words) {
+        // Copying a selection can race an outstanding prediction request. Keep the
+        // clipboard visible until typing starts, or the user pastes/dismisses it.
+        return (words.mInputStyle == SuggestedWords.INPUT_STYLE_BEGINNING_OF_SENTENCE_PREDICTION
+                || (!mWordComposer.isComposingWord()
+                    && mLatinIME.getClipboardHistoryManager().isSuggestionVisible()))
+                && mLatinIME.tryShowClipboardSuggestion();
     }
 
     public void performUpdateSuggestionStripSync(final SettingsValues settingsValues, final int inputStyle) {
@@ -2081,8 +2089,7 @@ public final class InputLogic {
                 Constants.GET_SUGGESTED_WORDS_TIMEOUT);
         if (suggestedWords != null) {
             // Prefer clipboard suggestions (if available and setting is enabled) over beginning of sentence predictions.
-            if (!(suggestedWords.mInputStyle == SuggestedWords.INPUT_STYLE_BEGINNING_OF_SENTENCE_PREDICTION
-                    && mLatinIME.tryShowClipboardSuggestion())) {
+            if (!shouldPreferClipboardSuggestion(suggestedWords)) {
                 mSuggestionStripViewAccessor.setSuggestions(suggestedWords);
             }
             if (!suggestedWords.isEmpty() && settingsValues.mSuggestionsEnabled && isInlineEmojiSearchAction()) {

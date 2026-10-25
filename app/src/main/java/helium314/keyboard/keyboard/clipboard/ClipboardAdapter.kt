@@ -12,12 +12,11 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import helium314.keyboard.latin.ClipboardHistoryEntry
+import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import helium314.keyboard.latin.ClipboardHistoryManager
 import helium314.keyboard.latin.R
 import helium314.keyboard.latin.common.ColorType
 import helium314.keyboard.latin.settings.Settings
-import helium314.keyboard.latin.utils.SmartCodeExtractor
 
 class ClipboardAdapter(
        val clipboardLayoutParams: ClipboardLayoutParams,
@@ -25,6 +24,26 @@ class ClipboardAdapter(
 ) : RecyclerView.Adapter<ClipboardAdapter.ViewHolder>() {
 
     var clipboardHistoryManager: ClipboardHistoryManager? = null
+    private var rows: List<ClipboardRow> = emptyList()
+
+    fun refresh() {
+        val manager = clipboardHistoryManager
+        val entries = if (manager == null) emptyList() else
+            (0 until manager.getHistorySize()).mapNotNull { manager.getHistoryEntry(it) }
+        val settings = Settings.getValues()
+        rows = clipboardRows(entries, settings.mSmartClipboard, settings.mClipboardHistoryPinnedFirst)
+        notifyDataSetChanged()
+    }
+
+    fun canSwipe(position: Int) = (rows.getOrNull(position) as? ClipboardRow.Clip)?.entry?.isPinned == false
+
+    fun removeAt(position: Int) {
+        val entry = (rows.getOrNull(position) as? ClipboardRow.Clip)?.entry ?: return
+        val manager = clipboardHistoryManager ?: return
+        val index = (0 until manager.getHistorySize()).firstOrNull { manager.getHistoryEntry(it)?.id == entry.id } ?: return
+        manager.removeEntry(index)
+        refresh()
+    }
 
     var pinnedIconResId = 0
     var itemBackgroundId = 0
@@ -39,12 +58,10 @@ class ClipboardAdapter(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.setContent(getItem(position))
+        holder.setContent(rows[position])
     }
 
-    private fun getItem(position: Int) = clipboardHistoryManager?.getHistoryEntry(position)
-
-    override fun getItemCount() = clipboardHistoryManager?.getHistorySize() ?: 0
+    override fun getItemCount() = rows.size
 
     inner class ViewHolder(
             view: View
@@ -80,9 +97,34 @@ class ClipboardAdapter(
             colors.setColor(pinnedIconView, ColorType.CLIPBOARD_PIN)
         }
 
-        fun setContent(historyEntry: ClipboardHistoryEntry?) {
-            if (historyEntry == null) return
-            itemView.tag = historyEntry.id
+        private var boundRow: ClipboardRow? = null
+
+        internal fun setContent(row: ClipboardRow) {
+            boundRow = row
+            val heading = row is ClipboardRow.Heading
+            (itemView.layoutParams as? StaggeredGridLayoutManager.LayoutParams)?.isFullSpan = heading
+            itemView.isClickable = !heading
+            itemView.isLongClickable = !heading
+            androidx.core.view.ViewCompat.setAccessibilityHeading(itemView, heading)
+            chipsView.visibility = View.GONE
+            contentImageView.visibility = View.GONE
+            pinnedIconView.visibility = View.GONE
+            contentTextView.visibility = View.VISIBLE
+            contentTextView.typeface = if (heading) Typeface.create(itemTypeFace, Typeface.BOLD) else itemTypeFace
+            contentTextView.setTextSize(TypedValue.COMPLEX_UNIT_PX, if (heading) itemTextSize * 0.85f else itemTextSize)
+            if (heading) {
+                itemView.background = null
+                contentTextView.setText(row.title)
+                return
+            }
+            itemView.setBackgroundResource(itemBackgroundId)
+            Settings.getValues().mColors.setBackground(itemView, ColorType.KEY_BACKGROUND)
+            if (row is ClipboardRow.Detail) {
+                val label = itemView.context.getString(CodeChips.labelResId(row.code.kind))
+                contentTextView.text = "$label\n${row.code.value}"
+                return
+            }
+            val historyEntry = (row as ClipboardRow.Clip).entry
             if (historyEntry.filename != null) {
                 historyEntry.setImageAndDescription(contentImageView, contentTextView)
             } else {
@@ -91,37 +133,30 @@ class ClipboardAdapter(
             pinnedIconView.visibility = if (historyEntry.isPinned) View.VISIBLE else View.GONE
             contentImageView.visibility = if (historyEntry.filename != null) View.VISIBLE else View.GONE
             contentTextView.visibility = if (contentTextView.text.isNullOrEmpty()) View.GONE else View.VISIBLE
-            setChips(historyEntry)
-        }
-
-        // codes and numbers found in the entry, each pasted on its own; nothing is done (and nothing costs) when the setting is off
-        private fun setChips(entry: ClipboardHistoryEntry) {
-            chipsView.visibility = View.GONE
-            val settings = Settings.getValues() ?: return
-            val text = entry.text
-            if (!settings.mSmartClipboard || entry.filename != null || text == null) return
-            val codes = SmartCodeExtractor.find(text)
-            if (codes.isEmpty()) return
-            CodeChips.fill(chipsView, codes, itemTextColor, settings.mColors.get(ColorType.KEY_BACKGROUND), itemTextSize * 0.9f, false) {
-                keyEventListener.onValue(it)
-            }
-            chipsView.visibility = View.VISIBLE
         }
 
         @SuppressLint("ClickableViewAccessibility")
         override fun onTouch(view: View, event: MotionEvent): Boolean {
             if (event.actionMasked == MotionEvent.ACTION_DOWN) {
-                keyEventListener.onKeyDown(view.tag as Long)
+                (boundRow as? ClipboardRow.Clip)?.let { keyEventListener.onKeyDown(it.entry.id) }
             }
             return false
         }
 
         override fun onClick(view: View) {
-            keyEventListener.onKeyUp(view.tag as Long)
+            when (val row = boundRow) {
+                is ClipboardRow.Clip -> keyEventListener.onKeyUp(row.entry.id)
+                is ClipboardRow.Detail -> keyEventListener.onValue(row.code.value)
+                else -> Unit
+            }
         }
 
         override fun onLongClick(view: View): Boolean {
-            clipboardHistoryManager?.toggleClipPinned(view.tag as Long)
+            when (val row = boundRow) {
+                is ClipboardRow.Clip -> clipboardHistoryManager?.toggleClipPinned(row.entry.id)
+                is ClipboardRow.Detail -> clipboardHistoryManager?.pinText(row.code.value)
+                else -> return false
+            }
             return true
         }
     }

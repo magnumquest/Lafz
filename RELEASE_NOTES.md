@@ -1,5 +1,14 @@
 # Release notes
 
+## 0.6.2
+- **A separate, scrollable smart clipboard.** Open the toolbar arrow → clipboard icon to browse pinned clips, detected details and recent history. Phone numbers, IBANs, bank account numbers, cards, verification codes, emails and links appear as individual cards. Tap a card to paste just that detail; hold it to pin it independently of the original copied text.
+- **Clipboard management.** Pinned details survive clearing or expiry of recent clips. Swipe recent clips left to delete them, hold a saved clip to pin or unpin it, and tap the original clip to paste its full text. Duplicate detected values are combined. Reopening the clipboard does not restore a clip deleted during the current keyboard session.
+- **Clipboard suggestions that stay visible.** Suggestions refresh when you copy with the keyboard open, recover the latest copy missed while it was inactive, and are no longer hidden by the toolbar or replaced by a late prediction update. Scroll through extracted details above the keys, or choose “Paste full text”. Normal word suggestions resume when you type.
+- **Better extraction and privacy.** Recognises local and international phone numbers, including Urdu and Arabic digits, alongside the existing bank details and codes. IBAN and card checksums are checked; nearby labels help distinguish phones, accounts and verification codes. Numeric fields filter out incompatible details. Content marked sensitive by its source app is masked in suggestions and excluded from saved history; password fields mask previews too. Extraction runs entirely on the device.
+- **Refreshed toolbar icons.** A consistent set of 34 rounded outline icons for the main and clipboard toolbars, with matching sizes and stroke weights. Icons follow the selected theme colours and respect custom icon choices.
+- **In-place upgrade.** Uses the same package ID and release signing certificate as 0.6.1, with version code 6002. Install the release APK over the existing app to keep your settings and data.
+- **Settings.** Smart clipboard and clipboard suggestions remain optional in Settings → Text correction. Clipboard history, retention and pinned ordering remain in Settings → Preferences.
+
 ## 0.6.1
 - **UI / Design fixes.** The keyboard now follows Gboard's look and measurements, in dp and sp, so it scales with the system display size and font size like Gboard does.
   - Key height, row spacing, key gaps, letter size and the space bar text match Gboard. The number row is an extra row on top: the other rows keep their size instead of being squeezed.
