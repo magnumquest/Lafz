@@ -11,6 +11,7 @@ import android.os.HandlerThread;
 import android.os.Message;
 
 import helium314.keyboard.latin.LatinIME;
+import helium314.keyboard.latin.InputStyle;
 import helium314.keyboard.latin.SuggestedWords;
 import helium314.keyboard.latin.common.InputPointers;
 
@@ -104,7 +105,7 @@ class InputLogicHandler implements Handler.Callback {
                 }
             }
             mInputLogic.getSuggestedWords(
-                isTailBatchInput ? SuggestedWords.INPUT_STYLE_TAIL_BATCH : SuggestedWords.INPUT_STYLE_UPDATE_BATCH, sequenceNumber,
+                isTailBatchInput ? InputStyle.TAIL_BATCH : InputStyle.UPDATE_BATCH, sequenceNumber,
                 suggestedWords -> showGestureSuggestionsWithPreviewVisuals(suggestedWords, isTailBatchInput, generation),
                 snapshot);
         });

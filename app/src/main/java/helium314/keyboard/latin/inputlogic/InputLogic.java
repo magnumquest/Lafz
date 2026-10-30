@@ -36,6 +36,7 @@ import helium314.keyboard.keyboard.emoji.EmojiSearchActivity;
 import helium314.keyboard.keyboard.emoji.RecentEmojis;
 import helium314.keyboard.keyboard.internal.keyboard_parser.floris.KeyCode;
 import helium314.keyboard.latin.CapsMode;
+import helium314.keyboard.latin.InputStyle;
 import helium314.keyboard.latin.dictionary.Dictionary;
 import helium314.keyboard.latin.DictionaryFacilitator;
 import helium314.keyboard.latin.LastComposedWord;
@@ -275,7 +276,7 @@ public final class InputLogic {
             addToHistoryIfEmoji(rawText, settingsValues); // add emoji before resetting, otherwise lastComposedWord is empty
             resetComposingState(true /* alsoResetLastComposedWord */);
         }
-        handler.postUpdateSuggestionStrip(SuggestedWords.INPUT_STYLE_TYPING);
+        handler.postUpdateSuggestionStrip(InputStyle.TYPING);
         final String text = performSpecificTldProcessingOnTextInput(rawText);
         if (SpaceState.PHANTOM == mSpaceState) {
             insertAutomaticSpaceIfOptionsAndTextAllow(settingsValues);
@@ -377,7 +378,7 @@ public final class InputLogic {
 
         // If we're not showing the "Touch again to save", then update the suggestion strip.
         // That's going to be predictions (or punctuation suggestions), so INPUT_STYLE_NONE.
-        handler.postUpdateSuggestionStrip(SuggestedWords.INPUT_STYLE_NONE);
+        handler.postUpdateSuggestionStrip(InputStyle.NONE);
 
         StatsUtils.onPickSuggestionManually(mSuggestedWords, suggestionInfo, mDictionaryFacilitator);
         StatsUtils.onWordCommitSuggestionPickedManually(suggestionInfo.mWord, mWordComposer.isBatchMode());
@@ -1940,7 +1941,7 @@ public final class InputLogic {
      * suggestion thread. When the result arrives it is applied on the UI thread, but only if no newer
      * strip update happened and the composing word is still the one that was computed.
      */
-    public void performUpdateSuggestionStripAsync(final SettingsValues settingsValues, final int inputStyle) {
+    public void performUpdateSuggestionStripAsync(final SettingsValues settingsValues, final InputStyle inputStyle) {
         final long perfStartNanos = BuildConfig.DEBUG ? System.nanoTime() : 0;
         // Invalidate any request still in flight, also for the early-outs below which change the strip.
         final int gen = ++mStripGeneration;
@@ -2032,13 +2033,13 @@ public final class InputLogic {
     private boolean shouldPreferClipboardSuggestion(final SuggestedWords words) {
         // Copying a selection can race an outstanding prediction request. Keep the
         // clipboard visible until typing starts, or the user pastes/dismisses it.
-        return (words.mInputStyle == SuggestedWords.INPUT_STYLE_BEGINNING_OF_SENTENCE_PREDICTION
+        return (words.mInputStyle == InputStyle.BEGINNING_OF_SENTENCE_PREDICTION
                 || (!mWordComposer.isComposingWord()
                     && mLatinIME.getClipboardHistoryManager().isSuggestionVisible()))
                 && mLatinIME.tryShowClipboardSuggestion();
     }
 
-    public void performUpdateSuggestionStripSync(final SettingsValues settingsValues, final int inputStyle) {
+    public void performUpdateSuggestionStripSync(final SettingsValues settingsValues, final InputStyle inputStyle) {
         final long perfStartNanos = BuildConfig.DEBUG ? System.nanoTime() : 0;
         // Any async request still in flight is now stale.
         ++mStripGeneration;
@@ -2132,7 +2133,7 @@ public final class InputLogic {
 
         updateInlineEmojiSearch();
         if (isInlineEmojiSearchAction()) {
-            mInputLogicHandler.getSuggestedWords(() -> getSuggestedWords(SuggestedWords.INPUT_STYLE_TYPING,
+            mInputLogicHandler.getSuggestedWords(() -> getSuggestedWords(InputStyle.TYPING,
                 SuggestedWords.NOT_A_SEQUENCE_NUMBER, this::doShowSuggestionsAndClearAutoCorrectionIndicator));
             return;
         }
@@ -2140,7 +2141,7 @@ public final class InputLogic {
         if (!mConnection.isCursorTouchingWord(settingsValues.mSpacingAndPunctuations, true /* checkTextAfter */)) {
             // Show predictions.
             mWordComposer.setCapitalizedModeAtStartComposingTime(CapsMode.OFF);
-            mLatinIME.mHandler.postUpdateSuggestionStrip(SuggestedWords.INPUT_STYLE_RECORRECTION);
+            mLatinIME.mHandler.postUpdateSuggestionStrip(InputStyle.RECORRECTION);
             // "unselect" the previous text
             mConnection.finishComposingText();
             return;
@@ -2198,7 +2199,7 @@ public final class InputLogic {
             // If there weren't any suggestion spans on this word, suggestions#size() will be 1
             // if shouldIncludeResumedWordInSuggestions is true, 0 otherwise. In this case, we
             // have no useful suggestions, so we will try to compute some for it instead.
-            mInputLogicHandler.getSuggestedWords(() -> getSuggestedWords(SuggestedWords.INPUT_STYLE_TYPING,
+            mInputLogicHandler.getSuggestedWords(() -> getSuggestedWords(InputStyle.TYPING,
                 SuggestedWords.NOT_A_SEQUENCE_NUMBER, this::doShowSuggestionsAndClearAutoCorrectionIndicator));
         } else {
             // We found suggestion spans in the word. We'll create the SuggestedWords out of
@@ -2208,7 +2209,7 @@ public final class InputLogic {
             final SuggestedWords suggestedWords = new SuggestedWords(suggestions,
                     null /* rawSuggestions */, typedWordInfo, false /* typedWordValid */,
                     false /* willAutoCorrect */, false /* isObsoleteSuggestions */,
-                    SuggestedWords.INPUT_STYLE_RECORRECTION, SuggestedWords.NOT_A_SEQUENCE_NUMBER);
+                    InputStyle.RECORRECTION, SuggestedWords.NOT_A_SEQUENCE_NUMBER);
             doShowSuggestionsAndClearAutoCorrectionIndicator(suggestedWords);
         }
     }
@@ -2712,7 +2713,7 @@ public final class InputLogic {
             // for application-specified completions. As for recorrections, we never auto-correct,
             // so we don't come here either. Hence, the input style is necessarily
             // INPUT_STYLE_TYPING.
-            performUpdateSuggestionStripSync(settingsValues, SuggestedWords.INPUT_STYLE_TYPING);
+            performUpdateSuggestionStripSync(settingsValues, InputStyle.TYPING);
         }
         final SuggestedWordInfo autoCorrectionOrNull = mWordComposer.getAutoCorrectionOrNull();
         final String typedWord = mWordComposer.getTypedWord();
@@ -2872,19 +2873,19 @@ public final class InputLogic {
     }
 
     // we used to provide keyboard, settingsValues and keyboardShiftMode, but every time read it from current instance anyway
-    void getSuggestedWords(final int inputStyle, final int sequenceNumber, final OnGetSuggestedWordsCallback callback) {
+    void getSuggestedWords(final InputStyle inputStyle, final int sequenceNumber, final OnGetSuggestedWordsCallback callback) {
         getSuggestedWords(inputStyle, sequenceNumber, callback, null);
     }
 
     /** @param batchPointers private copy of the swipe points to decode (batch input only), null to use the composer's own */
-    void getSuggestedWords(final int inputStyle, final int sequenceNumber, final OnGetSuggestedWordsCallback callback,
+    void getSuggestedWords(final InputStyle inputStyle, final int sequenceNumber, final OnGetSuggestedWordsCallback callback,
                            final InputPointers batchPointers) {
         final Keyboard keyboard = KeyboardSwitcher.getInstance().getKeyboard();
         if (keyboard == null) {
             callback.onGetSuggestedWords(SuggestedWords.getEmptyInstance());
             return;
         }
-        if (inputStyle != SuggestedWords.INPUT_STYLE_UPDATE_BATCH && inputStyle != SuggestedWords.INPUT_STYLE_TAIL_BATCH
+        if (inputStyle != InputStyle.UPDATE_BATCH && inputStyle != InputStyle.TAIL_BATCH
                         && isInlineEmojiSearchAction()) {
             searchForEmojiInline(sequenceNumber, callback);
             return;
@@ -2918,7 +2919,7 @@ public final class InputLogic {
     // Runs on the suggestion thread. Like getSuggestedWords, but uses a composer copy that was taken on
     // the UI thread, so it never reads state the UI thread is changing.
     private void getSuggestedWordsFromSnapshot(final WordComposer composerSnapshot, final NgramContext ngramContext,
-            final Keyboard keyboard, final SettingsValues settingsValues, final int inputStyle,
+            final Keyboard keyboard, final SettingsValues settingsValues, final InputStyle inputStyle,
             final OnGetSuggestedWordsCallback callback) {
         if (keyboard == null) {
             callback.onGetSuggestedWords(SuggestedWords.getEmptyInstance());
@@ -3108,7 +3109,7 @@ public final class InputLogic {
         }
         callback.onGetSuggestedWords(new SuggestedWords(suggestedWordInfos, suggestions.mRawSuggestions, typedWordInfo,
                                      false /* typedWordValid */, false /* autoCorrectEnabled */,
-                                     false /* isObsoleteSuggestions */, SuggestedWords.INPUT_STYLE_TYPING, sequenceNumber));
+                                     false /* isObsoleteSuggestions */, InputStyle.TYPING, sequenceNumber));
     }
 
     private void deleteTextReplacedByEmoji() {

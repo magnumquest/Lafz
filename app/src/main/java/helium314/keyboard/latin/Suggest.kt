@@ -74,7 +74,7 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
 
     fun getSuggestedWords(wordComposer: WordComposer, ngramContext: NgramContext, keyboard: Keyboard,
                           settingsValuesForSuggestion: SettingsValuesForSuggestion, isCorrectionEnabled: Boolean,
-                          inputStyle: Int, sequenceNumber: Int): SuggestedWords =
+                          inputStyle: InputStyle, sequenceNumber: Int): SuggestedWords =
         if (wordComposer.isBatchMode) {
             getSuggestedWordsForBatchInput(wordComposer, ngramContext, keyboard, settingsValuesForSuggestion,
                 inputStyle, isCorrectionEnabled, sequenceNumber)
@@ -86,7 +86,7 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
     // Retrieves suggestions for non-batch input (typing, recorrection, predictions...)
     // and calls the callback function with the suggestions.
     private fun getSuggestedWordsForNonBatchInput(wordComposer: WordComposer, ngramContext: NgramContext, keyboard: Keyboard,
-                      settingsValuesForSuggestion: SettingsValuesForSuggestion, inputStyleIfNotPrediction: Int,
+                      settingsValuesForSuggestion: SettingsValuesForSuggestion, inputStyleIfNotPrediction: InputStyle,
                       isCorrectionEnabled: Boolean, sequenceNumber: Int): SuggestedWords {
         val typedWordString = wordComposer.typedWord
         RomanScript.of(mDictionaryFacilitator.mainLocale)?.let { script ->
@@ -138,8 +138,8 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
             else suggestionsContainer
 
         val inputStyle = if (resultsArePredictions) {
-            if (suggestionResults.mNgramContext.isBeginningOfSentenceContext) SuggestedWords.INPUT_STYLE_BEGINNING_OF_SENTENCE_PREDICTION
-            else SuggestedWords.INPUT_STYLE_PREDICTION
+            if (suggestionResults.mNgramContext.isBeginningOfSentenceContext) InputStyle.BEGINNING_OF_SENTENCE_PREDICTION
+            else InputStyle.PREDICTION
         } else {
             inputStyleIfNotPrediction
         }
@@ -185,7 +185,7 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
      * Returns null if the model is not loaded yet, in which case regular suggestions are used.
      */
     private fun getRomanScriptSuggestions(script: RomanScript, wordComposer: WordComposer, ngramContext: NgramContext,
-                                          inputStyleIfNotPrediction: Int, sequenceNumber: Int, keyboard: Keyboard,
+                                          inputStyleIfNotPrediction: InputStyle, sequenceNumber: Int, keyboard: Keyboard,
                                           settingsValuesForSuggestion: SettingsValuesForSuggestion): SuggestedWords? {
         val engine = script.engine(Settings.getCurrentContext()) ?: return null
         engine.personal = if (Settings.getValues()?.mLearnRomanTyping == true) script.personal else null
@@ -208,7 +208,7 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
             addHonorificSuggestions(list, typed, ngramContext, true, 0, script.honorificScript)
             addContextEmoji(list, typed, ngramContext, true, 1)
             return SuggestedWords(list, null, null, false, false, false,
-                if (atStart) SuggestedWords.INPUT_STYLE_BEGINNING_OF_SENTENCE_PREDICTION else SuggestedWords.INPUT_STYLE_PREDICTION,
+                if (atStart) InputStyle.BEGINNING_OF_SENTENCE_PREDICTION else InputStyle.PREDICTION,
                 sequenceNumber)
         }
         // numbers (digits are also Arabizi letters, so they are word characters in Arabic mode) are never transliterated
@@ -484,7 +484,7 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
         wordComposer: WordComposer,
         ngramContext: NgramContext, keyboard: Keyboard,
         settingsValuesForSuggestion: SettingsValuesForSuggestion,
-        inputStyle: Int, isCorrectionEnabled: Boolean, sequenceNumber: Int
+        inputStyle: InputStyle, isCorrectionEnabled: Boolean, sequenceNumber: Int
     ): SuggestedWords {
         val locale = mDictionaryFacilitator.mainLocale
         val romanScript = RomanScript.of(locale)
@@ -568,7 +568,7 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
             suggestionsContainer
         }
 
-        if (useBackgroundGathering && inputStyle == SuggestedWords.INPUT_STYLE_TAIL_BATCH) {
+        if (useBackgroundGathering && inputStyle == InputStyle.TAIL_BATCH) {
             val wordData = WordData(null, suggestionResults, wordComposer.composedDataSnapshot,
                 ngramContext, keyboard, inputStyle, false, pseudoTypedWordInfo)
             BackgroundGatheringCache.addWord(wordData)
@@ -580,7 +580,7 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
     }
 
     private fun getBuiltInSwipeSuggestions(wordComposer: WordComposer, ngramContext: NgramContext,
-                                           keyboard: Keyboard, inputStyle: Int, sequenceNumber: Int,
+                                           keyboard: Keyboard, inputStyle: InputStyle, sequenceNumber: Int,
                                            script: RomanScript?, engineChoice: String): SuggestedWords? {
         val context = Settings.getCurrentContext() ?: return null
         val engine = script?.engine(context)
@@ -647,7 +647,7 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
     }
 
     /** get suggestions based on the current ngram context, with an empty typed word (that's what next word suggestions do)  */
-    private fun getNextWordSuggestions(ngramContext: NgramContext, keyboard: Keyboard, inputStyle: Int,
+    private fun getNextWordSuggestions(ngramContext: NgramContext, keyboard: Keyboard, inputStyle: InputStyle,
                                        settingsValuesForSuggestion: SettingsValuesForSuggestion): SuggestionResults {
         val cachedResults = nextWordSuggestionsCache[ngramContext]
         if (cachedResults != null) return cachedResults
