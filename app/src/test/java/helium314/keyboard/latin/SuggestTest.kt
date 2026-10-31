@@ -60,7 +60,7 @@ class SuggestTest {
 
     @BeforeTest fun reset() {
         JniUtils.sHaveGestureLib = true // the tests below exercise the dictionary based gesture decoder of the Google library
-        latinIME.prefs().edit { clear(); putBoolean(Settings.PREF_SUGGEST_EMOJIS, false) }
+        latinIME.prefs().edit { clear(); putBoolean(Settings.PREF_SUGGEST_EMOJIS, false); putBoolean(Settings.PREF_ROMAN_URDU_ON_ENGLISH, false) }
         currentTypingLocale = Locale.ENGLISH
         tapTypingSuggestions = suggestionResults(emptyList())
         glideTypingSuggestions = suggestionResults(emptyList())

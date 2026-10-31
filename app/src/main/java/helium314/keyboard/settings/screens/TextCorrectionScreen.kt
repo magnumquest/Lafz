@@ -91,6 +91,7 @@ fun TextCorrectionScreen(
         Settings.PREF_BIGRAM_PREDICTIONS,
         Settings.PREF_LIVE_TRANSLITERATION,
         Settings.PREF_HONORIFIC_SUGGESTIONS,
+        Settings.PREF_ROMAN_URDU_ON_ENGLISH,
         Settings.PREF_LEARN_ROMAN_TYPING,
         SettingsWithoutKey.EXPORT_LEARNED,
         SettingsWithoutKey.IMPORT_LEARNED,
@@ -266,6 +267,11 @@ fun createCorrectionSettings(context: Context) = listOf(
         R.string.honorific_suggestions_title, R.string.honorific_suggestions_summary
     ) {
         SwitchPreference(it, Defaults.PREF_HONORIFIC_SUGGESTIONS)
+    },
+    Setting(context, Settings.PREF_ROMAN_URDU_ON_ENGLISH,
+        R.string.roman_urdu_on_english_title, R.string.roman_urdu_on_english_summary
+    ) {
+        SwitchPreference(it, Defaults.PREF_ROMAN_URDU_ON_ENGLISH)
     },
     Setting(context, Settings.PREF_SUGGEST_PUNCTUATION, R.string.suggest_punctuation, R.string.suggest_punctuation_summary
     ) {

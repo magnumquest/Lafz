@@ -461,9 +461,10 @@ public class KeyboardView extends View {
 
         // Draw hint label.
         String hintLabel = key.getHintLabel();
+        final boolean showHint = mShowsHints || key.forcesHintLabel();
         Drawable hintIcon = (keyboard == null || !mShowsHints || hintLabel != null) ? null
                         : key.getHintIcon(keyboard.mIconsSet, params.mAnimAlpha);
-        if (hintLabel != null && mShowsHints) {
+        if (hintLabel != null && showHint) {
             paint.setTextSize(key.selectHintTextSize(params) * mHintFontSizeMultiplier);
             paint.setColor(key.selectHintTextColor(params));
             paint.setTypeface(KeyboardTypeface.resolve(hintLabel, Typeface.DEFAULT_BOLD));

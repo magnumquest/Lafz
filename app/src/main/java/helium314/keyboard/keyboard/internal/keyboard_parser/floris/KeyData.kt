@@ -10,6 +10,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import helium314.keyboard.keyboard.KeyboardId
 import helium314.keyboard.keyboard.KeyboardMode
+import helium314.keyboard.keyboard.Key
 import helium314.keyboard.keyboard.internal.KeyboardParams
 
 // taken from FlorisBoard, small modifications
@@ -115,8 +116,18 @@ class ShiftStateSelector(
     val capsLock: AbstractKeyData? = null,
     val default: AbstractKeyData? = null,
     val manualOrLocked: AbstractKeyData? = null,
+    /** Lafz: on the unshifted layout, show the shifted character as a small hint (top right) and offer it as first long-press key */
+    val shiftHint: Boolean = false,
 ) : AbstractKeyData {
     override fun compute(params: KeyboardParams, isPopup: Boolean): KeyData? {
+        if (shiftHint && !isPopup && params.mId.element == KeyboardElement.ALPHABET) {
+            val base = (unshifted ?: default)?.compute(params)
+            val shiftedKey = (manualOrLocked ?: shifted)?.compute(params)
+            val hint = shiftedKey?.label?.takeIf { it.isNotBlank() && it != base?.label }
+            if (base == null || hint == null) return base
+            val hintPopup = SimplePopups(listOf(hint)).merge(base.popup)
+            return base.copy(newPopup = hintPopup, newLabelFlags = base.labelFlags or Key.LABEL_FLAGS_FORCE_HINT_LABEL)
+        }
         return when (params.mId.element) {
             KeyboardElement.ALPHABET, KeyboardElement.SYMBOLS -> unshifted ?: default
             KeyboardElement.ALPHABET_MANUAL_SHIFTED -> shiftedManual ?: manualOrLocked ?: shifted ?: default

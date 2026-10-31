@@ -71,8 +71,8 @@ object Defaults {
     const val PREF_AUTOCORRECT_CAPITALIZED_SUGGESTION = true
     const val PREF_CENTER_SUGGESTION_TEXT_TO_ENTER = false
     const val PREF_SHOW_SUGGESTIONS = true
-    const val PREF_ALWAYS_SHOW_SUGGESTIONS = false
-    const val PREF_ALWAYS_SHOW_SUGGESTIONS_EXCEPT_WEB_TEXT = true
+    const val PREF_ALWAYS_SHOW_SUGGESTIONS = true // Lafz: show the strip even where the app asks for no suggestions (URL bars etc.)
+    const val PREF_ALWAYS_SHOW_SUGGESTIONS_EXCEPT_WEB_TEXT = false
     const val PREF_KEY_USE_PERSONALIZED_DICTS = true
     const val PREF_KEY_USE_DOUBLE_SPACE_PERIOD = true
     const val PREF_BLOCK_POTENTIALLY_OFFENSIVE = true
@@ -183,6 +183,7 @@ object Defaults {
     const val PREF_URL_DETECTION = false
     const val PREF_LIVE_TRANSLITERATION = true
     const val PREF_HONORIFIC_SUGGESTIONS = true
+    const val PREF_ROMAN_URDU_ON_ENGLISH = true
     const val PREF_VOICE_DICTATION = false
     const val PREF_LEARN_ROMAN_TYPING = true
     const val PREF_DONT_SHOW_MISSING_DICTIONARY_DIALOG = false

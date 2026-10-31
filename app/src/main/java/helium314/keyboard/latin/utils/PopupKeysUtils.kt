@@ -61,8 +61,9 @@ fun createPopupKeysArray(popupSet: PopupSet<*>?, params: KeyboardParams, label: 
     return array
 }
 
-fun getHintLabel(popupSet: PopupSet<*>?, params: KeyboardParams, label: String): String? {
-    val hintLabel = getHintText(popupSet, params, label) ?: return null
+fun getHintLabel(popupSet: PopupSet<*>?, params: KeyboardParams, label: String, preferLayoutPopup: Boolean = false): String? {
+    val layoutFirst = if (preferLayoutPopup) popupSet?.getPopupKeyLabels(params)?.firstOrNull()?.takeIf { it.isNotEmpty() } else null
+    val hintLabel = layoutFirst?.let { showMarkOnCircle(it) } ?: getHintText(popupSet, params, label) ?: return null
     if (hintLabel in toolbarKeyStrings.values || hintLabel.isEmpty())
         return null // better show nothing instead of the toolbar key label
 
@@ -70,6 +71,13 @@ fun getHintLabel(popupSet: PopupSet<*>?, params: KeyboardParams, label: String):
         // avoid e.g. !autoColumnOrder! as label
         //  this will avoid having labels on comma and period keys
         ?.takeIf { label -> !label.startsWith("!") || label.count { it == '!' } != 2 } // excluding the special labels
+}
+
+// Lafz: a bare combining mark (e.g. Urdu zabar) is unreadable alone, draw it on a dotted circle
+private fun showMarkOnCircle(text: String): String {
+    val first = text.codePointAt(0)
+    val type = Character.getType(first)
+    return if (type == Character.NON_SPACING_MARK.toInt() || type == Character.ENCLOSING_MARK.toInt()) "\u25CC$text" else text
 }
 
 fun getHintIcon(popupSet: PopupSet<*>?, params: KeyboardParams, label: String): String? =

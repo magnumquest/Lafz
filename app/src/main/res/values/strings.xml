@@ -221,6 +221,8 @@
     <string name="clear_learned_words_title">Clear learned words</string>
     <string name="clear_learned_words_summary">Forget what Roman Urdu and Roman Arabic learned from your typing</string>
     <string name="clear_learned_words_confirm">Delete everything learned from your typing in Roman Urdu and Roman Arabic?</string>
+    <string name="roman_urdu_on_english_title">Roman Urdu suggestions on English keyboard</string>
+    <string name="roman_urdu_on_english_summary">Also suggest Urdu words typed in English letters, such as kahan, zarorat, kidher</string>
     <string name="honorific_suggestions_title">Religious honorific suggestions</string>
     <!-- Summary for "honorific_suggestions_title". -->
     <string name="honorific_suggestions_summary">Suggest honorifics and terms such as Rasulullah ﷺ, Umar Radiallahu Anhu, inshallah</string>

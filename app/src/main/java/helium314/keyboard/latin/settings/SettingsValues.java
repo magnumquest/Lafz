@@ -111,6 +111,7 @@ public class SettingsValues {
     // Urdu / Arabic: show the native script in the text field while the Roman word is being typed
     public final boolean mLiveTransliteration;
     public final boolean mHonorificSuggestions;
+    public final boolean mRomanUrduOnEnglish;
     public final boolean mLearnRomanTyping;
     public final boolean mSuggestPunctuation;
     public final boolean mCenterSuggestionTextToEnter;
@@ -251,6 +252,7 @@ public class SettingsValues {
         mBigramPredictionEnabled = prefs.getBoolean(Settings.PREF_BIGRAM_PREDICTIONS, Defaults.PREF_BIGRAM_PREDICTIONS);
         mLiveTransliteration = prefs.getBoolean(Settings.PREF_LIVE_TRANSLITERATION, Defaults.PREF_LIVE_TRANSLITERATION);
         mHonorificSuggestions = prefs.getBoolean(Settings.PREF_HONORIFIC_SUGGESTIONS, Defaults.PREF_HONORIFIC_SUGGESTIONS);
+        mRomanUrduOnEnglish = prefs.getBoolean(Settings.PREF_ROMAN_URDU_ON_ENGLISH, Defaults.PREF_ROMAN_URDU_ON_ENGLISH);
         mLearnRomanTyping = prefs.getBoolean(Settings.PREF_LEARN_ROMAN_TYPING, Defaults.PREF_LEARN_ROMAN_TYPING);
         mSuggestPunctuation = prefs.getBoolean(Settings.PREF_SUGGEST_PUNCTUATION, Defaults.PREF_SUGGEST_PUNCTUATION);
         mSuggestClipboardContent = prefs.getBoolean(Settings.PREF_SUGGEST_CLIPBOARD_CONTENT, Defaults.PREF_SUGGEST_CLIPBOARD_CONTENT);

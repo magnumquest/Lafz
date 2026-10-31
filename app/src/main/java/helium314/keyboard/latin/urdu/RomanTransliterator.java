@@ -598,6 +598,87 @@ public final class RomanTransliterator {
         }
     }
 
+    /** Roman spellings of dictionary words (as people type them), for suggestions on plain Latin keyboards. */
+    public static final class RomanLexicon {
+        private String[] spell;   // sorted
+        private float[] score;
+        private int[] wordIdx;
+        private String[] bestSpelling;            // per word: most common Roman spelling, or null
+        private final HashMap<String, Integer> byShown = new HashMap<>();
+
+        public boolean isWord(String s) { return find(s) >= 0; }
+
+        private int find(String s) {
+            final int i = Arrays.binarySearch(spell, s);
+            return i;
+        }
+
+        /** best spellings starting with [prefix] (equal spelling included), most frequent first */
+        public List<String> complete(String prefix, int max) {
+            int lo = Arrays.binarySearch(spell, prefix);
+            if (lo < 0) lo = -lo - 1;
+            final ArrayList<Integer> hits = new ArrayList<>();
+            for (int i = lo; i < spell.length && spell[i].startsWith(prefix); i++) hits.add(i);
+            hits.sort((a, b) -> Float.compare(score[b], score[a]));
+            final ArrayList<String> out = new ArrayList<>();
+            final java.util.HashSet<Integer> seenWords = new java.util.HashSet<>();
+            for (int i : hits) {
+                if (out.size() >= max) break;
+                if (seenWords.add(wordIdx[i])) out.add(spell[i]);
+            }
+            return out;
+        }
+    }
+
+    private RomanLexicon romanLexicon;
+    private static final float LEXICON_MIN_P = 0.1f;
+    private static final int LEXICON_SIZE = 60000;
+
+    public synchronized RomanLexicon romanLexicon() {
+        if (romanLexicon != null) return romanLexicon;
+        final ArrayList<Object[]> all = new ArrayList<>();
+        final RomanLexicon lex = new RomanLexicon();
+        lex.bestSpelling = new String[words.length];
+        final float[] bestP = new float[words.length];
+        for (int i = 0; i < variants.length; i++) {
+            lex.byShown.putIfAbsent(shown[i], i);
+            for (int j = 0; j < variants[i].length; j++) {
+                final String sp = variants[i][j];
+                if (sp.length() < 2 || sp.length() > 20 || variantP[i][j] < LEXICON_MIN_P) continue;
+                if (!sp.matches("[a-z']+")) continue;
+                if (variantP[i][j] > bestP[i]) { bestP[i] = variantP[i][j]; lex.bestSpelling[i] = sp; }
+                all.add(new Object[]{sp, (float) (uniLn[i] + Math.log(variantP[i][j])), i});
+            }
+        }
+        all.sort((a, b) -> Float.compare((Float) b[1], (Float) a[1]));
+        final java.util.TreeMap<String, Object[]> best = new java.util.TreeMap<>();
+        for (Object[] e : all) {
+            if (best.size() >= LEXICON_SIZE) break;
+            best.putIfAbsent((String) e[0], e);
+        }
+        final int n = best.size();
+        lex.spell = new String[n]; lex.score = new float[n]; lex.wordIdx = new int[n];
+        int k = 0;
+        for (Object[] e : best.values()) { lex.spell[k] = (String) e[0]; lex.score[k] = (Float) e[1]; lex.wordIdx[k] = (Integer) e[2]; k++; }
+        romanLexicon = lex;
+        return lex;
+    }
+
+    /** Roman spellings of the words that most likely follow the Roman word [prevRoman] (must be a known spelling). */
+    public List<String> romanNext(String prevRoman, int max) {
+        final RomanLexicon lex = romanLexicon();
+        final int at = lex.find(prevRoman);
+        final ArrayList<String> out = new ArrayList<>();
+        if (at < 0) return out;
+        for (String urdu : nextWords(shown[lex.wordIdx[at]], false, max * 3)) {
+            final Integer w = lex.byShown.get(urdu);
+            final String sp = w == null ? null : lex.bestSpelling[w];
+            if (sp != null && !out.contains(sp)) out.add(sp);
+            if (out.size() >= max) break;
+        }
+        return out;
+    }
+
     /** Most likely next words after [prev] (or at sentence start): trigram continuations first, then bigram ones. */
     public List<String> nextWords(String prev, boolean atStart, int max) {
         final ArrayList<String> out = new ArrayList<>();

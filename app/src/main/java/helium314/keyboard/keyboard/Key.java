@@ -78,6 +78,8 @@ public class Key implements Comparable<Key> {
     public static final int LABEL_FLAGS_FROM_CUSTOM_ACTION_LABEL = 0x40000;
     public static final int LABEL_FLAGS_FOLLOW_FUNCTIONAL_TEXT_COLOR = 0x80000;
     public static final int LABEL_FLAGS_KEEP_BACKGROUND_ASPECT_RATIO = 0x100000;
+    /** Lafz: draw the hint label even when hints are turned off in the settings */
+    public static final int LABEL_FLAGS_FORCE_HINT_LABEL = 0x200000;
     public static final int LABEL_FLAGS_DISABLE_HINT_LABEL = 0x40000000;
 
     /** Icon to display instead of a label. Icon takes precedence over a label */
@@ -485,6 +487,10 @@ public class Key implements Comparable<Key> {
     }
 
     @Nullable
+    public boolean forcesHintLabel() {
+        return (mLabelFlags & LABEL_FLAGS_FORCE_HINT_LABEL) != 0;
+    }
+
     public String getHintLabel() {
         return mHintLabel;
     }
@@ -1145,7 +1151,7 @@ public class Key implements Comparable<Key> {
                 mHintIconName = null;
             } else {
                 // maybe also always null for comma and period keys
-                final String hintLabel = PopupKeysUtilsKt.getHintLabel(popupSet, params, keySpec);
+                final String hintLabel = PopupKeysUtilsKt.getHintLabel(popupSet, params, keySpec, (mLabelFlags & LABEL_FLAGS_FORCE_HINT_LABEL) != 0);
                 mHintLabel = needsToUpcase
                         ? StringUtils.toTitleCaseOfKeyLabel(hintLabel, localeForUpcasing)
                         : hintLabel;

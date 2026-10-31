@@ -346,6 +346,27 @@ final class SuggestionStripLayoutHelper {
         final int centerWidth = getSuggestionWidth(mCenterPositionInStrip, stripWidth);
         if (wordCountToShow == 1 || getTextScaleX(centerWordView.getText(), centerWidth,
                 centerWordView.getPaint()) < MIN_TEXT_XSCALE) {
+            // Lafz: a very long centre word (e.g. "Allah Subhanahu Wa Ta'ala") used to hide every other
+            // suggestion. Keep the word on its left (usually the plain typed word) next to it.
+            if (wordCountToShow > 1 && mCenterPositionInStrip > 0) {
+                final TextView leftView = mWordViews.get(mCenterPositionInStrip - 1);
+                final int avail = stripWidth - 2 * mPadding - mDividerWidth;
+                final int leftWidth = (int) (avail * 0.32f);
+                if (!TextUtils.isEmpty(leftView.getText())
+                        && getTextScaleX(leftView.getText(), leftWidth, leftView.getPaint()) >= MIN_TEXT_XSCALE) {
+                    mMoreSuggestionsAvailable = wordCountToShow > 2;
+                    layoutWord(context, mCenterPositionInStrip - 1, leftWidth);
+                    stripView.addView(leftView);
+                    setLayoutWeight(leftView, 0.32f, ViewGroup.LayoutParams.MATCH_PARENT);
+                    addDivider(stripView, mDividerViews.get(mCenterPositionInStrip));
+                    layoutWord(context, mCenterPositionInStrip, avail - leftWidth);
+                    stripView.addView(centerWordView);
+                    setLayoutWeight(centerWordView, 0.68f, ViewGroup.LayoutParams.MATCH_PARENT);
+                    final Integer li = (Integer) leftView.getTag();
+                    final Integer ci = (Integer) centerWordView.getTag();
+                    return Math.max(li == null ? 0 : li, ci == null ? 0 : ci) + 1;
+                }
+            }
             // Layout only the most relevant suggested word at the center of the suggestion strip
             // by consolidating all slots in the strip.
             final int countInStrip = 1;

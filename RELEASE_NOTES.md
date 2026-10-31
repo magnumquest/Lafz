@@ -1,5 +1,11 @@
 # Release notes
 
+## 0.6.4
+- **Roman Urdu suggestions on the English keyboard.** Type `kahan`, `kidher`, `zarorat` or `kia` on the normal English keyboard and Urdu words in English letters now show up in the suggestion bar, and after a word like `kia` the next likely word is offered. English suggestions always stay first. Turn it off in Settings → Text correction.
+- **Shift characters shown on the Urdu (Pakistan) keyboard.** Every key now shows a small character in its top-right corner: the one you get by long-pressing it or using shift, so letters, marks and symbols that are not on the main keys are easy to find. Long-pressing a key offers that character first.
+- **Suggestions that don't disappear.** The suggestion bar now stays visible everywhere you type, including browser address bars and fields that ask keyboards to hide it. It is still hidden in password fields. If you changed this setting yourself earlier, check Settings → Text correction.
+- **Plain "Allah" is back in the suggestions.** Typing Allah used to show only "Allah Subhanahu Wa Ta'ala". Now the plain word is offered next to its honorific forms, and long honorifics no longer push every other suggestion out of the bar.
+
 ## 0.6.3
 - **GIF and sticker search.** Find reactions on GIPHY, preview them, and insert or share them in supported messaging apps.
 - **Redesigned emoji panel.** Rounded Emoji, GIFs and Stickers tabs match the keyboard theme, with a scrollable category bar and clearer selection indicators.

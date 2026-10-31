@@ -174,6 +174,7 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
         addContextEmoji(suggestionsList, typedWordString, ngramContext, resultsArePredictions,
             if (resultsArePredictions) 1 else if (hasAutoCorrection || correctToCapitalizedWord) 3 else 2)
         val isTypedWordValid = firstOccurrenceOfTypedWordInSuggestions > -1 || (!resultsArePredictions && !allowsToBeAutoCorrected)
+        addRomanUrduOnEnglishSuggestions(suggestionsList, typedWordString, ngramContext, resultsArePredictions, isTypedWordValid)
         return SuggestedWords(suggestionsList, suggestionResults.mRawSuggestions, typedWordInfo,
             isTypedWordValid, hasAutoCorrection || correctToCapitalizedWord, false, inputStyle, sequenceNumber)
     }
@@ -301,6 +302,15 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
             shortcuts.suggest(typed, prev, forcedScript ?: scriptOf(typed), if (insertIndex <= 1) 3 else 2)
         }
         var index = insertIndex.coerceAtMost(list.size)
+        // the typed word is not shown in the strip while typing, and names like "Allah" are often not in the
+        // dictionary: offer the plain word next to its honorific forms (not for abbreviations like "ra")
+        if (!isPrediction && forcedScript == null) {
+            val head = forms.firstOrNull()?.substringBefore(' ')
+            if (head != null && head.equals(typed, ignoreCase = true) && list.drop(1).none { it.mWord == head }) {
+                list.add(index++, SuggestedWordInfo(head, "", 901, SuggestedWordInfo.KIND_COMPLETION,
+                    honorificsDictionary, SuggestedWordInfo.NOT_AN_INDEX, SuggestedWordInfo.NOT_A_CONFIDENCE))
+            }
+        }
         for (form in forms) {
             if (list.any { it.mWord == form }) continue
             list.add(index++, SuggestedWordInfo(form, "", 900,
@@ -308,6 +318,48 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
                 honorificsDictionary, SuggestedWordInfo.NOT_AN_INDEX, SuggestedWordInfo.NOT_A_CONFIDENCE))
         }
     }
+
+    /**
+     * English keyboard: also offer Urdu words typed in English letters (kahan, zarorat, kidher). English stays first: when the
+     * typed word is not English the best Roman-Urdu word takes the right-hand slot (list index 3), otherwise they only follow
+     * the English suggestions. After a Roman-Urdu word that is not English, likely next words are offered (kia -> haal).
+     */
+    private fun addRomanUrduOnEnglishSuggestions(list: ArrayList<SuggestedWordInfo>, typed: String, ngramContext: NgramContext,
+                                                 isPrediction: Boolean, isTypedWordValid: Boolean) {
+        val locale = mDictionaryFacilitator.mainLocale
+        if (locale.language != "en" || RomanScript.of(locale) != null) return
+        val sv = Settings.getValues() ?: return
+        if (!sv.mRomanUrduOnEnglish || sv.mInputAttributes.mIsPasswordField) return
+        val engine = RomanScript.URDU.engine(Settings.getCurrentContext()) ?: return
+        val lexicon = engine.romanLexicon()
+        val words: List<String>
+        val insertAt: Int
+        if (isPrediction) {
+            val prev = if (ngramContext.prevWordCount > 0 && !ngramContext.isBeginningOfSentenceContext)
+                ngramContext.getNthPrevWord(1)?.toString()?.lowercase()?.trim('\u200f', '\u200e') else null
+            if (prev == null || prev.length < 2 || !lexicon.isWord(prev) || mDictionaryFacilitator.isValidSpellingWord(prev)) return
+            words = engine.romanNext(prev, 2)
+            insertAt = 0
+        } else {
+            val t = typed.lowercase()
+            if (t.length < 2 || !t.all { it in 'a'..'z' || it == '\'' }) return
+            val found = lexicon.complete(t, 4).filter { it.length > t.length || it != t || !isTypedWordValid }
+            words = if (t.length >= 3) found else found.filter { it == t }
+            insertAt = if (isTypedWordValid) list.size else 3
+        }
+        val capitalize = typed.firstOrNull()?.isUpperCase() == true
+        var index = insertAt.coerceAtMost(list.size)
+        var added = 0
+        for (w in words) {
+            val shown = if (capitalize) w.replaceFirstChar { it.uppercase() } else w
+            if (list.drop(if (isPrediction) 0 else 1).any { it.mWord.equals(shown, ignoreCase = true) }) continue
+            list.add(index++, SuggestedWordInfo(shown, "", 700 - added, if (isPrediction) SuggestedWordInfo.KIND_PREDICTION else SuggestedWordInfo.KIND_COMPLETION,
+                romanUrduOnEnglishDictionary, SuggestedWordInfo.NOT_AN_INDEX, SuggestedWordInfo.NOT_A_CONFIDENCE))
+            if (++added >= 2) break
+        }
+    }
+
+    private val romanUrduOnEnglishDictionary = Dictionary.PhonyDictionary("roman_urdu_on_english")
 
     private fun scriptOf(text: String) =
         RomanScript.honorificScript(mDictionaryFacilitator.mainLocale, ReligiousShortcuts.isUrduScript(text))
