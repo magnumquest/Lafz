@@ -10,10 +10,6 @@ import helium314.keyboard.keyboard.Keyboard
 import helium314.keyboard.keyboard.KeyboardElement
 import helium314.keyboard.keyboard.KeyboardLayoutSet
 import helium314.keyboard.keyboard.internal.KeyboardParams
-import helium314.keyboard.latin.SuggestedWords.SuggestedWordInfo
-import helium314.keyboard.latin.SuggestedWords.SuggestedWordInfo.KIND_FLAG_APPROPRIATE_FOR_AUTO_CORRECTION
-import helium314.keyboard.latin.SuggestedWords.SuggestedWordInfo.KIND_SHORTCUT
-import helium314.keyboard.latin.SuggestedWords.SuggestedWordInfo.KIND_WHITELIST
 import helium314.keyboard.latin.common.ComposedData
 import helium314.keyboard.latin.common.Constants
 import helium314.keyboard.latin.common.InputPointers
@@ -22,6 +18,11 @@ import helium314.keyboard.latin.dictionary.Dictionary
 import helium314.keyboard.latin.settings.Settings
 import helium314.keyboard.latin.settings.SettingsValuesForSuggestion
 import helium314.keyboard.latin.utils.JniUtils
+import helium314.keyboard.latin.suggestions.SuggestedWords
+import helium314.keyboard.latin.suggestions.SuggestedWordInfo
+import helium314.keyboard.latin.suggestions.SuggestedWordInfo.KIND_FLAG_APPROPRIATE_FOR_AUTO_CORRECTION
+import helium314.keyboard.latin.suggestions.SuggestedWordInfo.KIND_SHORTCUT
+import helium314.keyboard.latin.suggestions.SuggestedWordInfo.KIND_WHITELIST
 import helium314.keyboard.latin.utils.SuggestionResults
 import helium314.keyboard.latin.utils.prefs
 import org.junit.runner.RunWith
@@ -36,6 +37,9 @@ import kotlin.test.BeforeTest
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+
+private val SuggestedWords.mSuggestedWordInfoList: List<SuggestedWordInfo>
+    get() = (0 until size()).map(::getInfo)
 
 @Suppress("NonAsciiCharacters")
 @RunWith(RobolectricTestRunner::class)

@@ -9,7 +9,7 @@ package helium314.keyboard.latin.define
 object ProductionFlags {
     /**
      * Include all suggestions from all dictionaries in
-     * [helium314.keyboard.latin.SuggestedWords.mRawSuggestions].
+     * [helium314.keyboard.latin.suggestions.SuggestedWords.mRawSuggestions].
      */
     const val INCLUDE_RAW_SUGGESTIONS = false
 }

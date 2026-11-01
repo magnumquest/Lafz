@@ -3,14 +3,19 @@
  * modified
  * SPDX-License-Identifier: Apache-2.0 AND GPL-3.0-only
  */
-package helium314.keyboard.latin
+package helium314.keyboard.latin.suggestions
 
 import android.content.Context
 import android.text.TextUtils
 import com.android.inputmethod.latin.utils.BinaryDictionaryUtils
 import helium314.keyboard.keyboard.Keyboard
 import helium314.keyboard.keyboard.internal.keyboard_parser.getEmojiDefaultVersion
-import helium314.keyboard.latin.SuggestedWords.SuggestedWordInfo
+import helium314.keyboard.latin.CapsMode
+import helium314.keyboard.latin.BuildConfig
+import helium314.keyboard.latin.DictionaryFacilitator
+import helium314.keyboard.latin.InputStyle
+import helium314.keyboard.latin.NgramContext
+import helium314.keyboard.latin.WordComposer
 import helium314.keyboard.latin.common.ComposedData
 import helium314.keyboard.latin.common.Constants
 import helium314.keyboard.latin.common.InputPointers
@@ -24,7 +29,6 @@ import helium314.keyboard.latin.settings.GESTURE_ENGINE_GOOGLE
 import helium314.keyboard.latin.settings.GESTURE_ENGINE_LAFZ
 import helium314.keyboard.latin.settings.Settings
 import helium314.keyboard.latin.settings.SettingsValuesForSuggestion
-import helium314.keyboard.latin.suggestions.SuggestionStripView
 import helium314.keyboard.latin.utils.AutoCorrectionUtils
 import helium314.keyboard.latin.utils.Log
 import helium314.keyboard.latin.utils.BackgroundGatheringCache

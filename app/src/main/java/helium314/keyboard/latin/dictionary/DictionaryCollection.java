@@ -7,10 +7,10 @@
 package helium314.keyboard.latin.dictionary;
 
 import helium314.keyboard.latin.NgramContext;
-import helium314.keyboard.latin.SuggestedWords.SuggestedWordInfo;
 import helium314.keyboard.latin.common.ComposedData;
 import helium314.keyboard.latin.makedict.WordProperty;
 import helium314.keyboard.latin.settings.SettingsValuesForSuggestion;
+import helium314.keyboard.latin.suggestions.SuggestedWordInfo;
 import helium314.keyboard.latin.utils.Log;
 
 import java.util.ArrayList;

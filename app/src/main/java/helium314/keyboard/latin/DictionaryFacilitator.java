@@ -16,6 +16,7 @@ import helium314.keyboard.latin.common.ComposedData;
 import helium314.keyboard.latin.dictionary.Dictionary;
 import helium314.keyboard.latin.dictionary.DictionaryStats;
 import helium314.keyboard.latin.settings.SettingsValuesForSuggestion;
+import helium314.keyboard.latin.suggestions.SuggestedWordInfo;
 import helium314.keyboard.latin.utils.SuggestionResults;
 
 import java.util.List;
@@ -132,7 +133,7 @@ public interface DictionaryFacilitator {
             InputStyle inputStyle);
 
     /** contact names (Latin script) matching the typed text, empty if the contacts dictionary is off; used by the Roman Urdu / Arabic keyboards, which skip the other dictionaries */
-    @NonNull default java.util.List<SuggestedWords.SuggestedWordInfo> getContactSuggestions(final ComposedData composedData,
+    @NonNull default java.util.List<SuggestedWordInfo> getContactSuggestions(final ComposedData composedData,
             final NgramContext ngramContext, @NonNull final Keyboard keyboard,
             final SettingsValuesForSuggestion settingsValuesForSuggestion, final int sessionId) {
         return java.util.Collections.emptyList();
