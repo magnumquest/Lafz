@@ -58,6 +58,7 @@ import helium314.keyboard.latin.define.DebugFlags;
 import helium314.keyboard.latin.settings.Settings;
 import helium314.keyboard.latin.settings.SettingsValues;
 import helium314.keyboard.latin.settings.SpacingAndPunctuations;
+import helium314.keyboard.latin.suggestions.PunctuationSuggestions;
 import helium314.keyboard.latin.suggestions.Suggest;
 import helium314.keyboard.latin.suggestions.Suggest.OnGetSuggestedWordsCallback;
 import helium314.keyboard.latin.suggestions.SuggestedWords;
@@ -78,6 +79,7 @@ import helium314.keyboard.latin.utils.TextRange;
 import helium314.keyboard.latin.utils.TimestampKt;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
@@ -309,7 +311,7 @@ public final class InputLogic {
         SuggestedWords suggestedWords = mSuggestedWords;
         String suggestion = suggestionInfo.getWord();
         // If this is a punctuation picked from the suggestion strip, pass it to onCodeInput
-        if (suggestion.length() == 1 && suggestedWords.isPunctuationSuggestions()) {
+        if (suggestion.length() == 1 && suggestedWords instanceof PunctuationSuggestions) {
             // We still want to log a suggestion click.
             StatsUtils.onPickSuggestionManually(mSuggestedWords, suggestionInfo, mDictionaryFacilitator);
             // Word separators are suggested before the user inputs something.
@@ -663,24 +665,24 @@ public final class InputLogic {
     public void setSuggestedWords(final SuggestedWords suggestedWords) {
         if (!suggestedWords.isEmpty()) {
             final SuggestedWordInfo suggestedWordInfo;
-            if (suggestedWords.mWillAutoCorrect) {
+            if (suggestedWords.getWillAutoCorrect()) {
                 suggestedWordInfo = suggestedWords.getInfo(SuggestedWords.INDEX_OF_AUTO_CORRECTION);
             } else {
                 // We can't use suggestedWords.getWord(SuggestedWords.INDEX_OF_TYPED_WORD)
                 // because it may differ from mWordComposer.mTypedWord.
-                suggestedWordInfo = suggestedWords.mTypedWordInfo;
+                suggestedWordInfo = suggestedWords.getTypedWordInfo();
             }
             mWordComposer.setAutoCorrection(suggestedWordInfo);
         }
         mSuggestedWords = suggestedWords;
-        final boolean newAutoCorrectionIndicator = suggestedWords.mWillAutoCorrect;
+        final boolean newAutoCorrectionIndicator = suggestedWords.getWillAutoCorrect();
 
         if (mWordComposer.isComposingWord() && liveScriptForComposer() != null) {
             // Live transliteration: the text shows the decoder's best candidate (or the phonetic text), no underline.
             final String typedWord = mWordComposer.getTypedWord();
             mLiveCandidate = liveCandidateFrom(suggestedWords, typedWord);
             mLiveCandidateFor = mLiveCandidate == null ? null : typedWord;
-            if (suggestedWords.mTypedWordInfo != null && typedWord.equals(suggestedWords.mTypedWordInfo.getWord()))
+            if (suggestedWords.getTypedWordInfo() != null && typedWord.equals(suggestedWords.getTypedWordInfo().getWord()))
                 mLiveDecodedFor = typedWord; // the decoder has answered for this word, even if with no candidate
             if (!composingDisplayText(typedWord).toString().equals(mLiveDisplayText))
                 setComposingDisplay(typedWord, false /* underline */);
@@ -727,8 +729,8 @@ public final class InputLogic {
      * already ranks a full reading above a mere completion). Honorifics and the typed Roman word are never used.
      */
     private static String liveCandidateFrom(final SuggestedWords suggestedWords, final String typedWord) {
-        if (suggestedWords.isEmpty() || suggestedWords.mIsObsoleteSuggestions || suggestedWords.mTypedWordInfo == null
-                || !typedWord.equals(suggestedWords.mTypedWordInfo.getWord()))
+        if (suggestedWords.isEmpty() || suggestedWords.isObsoleteSuggestions() || suggestedWords.getTypedWordInfo() == null
+                || !typedWord.equals(suggestedWords.getTypedWordInfo().getWord()))
             return null;
         // the decoder already ranks a full reading first unless only a completion is plausible (completionCommitGap)
         for (int i = 0; i < suggestedWords.size(); i++) {
@@ -1320,7 +1322,7 @@ public final class InputLogic {
             mSpaceState = SpaceState.SWAP_PUNCTUATION;
             mSuggestionStripViewAccessor.setNeutralSuggestionStrip();
         } else if (Constants.CODE_SPACE == codePoint) {
-            if (!mSuggestedWords.isPunctuationSuggestions()) {
+            if (!(mSuggestedWords instanceof PunctuationSuggestions)) {
                 mSpaceState = SpaceState.WEAK;
             }
 
@@ -2033,7 +2035,7 @@ public final class InputLogic {
     private boolean shouldPreferClipboardSuggestion(final SuggestedWords words) {
         // Copying a selection can race an outstanding prediction request. Keep the
         // clipboard visible until typing starts, or the user pastes/dismisses it.
-        return (words.mInputStyle == InputStyle.BEGINNING_OF_SENTENCE_PREDICTION
+        return (words.getInputStyle() == InputStyle.BEGINNING_OF_SENTENCE_PREDICTION
                 || (!mWordComposer.isComposingWord()
                     && mLatinIME.getClipboardHistoryManager().isSuggestionVisible()))
                 && mLatinIME.tryShowClipboardSuggestion();
@@ -2503,14 +2505,12 @@ public final class InputLogic {
      */
     static SuggestedWords retrieveOlderSuggestions(SuggestedWordInfo typedWordInfo,
             SuggestedWords previousSuggestedWords) {
-        SuggestedWords oldSuggestedWords = previousSuggestedWords.isPunctuationSuggestions()
+        SuggestedWords oldSuggestedWords = previousSuggestedWords instanceof PunctuationSuggestions
                 ? SuggestedWords.getEmptyInstance() : previousSuggestedWords;
-        ArrayList<SuggestedWordInfo> typedWordAndPreviousSuggestions =
+        List<SuggestedWordInfo> typedWordAndPreviousSuggestions =
                 SuggestedWords.getTypedWordAndPreviousSuggestions(typedWordInfo, oldSuggestedWords);
-        return new SuggestedWords(typedWordAndPreviousSuggestions, null /* rawSuggestions */,
-                typedWordInfo, false /* typedWordValid */, false /* hasAutoCorrectionCandidate */,
-                true /* isObsoleteSuggestions */, oldSuggestedWords.mInputStyle,
-                SuggestedWords.NOT_A_SEQUENCE_NUMBER);
+        return new SuggestedWords(typedWordAndPreviousSuggestions, null, typedWordInfo, false,
+            false, true, oldSuggestedWords.getInputStyle(), SuggestedWords.NOT_A_SEQUENCE_NUMBER);
     }
 
     /**

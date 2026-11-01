@@ -501,11 +501,11 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
             if (builtIn != null) return builtIn
             // Roman scripts never have a dictionary decoder. No result for English may only fall through to the
             // dictionary decoder when the Google library is really loaded.
-            if (romanScript != null || !JniUtils.sHaveGestureLib) return SuggestedWords.getEmptyBatchInstance()
+            if (romanScript != null || !JniUtils.sHaveGestureLib) return SuggestedWords.emptyBatchInstance
         }
         // HeliBoard's own native gesture decoder only exists in the Google library: without it the native
         // call dereferences a null pointer and kills the keyboard process, so it must never be reached.
-        if (!JniUtils.sHaveGestureLib) return SuggestedWords.getEmptyBatchInstance()
+        if (!JniUtils.sHaveGestureLib) return SuggestedWords.emptyBatchInstance
         val suggestionResults = mDictionaryFacilitator.getSuggestionResults(
             wordComposer.composedDataSnapshot, ngramContext, keyboard,
             settingsValuesForSuggestion, SESSION_ID_GESTURE, inputStyle
