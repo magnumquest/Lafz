@@ -17,7 +17,7 @@ import helium314.keyboard.latin.dictionary.Dictionary;
 import helium314.keyboard.latin.dictionary.DictionaryStats;
 import helium314.keyboard.latin.settings.SettingsValuesForSuggestion;
 import helium314.keyboard.latin.suggestions.SuggestedWordInfo;
-import helium314.keyboard.latin.utils.SuggestionResults;
+import helium314.keyboard.latin.suggestions.SuggestionResults;
 
 import java.util.List;
 import java.util.Locale;
