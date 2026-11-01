@@ -1,114 +1,114 @@
 [
   [
-    { "$": "shift_state_selector", "shiftHint": true,
-      "manualOrLocked": { "label": "ٔ" },
+    { "$": "shift_state_selector",
+      "manualOrLocked": { "label": "؛" },
       "default": { "label": "ق" }
     },
-    { "$": "shift_state_selector", "shiftHint": true,
-      "manualOrLocked": { "label": "ْ" },
-      "default": { "label": "و" }
+    { "$": "shift_state_selector",
+      "manualOrLocked": { "label": "ؤ" },
+      "default": { "label": "و", "labelFlags": 2097152 }
     },
-    { "$": "shift_state_selector", "shiftHint": true,
-      "manualOrLocked": { "label": "ّ" },
+    { "$": "shift_state_selector",
+      "manualOrLocked": { "label": "٪" },
       "default": { "label": "ع" }
     },
-    { "$": "shift_state_selector", "shiftHint": true,
-      "manualOrLocked": { "label": "ً" },
-      "default": { "label": "ر" }
+    { "$": "shift_state_selector",
+      "manualOrLocked": { "label": "ڑ" },
+      "default": { "label": "ر", "labelFlags": 2097152 }
     },
-    { "$": "shift_state_selector", "shiftHint": true,
-      "manualOrLocked": { "label": "ٗ" },
-      "default": { "label": "ت" }
+    { "$": "shift_state_selector",
+      "manualOrLocked": { "label": "ٹ" },
+      "default": { "label": "ت", "labelFlags": 2097152 }
     },
-    { "$": "shift_state_selector", "shiftHint": true,
-      "manualOrLocked": { "label": "ٖ" },
-      "default": { "label": "ے" }
+    { "$": "shift_state_selector",
+      "manualOrLocked": { "label": "ۓ" },
+      "default": { "label": "ے", "labelFlags": 2097152 }
     },
-    { "$": "shift_state_selector", "shiftHint": true,
-      "manualOrLocked": { "label": "ٰ" },
+    { "$": "shift_state_selector",
+      "manualOrLocked": { "label": "٭" },
       "default": { "label": "ء" }
     },
-    { "$": "shift_state_selector", "shiftHint": true,
-      "manualOrLocked": { "label": "ُ" },
-      "default": { "label": "ی" }
+    { "$": "shift_state_selector",
+      "manualOrLocked": { "label": "ئ" },
+      "default": { "label": "ی", "labelFlags": 2097152 }
     },
-    { "$": "shift_state_selector", "shiftHint": true,
-      "manualOrLocked": { "label": "ِ" },
-      "default": { "label": "ہ" }
+    { "$": "shift_state_selector",
+      "manualOrLocked": { "label": "ۂ" },
+      "default": { "label": "ہ", "labelFlags": 2097152 }
     },
-    { "$": "shift_state_selector", "shiftHint": true,
-      "manualOrLocked": { "label": "َ" },
+    { "$": "shift_state_selector",
+      "manualOrLocked": { "label": "ڈ" },
       "default": { "label": "پ" }
     }
   ],
   [
-    { "$": "shift_state_selector", "shiftHint": true,
+    { "$": "shift_state_selector",
       "manualOrLocked": { "label": "؏" },
-      "default": { "label": "ا" }
+      "default": { "label": "ا", "labelFlags": 2097152 }
     },
-    { "$": "shift_state_selector", "shiftHint": true,
+    { "$": "shift_state_selector",
       "manualOrLocked": { "label": "؎" },
-      "default": { "label": "س" }
+      "default": { "label": "س", "labelFlags": 2097152 }
     },
-    { "$": "shift_state_selector", "shiftHint": true,
+    { "$": "shift_state_selector",
       "manualOrLocked": { "label": "ؔ" },
-      "default": { "label": "د" }
+      "default": { "label": "د", "labelFlags": 2097152 }
     },
-    { "$": "shift_state_selector", "shiftHint": true,
+    { "$": "shift_state_selector",
       "manualOrLocked": { "label": "ؒ" },
       "default": { "label": "ف" }
     },
-    { "$": "shift_state_selector", "shiftHint": true,
+    { "$": "shift_state_selector",
       "manualOrLocked": { "label": "ؓ" },
-      "default": { "label": "گ" }
+      "default": { "label": "گ", "labelFlags": 2097152 }
     },
-    { "$": "shift_state_selector", "shiftHint": true,
+    { "$": "shift_state_selector",
       "manualOrLocked": { "label": "ؑ" },
-      "default": { "label": "ح" }
+      "default": { "label": "ح", "labelFlags": 2097152 }
     },
-    { "$": "shift_state_selector", "shiftHint": true,
+    { "$": "shift_state_selector",
       "manualOrLocked": { "label": "ؐ" },
-      "default": { "label": "ج" }
+      "default": { "label": "ج", "labelFlags": 2097152 }
     },
-    { "$": "shift_state_selector", "shiftHint": true,
+    { "$": "shift_state_selector",
       "manualOrLocked": { "label": "ﷺ" },
-      "default": { "label": "ک" }
+      "default": { "label": "ک", "labelFlags": 2097152 }
     },
-    { "$": "shift_state_selector", "shiftHint": true,
+    { "$": "shift_state_selector",
       "manualOrLocked": { "label": "ﷻ" },
       "default": { "label": "ل" }
     }
   ],
   [
-    { "$": "shift_state_selector", "shiftHint": true,
+    { "$": "shift_state_selector",
       "manualOrLocked": { "label": "ﷲ" },
       "default": { "label": "َ" }
     },
-    { "$": "shift_state_selector", "shiftHint": true,
+    { "$": "shift_state_selector",
       "manualOrLocked": { "label": "؀" },
-      "default": { "label": "ز" }
+      "default": { "label": "ز", "labelFlags": 2097152 }
     },
-    { "$": "shift_state_selector", "shiftHint": true,
+    { "$": "shift_state_selector",
       "manualOrLocked": { "label": "؂" },
-      "default": { "label": "ش" }
+      "default": { "label": "ش", "labelFlags": 2097152 }
     },
-    { "$": "shift_state_selector", "shiftHint": true,
+    { "$": "shift_state_selector",
       "manualOrLocked": { "label": "؃" },
-      "default": { "label": "چ" }
+      "default": { "label": "چ", "labelFlags": 2097152 }
     },
-    { "$": "shift_state_selector", "shiftHint": true,
+    { "$": "shift_state_selector",
       "manualOrLocked": { "label": "؍" },
-      "default": { "label": "ط" }
+      "default": { "label": "ط", "labelFlags": 2097152 }
     },
-    { "$": "shift_state_selector", "shiftHint": true,
+    { "$": "shift_state_selector",
       "manualOrLocked": { "label": "٘" },
       "default": { "label": "ب", "popup": { "main": { "label": "(" } } }
     },
-    { "$": "shift_state_selector", "shiftHint": true,
+    { "$": "shift_state_selector",
       "manualOrLocked": { "label": "؟" },
-      "default": { "label": "ن" }
+      "default": { "label": "ن", "labelFlags": 2097152 }
     },
-    { "$": "shift_state_selector", "shiftHint": true,
+    { "$": "shift_state_selector",
       "manualOrLocked": { "label": "٫" },
       "default": { "label": "م", "popup": { "main": { "label": ")" } } }
     }

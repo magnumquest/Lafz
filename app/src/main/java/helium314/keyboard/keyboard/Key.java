@@ -1151,7 +1151,7 @@ public class Key implements Comparable<Key> {
                 mHintIconName = null;
             } else {
                 // maybe also always null for comma and period keys
-                final String hintLabel = PopupKeysUtilsKt.getHintLabel(popupSet, params, keySpec, (mLabelFlags & LABEL_FLAGS_FORCE_HINT_LABEL) != 0);
+                final String hintLabel = PopupKeysUtilsKt.getHintLabel(popupSet, params, label != null ? label : keySpec, (mLabelFlags & LABEL_FLAGS_FORCE_HINT_LABEL) != 0);
                 mHintLabel = needsToUpcase
                         ? StringUtils.toTitleCaseOfKeyLabel(hintLabel, localeForUpcasing)
                         : hintLabel;

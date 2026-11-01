@@ -73,6 +73,7 @@ fun PreferencesScreen(
         if (!prefs.getBoolean(Settings.PREF_SHOW_NUMBER_ROW, Defaults.PREF_SHOW_NUMBER_ROW))
             Settings.PREF_SHOW_NUMBER_ROW_IN_SYMBOLS else null,
         Settings.PREF_SHOW_LANGUAGE_SWITCH_KEY,
+        Settings.PREF_LANGUAGE_KEY_RIGHT,
         Settings.PREF_LANGUAGE_SWITCH_KEY,
         Settings.PREF_SHOW_EMOJI_KEY,
         Settings.PREF_SHOW_DPAD_KEY,
@@ -146,6 +147,9 @@ fun createPreferencesSettings(context: Context) = listOf(
     },
     Setting(context, Settings.PREF_SHOW_LANGUAGE_SWITCH_KEY, R.string.show_language_switch_key) {
         SwitchPreference(it, Defaults.PREF_SHOW_LANGUAGE_SWITCH_KEY) { KeyboardSwitcher.getInstance().reloadKeyboard() }
+    },
+    Setting(context, Settings.PREF_LANGUAGE_KEY_RIGHT, R.string.language_key_right, R.string.language_key_right_summary) {
+        SwitchPreference(it, Defaults.PREF_LANGUAGE_KEY_RIGHT) { KeyboardSwitcher.getInstance().reloadKeyboard() }
     },
     Setting(context, Settings.PREF_LANGUAGE_SWITCH_KEY, R.string.language_switch_key_behavior) {
         ListPreference(

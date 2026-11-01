@@ -77,6 +77,7 @@ object Defaults {
     const val PREF_KEY_USE_DOUBLE_SPACE_PERIOD = true
     const val PREF_BLOCK_POTENTIALLY_OFFENSIVE = true
     const val PREF_SHOW_LANGUAGE_SWITCH_KEY = false
+    const val PREF_LANGUAGE_KEY_RIGHT = false
     const val PREF_LANGUAGE_SWITCH_KEY = "internal"
     const val PREF_SHOW_EMOJI_KEY = false
     const val PREF_SHOW_DPAD_KEY = true

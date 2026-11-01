@@ -71,6 +71,8 @@ public class SettingsValues {
     public final boolean mLanguageSwitchKeyToOtherImes;
     public final boolean mLanguageSwitchKeyToOtherSubtypes;
     private final boolean mShowsLanguageSwitchKey;
+    /** Lafz: language key sits right of the space bar instead of left */
+    public final boolean mLanguageKeyRight;
     public final boolean mShowsNumberRow;
     public final boolean mShowsNumberRowInSymbols;
     public final boolean mLocalizedNumberRow;
@@ -218,6 +220,7 @@ public class SettingsValues {
         String languagePref = prefs.getString(Settings.PREF_LANGUAGE_SWITCH_KEY, Defaults.PREF_LANGUAGE_SWITCH_KEY);
         mLanguageSwitchKeyToOtherImes = languagePref.equals("input_method") || languagePref.equals("both");
         mLanguageSwitchKeyToOtherSubtypes = mIsLocked || languagePref.equals("internal") || languagePref.equals("both");
+        mLanguageKeyRight = prefs.getBoolean(Settings.PREF_LANGUAGE_KEY_RIGHT, Defaults.PREF_LANGUAGE_KEY_RIGHT);
         mShowsLanguageSwitchKey = prefs.getBoolean(Settings.PREF_SHOW_LANGUAGE_SWITCH_KEY, Defaults.PREF_SHOW_LANGUAGE_SWITCH_KEY);
         mShowsNumberRow = prefs.getBoolean(Settings.PREF_SHOW_NUMBER_ROW, Defaults.PREF_SHOW_NUMBER_ROW);
         mShowsNumberRowInSymbols = prefs.getBoolean(Settings.PREF_SHOW_NUMBER_ROW_IN_SYMBOLS, Defaults.PREF_SHOW_NUMBER_ROW_IN_SYMBOLS);

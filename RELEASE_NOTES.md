@@ -1,5 +1,8 @@
 # Release notes
 
+## 0.6.5
+- Bug fixes.
+
 ## 0.6.4
 - **Roman Urdu suggestions on the English keyboard.** Type `kahan`, `kidher`, `zarorat` or `kia` on the normal English keyboard and Urdu words in English letters now show up in the suggestion bar, and after a word like `kia` the next likely word is offered. English suggestions always stay first. Turn it off in Settings → Text correction.
 - **Shift characters shown on the Urdu (Pakistan) keyboard.** Every key now shows a small character in its top-right corner: the one you get by long-pressing it or using shift, so letters, marks and symbols that are not on the main keys are easy to find. Long-pressing a key offers that character first.
