@@ -544,7 +544,7 @@ class DictionaryFacilitatorImpl : DictionaryFacilitator {
             val dict = group.getSubDict(Dictionary.TYPE_CONTACTS) ?: continue
             val found = dict.getSuggestions(composedData, ngramContext, proximityInfoHandle, settingsValuesForSuggestion,
                 sessionId, group.getWeightForLocale(dictionaryGroups, false), weightOfLangModelVsSpatialModel) ?: continue
-            for (info in found) if (!isBlacklisted(info.word) && result.none { it.mWord == info.mWord }) result.add(info)
+            for (info in found) if (!isBlacklisted(info.word) && result.none { it.word == info.word }) result.add(info)
         }
         return result
     }
@@ -577,13 +577,13 @@ class DictionaryFacilitatorImpl : DictionaryFacilitator {
                     // consider the user might use custom main dictionary containing shortcuts
                     //  assume this is unlikely to happen, and take care about common shortcuts that are not actual words (emoji, symbols)
                     && word.length > 2 // should exclude most symbol shortcuts
-                    && info.mSourceDict.mDictType == dictType // dictType is always main, but info.mSourceDict.mDictType contains the actual dict (main dict is a dictionary group)
+                    && info.sourceDict.mDictType == dictType // dictType is always main, but info.sourceDict.mDictType contains the actual dict (main dict is a dictionary group)
                     && !mightBeEmoji(word) // simplified check for performance reasons
                     && !dictionary.isInDictionary(word)
                 )
                     continue
 
-                if (word.length == 1 && info.mSourceDict.mDictType == Dictionary.TYPE_EMOJI && !StringUtils.mightBeEmoji(word[0].code))
+                if (word.length == 1 && info.sourceDict.mDictType == Dictionary.TYPE_EMOJI && !StringUtils.mightBeEmoji(word[0].code))
                     continue
 
                 suggestions.add(info)

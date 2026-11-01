@@ -110,7 +110,7 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
         // store the original SuggestedWordInfo for typed word, as it will be removed
         // we may want to re-add it in case auto-correction happens, so that the original word can at least be selected
         // we check against the capitalizedTypedWord because getTransformedSuggestedWordInfoList adjusts for capsMode
-        val typedWordFirstOccurrenceWordInfo = suggestionsContainer.firstOrNull { it.mWord == capitalizedTypedWord }
+        val typedWordFirstOccurrenceWordInfo = suggestionsContainer.firstOrNull { it.word == capitalizedTypedWord }
         val firstOccurrenceOfTypedWordInSuggestions = SuggestedWordInfo.removeDupsAndTypedWord(capitalizedTypedWord, suggestionsContainer)
         makeFirstTwoSuggestionsNonEmoji(suggestionsContainer)
 
@@ -121,8 +121,8 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
             {
                 val first = suggestionsContainer.firstOrNull() ?: suggestionResults.first()
                 val suggestions = getNextWordSuggestions(ngramContext, keyboard, inputStyleIfNotPrediction, settingsValuesForSuggestion)
-                val suggestionForFirstInContainer = suggestions.firstOrNull { it.mWord == first.word }
-                val suggestionForTypedWord = suggestions.firstOrNull { it.mWord == capitalizedTypedWord }
+                val suggestionForFirstInContainer = suggestions.firstOrNull { it.word == first.word }
+                val suggestionForTypedWord = suggestions.firstOrNull { it.word == capitalizedTypedWord }
                 suggestionForFirstInContainer to suggestionForTypedWord
             },
             isCorrectionEnabled,
@@ -132,7 +132,7 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
             typedWordFirstOccurrenceWordInfo
         )
         val typedWordInfo = SuggestedWordInfo(typedWordString, "", SuggestedWordInfo.MAX_SCORE,
-            SuggestedWordInfo.KIND_TYPED, typedWordFirstOccurrenceWordInfo?.mSourceDict ?: Dictionary.DICTIONARY_USER_TYPED,
+            SuggestedWordInfo.KIND_TYPED, typedWordFirstOccurrenceWordInfo?.sourceDict ?: Dictionary.DICTIONARY_USER_TYPED,
             SuggestedWordInfo.NOT_AN_INDEX , SuggestedWordInfo.NOT_A_CONFIDENCE)
         if (typedWordString.isNotEmpty()) {
             suggestionsContainer.add(0, typedWordInfo)
@@ -263,7 +263,7 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
             val info = useDefaultEmojiSkinTone(SuggestedWordInfo(emoji, "", 850,
                 SuggestedWordInfo.KIND_PREDICTION, emojiSource,
                 SuggestedWordInfo.NOT_AN_INDEX, SuggestedWordInfo.NOT_A_CONFIDENCE))
-            if (list.none { it.mWord == info.mWord }) list.add(index++, info)
+            if (list.none { it.word == info.word }) list.add(index++, info)
         }
     }
 
@@ -278,9 +278,9 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
             settingsValuesForSuggestion, SESSION_ID_TYPING)
         var index = 4.coerceAtMost(list.size)
         // the contacts dictionary also returns typo-tolerant matches ("rasul" -> "Hashmi"): only names that start with what was typed
-        for (c in contacts.filter { it.mWord.startsWith(typed, ignoreCase = true) }.take(2)) {
-            if (list.any { it.mWord == c.mWord }) continue
-            list.add(index++, SuggestedWordInfo(c.mWord, "", 600, SuggestedWordInfo.KIND_COMPLETION, c.mSourceDict,
+        for (c in contacts.filter { it.word.startsWith(typed, ignoreCase = true) }.take(2)) {
+            if (list.any { it.word == c.word }) continue
+            list.add(index++, SuggestedWordInfo(c.word, "", 600, SuggestedWordInfo.KIND_COMPLETION, c.sourceDict,
                 SuggestedWordInfo.NOT_AN_INDEX, SuggestedWordInfo.NOT_A_CONFIDENCE))
         }
     }
@@ -310,13 +310,13 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
         // dictionary: offer the plain word next to its honorific forms (not for abbreviations like "ra")
         if (!isPrediction && forcedScript == null) {
             val head = forms.firstOrNull()?.substringBefore(' ')
-            if (head != null && head.equals(typed, ignoreCase = true) && list.drop(1).none { it.mWord == head }) {
+            if (head != null && head.equals(typed, ignoreCase = true) && list.drop(1).none { it.word == head }) {
                 list.add(index++, SuggestedWordInfo(head, "", 901, SuggestedWordInfo.KIND_COMPLETION,
                     honorificsDictionary, SuggestedWordInfo.NOT_AN_INDEX, SuggestedWordInfo.NOT_A_CONFIDENCE))
             }
         }
         for (form in forms) {
-            if (list.any { it.mWord == form }) continue
+            if (list.any { it.word == form }) continue
             list.add(index++, SuggestedWordInfo(form, "", 900,
                 if (isPrediction) SuggestedWordInfo.KIND_PREDICTION else SuggestedWordInfo.KIND_COMPLETION,
                 honorificsDictionary, SuggestedWordInfo.NOT_AN_INDEX, SuggestedWordInfo.NOT_A_CONFIDENCE))
@@ -356,7 +356,7 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
         var added = 0
         for (w in words) {
             val shown = if (capitalize) w.replaceFirstChar { it.uppercase() } else w
-            if (list.drop(if (isPrediction) 0 else 1).any { it.mWord.equals(shown, ignoreCase = true) }) continue
+            if (list.drop(if (isPrediction) 0 else 1).any { it.word.equals(shown, ignoreCase = true) }) continue
             list.add(index++, SuggestedWordInfo(shown, "", 700 - added, if (isPrediction) SuggestedWordInfo.KIND_PREDICTION else SuggestedWordInfo.KIND_COMPLETION,
                 romanUrduOnEnglishDictionary, SuggestedWordInfo.NOT_AN_INDEX, SuggestedWordInfo.NOT_A_CONFIDENCE))
             if (++added >= 2) break
@@ -395,11 +395,11 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
         if (SHOULD_AUTO_CORRECT_USING_NON_WHITE_LISTED_SUGGESTION
                 || firstSuggestionInContainer?.isKindOf(SuggestedWordInfo.KIND_WHITELIST) == true
                 || (consideredWord.length > 1
-                    && typedWordInfo?.mSourceDict == null // more than 1 letter and not in dictionary
+                    && typedWordInfo?.sourceDict == null // more than 1 letter and not in dictionary
                     // if the typed word contains @ or ., the suggestion also needs to contain it
                     // (avoid autocorrecting mail addresses, URLs & similar to something different)
-                    && (!typedWordString.contains('@') || firstSuggestionInContainer?.mWord?.contains('@') == true)
-                    && (!typedWordString.contains('.') || firstSuggestionInContainer?.mWord?.contains('.') == true)
+                    && (!typedWordString.contains('@') || firstSuggestionInContainer?.word?.contains('@') == true)
+                    && (!typedWordString.contains('.') || firstSuggestionInContainer?.word?.contains('.') == true)
                     )
             ) {
             allowsToBeAutoCorrected = true
@@ -408,10 +408,10 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
             val first = firstAndTypedEmptyInfos.first
             val typed = firstAndTypedEmptyInfos.second
             allowsToBeAutoCorrected = when {
-                firstSuggestionInContainer.mScore > scoreLimit -> true // suggestion has good score, allow
+                firstSuggestionInContainer.score > scoreLimit -> true // suggestion has good score, allow
                 first == null -> false // no autocorrect if first suggestion unknown in this ngram context
                 typed == null -> true // allow autocorrect if typed word not known in this ngram context, todo: this may be too aggressive
-                else -> first.mScore - typed.mScore > 20 // autocorrect if suggested word has clearly higher score for empty word suggestions
+                else -> first.score - typed.score > 20 // autocorrect if suggested word has clearly higher score for empty word suggestions
             }
         } else {
             allowsToBeAutoCorrected = false
@@ -451,25 +451,25 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
             // form to allow auto-correcting to it in this language. For details of how this
             // is determined, see #isAllowedByAutoCorrectionWithSpaceFilter.
             val allowed = isAllowedByAutoCorrectionWithSpaceFilter(firstSuggestion)
-            if (allowed && typedWordInfo != null && typedWordInfo.mScore > scoreLimit) {
+            if (allowed && typedWordInfo != null && typedWordInfo.score > scoreLimit) {
                 // typed word is valid and has good score
                 // do not auto-correct if typed word is better match than first suggestion
                 val dictLocale = mDictionaryFacilitator.currentLocale
-                if (firstSuggestion.mScore < scoreLimit) {
+                if (firstSuggestion.score < scoreLimit) {
                     // don't allow if suggestion has too low score
                     return true to false
                 }
-                if (firstSuggestion.mSourceDict.mLocale !== typedWordInfo.mSourceDict.mLocale) {
+                if (firstSuggestion.sourceDict.mLocale !== typedWordInfo.sourceDict.mLocale) {
                     // dict locale different -> return the better match
-                    return true to (dictLocale == firstSuggestion.mSourceDict.mLocale)
+                    return true to (dictLocale == firstSuggestion.sourceDict.mLocale)
                 }
                 // the score difference may need tuning, but so far it seems alright
                 val firstWordBonusScore =
                     ((if (firstSuggestion.isKindOf(SuggestedWordInfo.KIND_WHITELIST)) 20 else 0) // large bonus because it's wanted by dictionary
                             + (if (StringUtils.isLowerCaseAscii(typedWordString)) 5 else 0) // small bonus because typically only lower case ascii is typed (applies to latin keyboards only)
-                            + if (firstSuggestion.mScore > typedWordInfo.mScore) 5 else 0) // small bonus if score is higher
-                val firstScoreForEmpty = firstAndTypedEmptyInfos.first?.mScore ?: 0
-                val typedScoreForEmpty = firstAndTypedEmptyInfos.second?.mScore ?: 0
+                            + if (firstSuggestion.score > typedWordInfo.score) 5 else 0) // small bonus if score is higher
+                val firstScoreForEmpty = firstAndTypedEmptyInfos.first?.score ?: 0
+                val typedScoreForEmpty = firstAndTypedEmptyInfos.second?.score ?: 0
                 if (firstScoreForEmpty + firstWordBonusScore >= typedScoreForEmpty + 20) {
                     // first word is clearly better match for this ngram context
                     return true to true
@@ -519,7 +519,7 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
 
         val rejected: SuggestedWordInfo?
         if (SHOULD_REMOVE_PREVIOUSLY_REJECTED_SUGGESTION && suggestionsContainer.size > 1 && TextUtils.equals(
-                suggestionsContainer[0].mWord,
+                suggestionsContainer[0].word,
                 wordComposer.rejectedBatchModeSuggestion
             )
         ) {
@@ -541,13 +541,13 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
         // For some reason some suggestions with MIN_VALUE are making their way here.
         // TODO: Find a more robust way to detect distracters.
         for (i in suggestionsContainer.indices.reversed()) {
-            if (suggestionsContainer[i].mScore < SUPPRESS_SUGGEST_THRESHOLD) {
+            if (suggestionsContainer[i].score < SUPPRESS_SUGGEST_THRESHOLD) {
                 suggestionsContainer.removeAt(i)
             }
         }
 
         val capitalizedTypedWord = capitalize(wordComposer.typedWord, capsMode, locale)
-        val addCapitalizedSuggestion = capitalizedTypedWord != wordComposer.typedWord && suggestionsContainer.drop(1).none { it.mWord == capitalizedTypedWord }
+        val addCapitalizedSuggestion = capitalizedTypedWord != wordComposer.typedWord && suggestionsContainer.drop(1).none { it.word == capitalizedTypedWord }
         if (addCapitalizedSuggestion) {
             suggestionsContainer.add(min(1, suggestionsContainer.size),
                 SuggestedWordInfo(capitalizedTypedWord, "", 0, SuggestedWordInfo.KIND_TYPED,
@@ -567,7 +567,7 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
             getNextWordSuggestions(ngramContext, keyboard, inputStyle, settingsValuesForSuggestion), rejected
         )
         val suggestionsList = if (SuggestionStripView.DEBUG_SUGGESTIONS && suggestionsContainer.isNotEmpty()) {
-            getSuggestionsInfoListWithDebugInfo(suggestionResults.first().mWord, suggestionsContainer)
+            getSuggestionsInfoListWithDebugInfo(suggestionResults.first().word, suggestionsContainer)
         } else {
             suggestionsContainer
         }
@@ -699,7 +699,7 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
 
         private val TAG: String = Suggest::class.java.simpleName
 
-        // Source of the Roman -> Urdu / Arabic decoder candidates (SuggestedWordInfo.mSourceDict). InputLogic uses it
+        // Source of the Roman -> Urdu / Arabic decoder candidates (SuggestedWordInfo.sourceDict). InputLogic uses it
         // to pick the live-transliteration candidate, so honorifics and the typed Roman word are never picked.
         @JvmField val ROMAN_SCRIPT_SOURCE = Dictionary.PhonyDictionary("roman_script_translit")
 
@@ -722,7 +722,7 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
             if (capsMode != CapsMode.OFF || 0 != trailingSingleQuotesCount) {
                 for (i in 0 until suggestionsCount) {
                     val wordInfo = suggestions[i]
-                    val wordLocale = wordInfo.mSourceDict.mLocale
+                    val wordLocale = wordInfo.sourceDict.mLocale
                     val transformedWordInfo = capitalizeAndAddTrailingSingleQuotes(
                         wordInfo, wordLocale ?: defaultLocale, capsMode, trailingSingleQuotesCount
                     )
@@ -734,18 +734,13 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
         private fun capitalizeAndAddTrailingSingleQuotes(
             wordInfo: SuggestedWordInfo, locale: Locale, capsMode: CapsMode, trailingSingleQuotesCount: Int
         ): SuggestedWordInfo {
-            var capitalizedWord = capitalize(wordInfo.mWord, capsMode, locale)
+            var capitalizedWord = capitalize(wordInfo.word, capsMode, locale)
             // Appending quotes is here to help people quote words. However, it's not helpful
             // when they type words with quotes toward the end like "it's" or "didn't", where
             // it's more likely the user missed the last character (or didn't type it yet).
-            val quotesToAppend = trailingSingleQuotesCount - if (wordInfo.mWord.contains('\'')) 1 else 0
+            val quotesToAppend = trailingSingleQuotesCount - if (wordInfo.word.contains('\'')) 1 else 0
             repeat(max(0, quotesToAppend)) { capitalizedWord += '\'' }
-            return SuggestedWordInfo(
-                capitalizedWord, wordInfo.mPrevWordsContext,
-                wordInfo.mScore, wordInfo.mKindAndFlags,
-                wordInfo.mSourceDict, wordInfo.mIndexOfTouchPointOfSecondWord,
-                wordInfo.mAutoCommitFirstWordConfidence
-            )
+            return wordInfo.copy(word = capitalizedWord)
         }
 
         private fun getSuggestionsInfoListWithDebugInfo(
@@ -764,26 +759,25 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
         fun addDebugInfo(wordInfo: SuggestedWordInfo?, typedWord: String) {
             if (!SuggestionStripView.DEBUG_SUGGESTIONS)
                 return
-            val normalizedScore = BinaryDictionaryUtils.calcNormalizedScore(typedWord, wordInfo.toString(), wordInfo!!.mScore)
+            val normalizedScore = BinaryDictionaryUtils.calcNormalizedScore(typedWord, wordInfo.toString(), wordInfo!!.score)
             val scoreInfoString: String
-            val dict = wordInfo.mSourceDict.mDictType + ":" + wordInfo.mSourceDict.mLocale
+            val dict = wordInfo.sourceDict.mDictType + ":" + wordInfo.sourceDict.mLocale
             scoreInfoString = if (normalizedScore > 0) {
-                String.format(Locale.ROOT, "%d (%4.2f), %s", wordInfo.mScore, normalizedScore, dict)
+                String.format(Locale.ROOT, "%d (%4.2f), %s", wordInfo.score, normalizedScore, dict)
             } else {
-                String.format(Locale.ROOT, "%d, %s", wordInfo.mScore, dict)
+                String.format(Locale.ROOT, "%d, %s", wordInfo.score, dict)
             }
             wordInfo.debugString = scoreInfoString
         }
 
         @JvmStatic
         fun useDefaultEmojiSkinTone(suggestion: SuggestedWordInfo): SuggestedWordInfo {
-            val defaultVersion = getEmojiDefaultVersion(suggestion.mWord)
-            if (defaultVersion == suggestion.mWord) {
+            val defaultVersion = getEmojiDefaultVersion(suggestion.word)
+            if (defaultVersion == suggestion.word) {
                 return suggestion
             }
 
-            return SuggestedWordInfo(defaultVersion, suggestion.mPrevWordsContext, suggestion.mScore, suggestion.mKindAndFlags,
-                suggestion.mSourceDict, suggestion.mIndexOfTouchPointOfSecondWord, suggestion.mAutoCommitFirstWordConfidence)
+            return suggestion.copy(word = defaultVersion)
         }
 
         /**
@@ -807,11 +801,11 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
          * @return whether it's fine to auto-correct to this.
          */
         private fun isAllowedByAutoCorrectionWithSpaceFilter(info: SuggestedWordInfo): Boolean {
-            val locale = info.mSourceDict.mLocale ?: return true
+            val locale = info.sourceDict.mLocale ?: return true
             val maximumLengthForThisLanguage = sLanguageToMaximumAutoCorrectionWithSpaceLength[locale.language]
                 ?: return true // This language does not enforce a maximum length to auto-correction
-            return (info.mWord.length <= maximumLengthForThisLanguage
-                    || -1 == info.mWord.indexOf(Constants.CODE_SPACE.toChar()))
+            return (info.word.length <= maximumLengthForThisLanguage
+                    || -1 == info.word.indexOf(Constants.CODE_SPACE.toChar()))
         }
 
         /** returns CapsMode.MANUAL, CapsMode.MANUAL_LOCKED, or CAPS_MODE_OFF */
@@ -858,22 +852,19 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
 
         /** reduces score of the first suggestion if next one is close and has more than a single letter */
         private fun replaceSingleLetterFirstSuggestion(suggestionResults: MutableList<SuggestedWordInfo>) {
-            if (suggestionResults.size < 2 || suggestionResults.first().mWord.length != 1) return
+            if (suggestionResults.size < 2 || suggestionResults.first().word.length != 1) return
             // suppress single letter suggestions if next suggestion is close and has more than one letter
             val first = suggestionResults[0]
             val second = suggestionResults[1]
-            if (second.mWord.length > 1 && second.mScore > 0.94 * first.mScore) {
+            if (second.word.length > 1 && second.score > 0.94 * first.score) {
                 suggestionResults.remove(first) // remove and re-add with lower score
-                val modifiedFirst = SuggestedWordInfo(
-                    first.mWord, first.mPrevWordsContext, (first.mScore * 0.93).toInt(),
-                    first.mKindAndFlags, first.mSourceDict, first.mIndexOfTouchPointOfSecondWord, first.mAutoCommitFirstWordConfidence
-                )
-                val insertIndex = suggestionResults.indexOfFirst { it.mScore < modifiedFirst.mScore }
+                val modifiedFirst = first.copy(word = first.word, score = (first.score * 0.93).toInt())
+                val insertIndex = suggestionResults.indexOfFirst { it.score < modifiedFirst.score }
                 if (insertIndex == -1) suggestionResults.add(modifiedFirst)
                 else suggestionResults.add(insertIndex, modifiedFirst)
 
                 if (DebugFlags.DEBUG_ENABLED)
-                    Log.d(TAG, "reduced score of ${first.mWord} from ${first.mScore}, new first: ${suggestionResults.first().mWord} (${suggestionResults.first().mScore})")
+                    Log.d(TAG, "reduced score of ${first.word} from ${first.score}, new first: ${suggestionResults.first().word} (${suggestionResults.first().score})")
             }
         }
 
@@ -884,17 +875,17 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
             nextWordSuggestions: SuggestionResults, rejected: SuggestedWordInfo?
         ): SuggestedWordInfo? {
             if (pseudoTypedWordInfo == null || !Settings.getValues().mUsePersonalizedDicts
-                || pseudoTypedWordInfo.mSourceDict.mDictType != Dictionary.TYPE_MAIN || suggestionsContainer.size < 2
+                || pseudoTypedWordInfo.sourceDict.mDictType != Dictionary.TYPE_MAIN || suggestionsContainer.size < 2
             ) return pseudoTypedWordInfo
-            val goodNextSuggestions = nextWordSuggestions.filter { it.mScore >= 170 } // we only want reasonably often typed words, value may require tuning
+            val goodNextSuggestions = nextWordSuggestions.filter { it.score >= 170 } // we only want reasonably often typed words, value may require tuning
             if (goodNextSuggestions.isEmpty()) return pseudoTypedWordInfo
 
             // for each suggestion, check whether the word was already typed in this ngram context (i.e. is nextWordSuggestion)
             for (suggestion in suggestionsContainer) {
-                if (suggestion.mScore < pseudoTypedWordInfo.mScore * 0.93) break // we only want reasonably good suggestions, value may require tuning
+                if (suggestion.score < pseudoTypedWordInfo.score * 0.93) break // we only want reasonably good suggestions, value may require tuning
                 if (suggestion === rejected) continue  // ignore rejected suggestions
                 for (nextWordSuggestion in goodNextSuggestions) {
-                    if (nextWordSuggestion.mWord != suggestion.mWord) continue
+                    if (nextWordSuggestion.word != suggestion.word) continue
                     // if we have a high scoring suggestion in next word suggestions, take it (because it's expected that user might want to type it again)
                     suggestionsContainer.remove(suggestion)
                     suggestionsContainer.add(0, suggestion)
