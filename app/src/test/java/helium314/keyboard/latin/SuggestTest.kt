@@ -668,7 +668,7 @@ class SuggestTest {
 
         suggest.clearNextWordSuggestionsCache()
         return suggest.getSuggestedWords(
-            wc, context, Keyboard(params), Settings.getValues().mSettingsValuesForSuggestion,
+            wc, null, context, Keyboard(params), Settings.getValues().mSettingsValuesForSuggestion,
             Settings.getValues().mAutoCorrectEnabled, InputStyle.NONE, 0
         )
     }
