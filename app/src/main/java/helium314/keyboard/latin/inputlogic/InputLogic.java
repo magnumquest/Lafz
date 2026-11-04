@@ -37,6 +37,7 @@ import helium314.keyboard.keyboard.emoji.RecentEmojis;
 import helium314.keyboard.keyboard.internal.keyboard_parser.floris.KeyCode;
 import helium314.keyboard.latin.CapsMode;
 import helium314.keyboard.latin.InputStyle;
+import helium314.keyboard.latin.common.CoordinateUtils;
 import helium314.keyboard.latin.dictionary.Dictionary;
 import helium314.keyboard.latin.DictionaryFacilitator;
 import helium314.keyboard.latin.LastComposedWord;
@@ -859,7 +860,7 @@ public final class InputLogic {
                 break;
             }
             case KeyCode.SETTINGS:
-                onSettingsKeyPressed();
+                mLatinIME.launchSettings();
                 break;
             case KeyCode.ACTION_NEXT:
                 performEditorAction(EditorInfo.IME_ACTION_NEXT);
@@ -2195,7 +2196,7 @@ public final class InputLogic {
             }
         }
         int[] codePoints = StringUtils.toCodePointArray(typedWordString);
-        mWordComposer.setComposingWord(codePoints, mLatinIME.getCoordinatesForCurrentKeyboard(codePoints));
+        mWordComposer.setComposingWord(codePoints, getCoordinatesForCurrentKeyboard(codePoints));
         mWordComposer.setCursorPositionWithinWord(typedWordString.codePointCount(0, numberOfCharsInWordBeforeCursor));
         mConnection.setComposingRegion(expectedCursorPosition - numberOfCharsInWordBeforeCursor,
                 expectedCursorPosition + word.getNumberOfCharsAfterCursor());
@@ -2306,7 +2307,7 @@ public final class InputLogic {
             // For languages without spaces, we revert the typed string but the cursor is flush
             // with the typed word, so we need to resume suggestions right away.
             final int[] codePoints = StringUtils.toCodePointArray(stringToCommit);
-            mWordComposer.setComposingWord(codePoints, mLatinIME.getCoordinatesForCurrentKeyboard(codePoints));
+            mWordComposer.setComposingWord(codePoints, getCoordinatesForCurrentKeyboard(codePoints));
             setComposingTextInternal(textToCommit, 1);
         }
         // Don't restart suggestion yet. We'll restart if the user deletes the separator.
@@ -2314,6 +2315,19 @@ public final class InputLogic {
 
         // We have a separator between the word and the cursor: we should show predictions.
         inputTransaction.setRequiresUpdateSuggestions();
+    }
+
+    /**
+     * @param codePoints code points to get coordinates for.
+     * @return x,y coordinates for this keyboard, as a flattened array.
+     */
+    private int[] getCoordinatesForCurrentKeyboard(int[] codePoints) {
+        Keyboard keyboard = KeyboardSwitcher.getInstance().getKeyboard();
+        if (null == keyboard) {
+            return CoordinateUtils.newCoordinateArray(codePoints.length,
+                Constants.NOT_A_COORDINATE, Constants.NOT_A_COORDINATE);
+        }
+        return keyboard.getCoordinates(codePoints);
     }
 
     /**
@@ -2448,13 +2462,6 @@ public final class InputLogic {
             return text.substring(1);
         }
         return text;
-    }
-
-    /**
-     * Handle a press on the settings key.
-     */
-    private void onSettingsKeyPressed() {
-        mLatinIME.displaySettingsDialog();
     }
 
     /**
