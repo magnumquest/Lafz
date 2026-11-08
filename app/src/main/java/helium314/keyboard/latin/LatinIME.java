@@ -518,6 +518,10 @@ public class LatinIME extends InputMethodService implements
         final RomanScript romanScript = RomanScript.of(locale);
         if (romanScript != null) romanScript.engine(this);
         final SettingsValues currentSettingsValues = mSettings.getCurrent();
+        // The English keyboard can offer Roman Urdu next-word suggestions too. Build its large
+        // spelling index in the model-loader thread instead of on the first suggestion request.
+        if (locale.getLanguage().equals("en") && currentSettingsValues.mRomanUrduOnEnglish)
+            RomanScript.URDU.preloadRomanUrduLexicon(this);
         // swipe typing: load the decoder in the background now, never on the first swipe. With swipe off nothing of it
         // is loaded, and anything loaded earlier is released.
         if (currentSettingsValues.mGestureInputEnabled) {

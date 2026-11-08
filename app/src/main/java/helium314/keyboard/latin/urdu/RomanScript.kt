@@ -25,6 +25,7 @@ enum class RomanScript(val languageTag: String, private val modelAsset: String, 
 
     @Volatile private var engine: RomanTransliterator? = null
     @Volatile private var loading = false
+    @Volatile private var preloadRomanLexicon = false
 
     /** what the owner's typing taught the keyboard; null until loaded (learning is skipped, never waited for, before that) */
     @Volatile var personal: PersonalModel? = null
@@ -112,7 +113,11 @@ enum class RomanScript(val languageTag: String, private val modelAsset: String, 
         thread(name = "translit-model-load-$languageTag") {
             try {
                 if (personal == null) loadPersonal(appContext)
-                engine = appContext.assets.open(modelAsset).use { RomanTransliterator.load(it) }
+                val loadedEngine = appContext.assets.open(modelAsset).use { RomanTransliterator.load(it) }
+                if (preloadRomanLexicon) loadedEngine.romanLexicon()
+                // Publish only when the optional first-use work is finished, so suggestions
+                // never wait on the lexicon's synchronized lazy initializer.
+                engine = loadedEngine
             } catch (e: Exception) {
                 Log.e("RomanScript", "could not load $modelAsset", e)
             } finally {
@@ -120,6 +125,14 @@ enum class RomanScript(val languageTag: String, private val modelAsset: String, 
             }
         }
         return null
+    }
+
+    /** Warm the optional English -> Roman Urdu suggestion index off the typing path. */
+    fun preloadRomanUrduLexicon(context: Context) {
+        preloadRomanLexicon = true
+        engine(context)?.let { loadedEngine ->
+            thread(name = "roman-lexicon-warm-$languageTag") { loadedEngine.romanLexicon() }
+        }
     }
 
     /** Like [engine] but waits (up to [timeoutMs]) for the model to finish loading; only for background threads. */
