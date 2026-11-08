@@ -1,5 +1,9 @@
 # Release notes
 
+## 0.6.6
+- **More scientific and technical suggestions.** English and Urdu now include additional medical, biological, engineering and physics terms while keeping everyday word suggestions prominent.
+- **Check for updates.** Open Settings → About to check for a newer release, download it and install it.
+
 ## 0.6.5
 - Bug fixes.
 

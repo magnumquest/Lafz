@@ -871,6 +871,18 @@ New dictionary:
     <string name="version">Version</string>
     <!-- github repo link for about screen -->
     <string name="about_github_link">View on GitHub</string>
+    <string name="check_for_updates">Check for updates</string>
+    <string name="check_for_updates_summary">Check GitHub for a newer Lafz release</string>
+    <string name="checking_for_updates">Checking for updates…</string>
+    <string name="up_to_date">Lafz %1$s is up to date</string>
+    <string name="update_available">Lafz %1$s is available</string>
+    <string name="update_download_size">Download size: %1$s</string>
+    <string name="download_update">Download update</string>
+    <string name="install_update">Install update</string>
+    <string name="downloading_update">Downloading update… %1$d%%</string>
+    <string name="update_downloaded">Lafz %1$s is downloaded</string>
+    <string name="update_allow_installs">Allow installs from Lafz in Android settings, then tap Install update.</string>
+    <string name="update_failed">Could not check or install the update</string>
     <!-- link to the wiki for about screen -->
     <string name="about_wiki_link">Go to Wiki</string>
     <!-- description for wiki link -->

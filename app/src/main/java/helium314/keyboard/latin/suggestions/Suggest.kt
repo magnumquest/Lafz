@@ -199,8 +199,26 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
             if (resultsArePredictions) 1 else if (hasAutoCorrection || correctToCapitalizedWord) 3 else 2)
         val isTypedWordValid = firstOccurrenceOfTypedWordInSuggestions > -1 || (!resultsArePredictions && !allowsToBeAutoCorrected)
         addRomanUrduOnEnglishSuggestions(suggestionsList, typedWordString, ngramContext, resultsArePredictions, isTypedWordValid)
+        addTechnicalCompletion(suggestionsList, typedWordString, resultsArePredictions, wordComposer)
         return SuggestedWords(suggestionsList, suggestionResults.rawSuggestions, typedWordInfo,
             isTypedWordValid, hasAutoCorrection || correctToCapitalizedWord, false, inputStyle, sequenceNumber)
+    }
+
+    /** Adds at most one low-priority STEM completion; it never changes conversational ranking or autocorrection. */
+    private fun addTechnicalCompletion(
+        suggestions: ArrayList<SuggestedWordInfo>, typed: String, isPrediction: Boolean, wordComposer: WordComposer
+    ) {
+        if (isPrediction || typed.isEmpty() || wordComposer.isCursorFrontOrMiddleOfComposingWord) return
+        val context = Settings.getCurrentContext() ?: return
+        val language = mDictionaryFacilitator.mainLocale.language
+        var candidate = TechnicalTerms.completion(context, language, typed) ?: return
+        if (typed.first().isUpperCase()) candidate = candidate.replaceFirstChar { it.uppercase(Locale.ROOT) }
+        if (suggestions.any { it.word.equals(candidate, ignoreCase = true) }) return
+        val source = Dictionary.PhonyDictionary("technical_terms")
+        val technical = SuggestedWordInfo(candidate, "", 300, SuggestedWordInfo.KIND_COMPLETION,
+            source, SuggestedWordInfo.NOT_AN_INDEX, SuggestedWordInfo.NOT_A_CONFIDENCE)
+        // Keep the typed word and the best conversational alternative ahead of the technical term.
+        suggestions.add(min(2, suggestions.size), technical)
     }
 
     /**

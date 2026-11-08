@@ -5,6 +5,9 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings as AndroidSettings
 import android.text.method.LinkMovementMethod
 import android.view.View
 import android.widget.TextView
@@ -12,9 +15,13 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -37,6 +44,8 @@ import helium314.keyboard.settings.Setting
 import helium314.keyboard.settings.preferences.Preference
 import helium314.keyboard.settings.SearchSettingsScreen
 import helium314.keyboard.settings.SettingsActivity
+import helium314.keyboard.settings.updates.GithubRelease
+import helium314.keyboard.settings.updates.GithubReleaseUpdater
 import helium314.keyboard.latin.utils.Theme
 import helium314.keyboard.latin.utils.previewDark
 import kotlinx.coroutines.Dispatchers
@@ -55,6 +64,7 @@ fun AboutScreen(
         R.string.lafz_section_project,
         SettingsWithoutKey.APP,
         SettingsWithoutKey.VERSION,
+        SettingsWithoutKey.CHECK_FOR_UPDATES,
         SettingsWithoutKey.LICENSE,
         SettingsWithoutKey.FUTO_SWIPE,
         R.string.lafz_section_help,
@@ -98,6 +108,9 @@ fun createAboutSettings(context: Context) = listOf(
             },
             icon = R.drawable.ic_settings_about_version
         )
+    },
+    Setting(context, SettingsWithoutKey.CHECK_FOR_UPDATES, R.string.check_for_updates, R.string.check_for_updates_summary) {
+        UpdateSetting(it)
     },
     Setting(context, SettingsWithoutKey.LICENSE, R.string.license, R.string.gnu_gpl) {
         val ctx = LocalContext.current
@@ -185,6 +198,122 @@ fun createAboutSettings(context: Context) = listOf(
         )
     },
 )
+
+@Composable
+private fun UpdateSetting(setting: Setting) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var checking by remember { mutableStateOf(false) }
+    var downloading by remember { mutableStateOf(false) }
+    var progress by remember { mutableIntStateOf(0) }
+    var release by remember { mutableStateOf<GithubRelease?>(null) }
+    var stagedApk by remember { mutableStateOf<java.io.File?>(null) }
+    var showDialog by remember { mutableStateOf(false) }
+    var status by remember { mutableStateOf<String?>(null) }
+
+    fun installStagedUpdate() {
+        val apk = stagedApk ?: return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !context.packageManager.canRequestPackageInstalls()) {
+            status = context.getString(R.string.update_allow_installs)
+            context.startActivity(Intent(AndroidSettings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                Uri.parse("package:${context.packageName}")))
+            return
+        }
+        try {
+            GithubReleaseUpdater.install(context, apk)
+        } catch (e: Exception) {
+            status = e.message ?: context.getString(R.string.update_failed)
+        }
+    }
+
+    fun checkForUpdate() {
+        if (checking || downloading) return
+        scope.launch {
+            checking = true
+            status = context.getString(R.string.checking_for_updates)
+            try {
+                val found = GithubReleaseUpdater.findUpdate()
+                if (found == null) {
+                    status = context.getString(R.string.up_to_date, BuildConfig.VERSION_NAME)
+                    Toast.makeText(context, status, Toast.LENGTH_LONG).show()
+                } else {
+                    release = found
+                    showDialog = true
+                    status = context.getString(R.string.update_available, found.versionName)
+                }
+            } catch (e: Exception) {
+                status = e.message ?: context.getString(R.string.update_failed)
+                Toast.makeText(context, status, Toast.LENGTH_LONG).show()
+            } finally {
+                checking = false
+            }
+        }
+    }
+
+    fun downloadUpdate() {
+        val latest = release ?: return
+        if (downloading) return
+        scope.launch {
+            downloading = true
+            progress = 0
+            status = context.getString(R.string.downloading_update, 0)
+            try {
+                stagedApk = GithubReleaseUpdater.download(context, latest) { percent ->
+                    progress = percent
+                    status = context.getString(R.string.downloading_update, percent)
+                }
+                status = context.getString(R.string.update_downloaded, latest.versionName)
+            } catch (e: Exception) {
+                status = e.message ?: context.getString(R.string.update_failed)
+                Toast.makeText(context, status, Toast.LENGTH_LONG).show()
+            } finally {
+                downloading = false
+            }
+        }
+    }
+
+    Preference(
+        name = setting.title,
+        description = status ?: setting.description,
+        onClick = { if (stagedApk != null) installStagedUpdate() else checkForUpdate() },
+        icon = R.drawable.ic_settings_about_version,
+    )
+
+    val latest = release
+    if (showDialog && latest != null) {
+        val sizeMb = String.format(Locale.ROOT, "%.1f MB", latest.sizeBytes / (1024f * 1024f))
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { if (!downloading) showDialog = false },
+            title = { Text(stringResource(R.string.update_available, latest.versionName)) },
+            text = {
+                Text(buildString {
+                    append(context.getString(R.string.update_download_size, sizeMb))
+                    val notes = latest.notes.take(1200)
+                    if (notes.isNotBlank()) append("\n\n").append(notes)
+                    if (downloading) append("\n\n").append(context.getString(R.string.downloading_update, progress))
+                    if (stagedApk != null) append("\n\n").append(context.getString(R.string.update_allow_installs))
+                })
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !downloading,
+                    onClick = { if (stagedApk != null) installStagedUpdate() else downloadUpdate() },
+                ) {
+                    Text(when {
+                        downloading -> context.getString(R.string.downloading_update, progress)
+                        stagedApk != null -> context.getString(R.string.install_update)
+                        else -> context.getString(R.string.download_update)
+                    })
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDialog = false }, enabled = !downloading) {
+                    Text(stringResource(R.string.dialog_close))
+                }
+            },
+        )
+    }
+}
 
 @Preview
 @Composable
