@@ -57,6 +57,7 @@ import helium314.keyboard.latin.voice.VoiceText;
 import helium314.keyboard.latin.settings.SettingsSubtype;
 import helium314.keyboard.latin.settings.SettingsValues;
 import helium314.keyboard.latin.suggestions.PunctuationSuggestions;
+import helium314.keyboard.latin.suggestions.Suggest;
 import helium314.keyboard.latin.suggestions.SuggestedWords;
 import helium314.keyboard.latin.suggestions.SuggestedWordInfo;
 import helium314.keyboard.latin.suggestions.SuggestionStripView;
