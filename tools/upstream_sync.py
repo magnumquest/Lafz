@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
-"""Tracks which HeliBoard (upstream) commits have been looked at, so only new ones are reviewed.
+"""Tracks which HeliBoard (upstream) commits have been reviewed.
 
   tools/upstream_sync.py new                       fetch upstream, list commits not yet reviewed (oldest first)
   tools/upstream_sync.py mark ignored SHA... -m "why"   record a decision (ignored | merged | later); SHA may be a range A..B
   tools/upstream_sync.py log                       show the ledger
 
-A commit counts as handled when it is reachable from our main (merged), was cherry-picked with -x ("cherry picked from commit SHA"),
-or has a line in docs/upstream-sync.tsv. Everything else in upstream/main is "new". The ledger is committed, so every machine agrees.
+Commits marked "later" stay visible in `new` until their decision is changed to "merged" or "ignored".
+Exact cherry-picks with `-x` and commits already reachable from Lafz main are detected automatically.
+The ledger is committed, so every machine agrees.
 """
-import argparse, datetime, os, subprocess, sys
+import argparse, os, re, subprocess, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LEDGER = os.path.join(ROOT, "docs", "upstream-sync.tsv")
@@ -36,46 +37,59 @@ def ledger():
 
 def cherry_picked():
     out = git("log", "main", "--grep=cherry picked from commit", "--format=%B")
-    return {l.split("commit ")[1].strip(" )") for l in out.splitlines() if "cherry picked from commit" in l}
+    return {m.group(1) for m in re.finditer(r"cherry picked from commit ([0-9a-f]{7,40})", out, re.I)}
 
 
 def new_commits():
     done = ledger()
     picked = cherry_picked()
     shas = git("rev-list", "--reverse", "--no-merges", f"main..{UPSTREAM}").split()
-    return [s for s in shas if s not in done and s not in picked]
+    return [(s, done.get(s)) for s in shas if s not in picked and (s not in done or done[s][2] == "later")]
 
 
 def cmd_new(_):
     git("fetch", "upstream", "--no-tags")
-    new = new_commits()
-    if not new:
+    pending = new_commits()
+    if not pending:
         print("No new upstream commits. Nothing to review.")
         return
-    print(f"{len(new)} new upstream commit(s) to review (oldest first):")
-    for s in new:
-        print(git("log", "-1", "--format=%h  %ad  %an  %s", "--date=short", s))
+    deferred = sum(1 for _, row in pending if row and row[2] == "later")
+    fresh = len(pending) - deferred
+    print(f"{fresh} new and {deferred} deferred upstream commit(s) to review (oldest first):")
+    for s, row in pending:
+        label = "LATER" if row else "NEW"
+        print(f"[{label}] " + git("log", "-1", "--format=%h  %ad  %an  %s", "--date=short", s))
 
 
 def cmd_mark(a):
     shas = []
     for r in a.shas:
-        shas += git("rev-list", "--reverse", r).split() if ".." in r else [git("rev-parse", r)]
+        shas += git("rev-list", "--reverse", "--no-merges", r).split() if ".." in r else [git("rev-parse", r)]
     rows = ledger()
-    new_file = not os.path.exists(LEDGER)
-    with open(LEDGER, "a", encoding="utf-8") as f:
-        if new_file:
-            f.write(HEADER)
-        for s in shas:
-            if s in rows:
-                continue
-            subj, date = git("log", "-1", "--format=%s%x09%ad", "--date=short", s).split("\t")
-            f.write(f"{s}\t{date}\t{a.decision}\t{subj}\t{a.m or ''}\n")
+    for s in shas:
+        subj, date = git("log", "-1", "--format=%s%x09%ad", "--date=short", s).split("\t")
+        previous = rows.get(s)
+        if previous:
+            previous_decision = previous[2]
+            previous[2] = a.decision
+            previous[4] = a.m or ""
+            print(f"{previous_decision} -> {a.decision}: {s[:8]} {subj}")
+        else:
+            rows[s] = [s, date, a.decision, subj, a.m or ""]
             print(f"{a.decision}: {s[:8]} {subj}")
+    with open(LEDGER, "w", encoding="utf-8") as f:
+        f.write(HEADER)
+        for row in rows.values():
+            f.write("\t".join(part.replace("\t", " ").replace("\n", " ") for part in row[:5]) + "\n")
 
 
 def cmd_log(_):
-    print(open(LEDGER, encoding="utf-8").read() if os.path.exists(LEDGER) else "(empty ledger)")
+    rows = ledger()
+    if not rows:
+        print("(empty ledger)")
+        return
+    for row in rows.values():
+        print("\t".join(row))
 
 
 p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)

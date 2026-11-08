@@ -1,33 +1,17 @@
 ---
 name: Feature request
-about: Suggest an idea for this project
+about: Suggest an improvement to Lafz
 labels: enhancement
 ---
 
-Please see the appropriate readme section for issue reporting guidelines: https://github.com/HeliBorg/HeliBoard?tab=readme-ov-file#reporting-issues
-tl;dr:
-* search for duplicates, also in closed issues
-* check FAQ / hidden features
-* a single issue per topic
-* ONLY add screenshots when necessary, and reduce their size
-* write it yourself
+## What would you like to do?
 
-<!--
-issue template below, please remove above text before submitting (and the template too if you think it's a good idea)
-Please choose a meaningful title for your issue
--->
+Describe the task or problem you want Lafz to help with.
 
-<!-- Please check FAQ and hidden features whether what you want is already implemented -->
+## Suggested improvement
 
-**Is your feature request related to a problem? Please describe.**
+Describe what you would like Lafz to do.
 
-**Describe the solution you'd like**
-Please provide a description of what you would like to have. The clearer it is described, the better it can be implemented the way you want it.
+## Additional context
 
-**Use case**
-Provide a clear and concise description of *your use case* and what you thus think is missing, and why.
-
-**Describe alternatives you've considered (if any)**
-
-**App version**
-Please provide the explicit version, you're using.
+Add examples or screenshots if they help explain the request.

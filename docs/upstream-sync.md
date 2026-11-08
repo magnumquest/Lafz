@@ -1,20 +1,18 @@
-# Repository layout and sync workflow
+# Repository and release workflow
 
-Single working copy: `~/python-projects/lafz`. Forge is the source of truth.
+Forge is the source of truth for Lafz. The remotes have distinct roles:
 
 | Remote | Purpose | Push |
 |---|---|---|
-| `origin` | forge `thomas/lafz` (ssh, port 2222) | yes: plain `git push` / `git push origin vX.Y.Z` |
-| `github` | `magnumquest/lafz` public mirror, releases only | disabled; use `tools/publish_github.py vX.Y.Z` |
+| `origin` | primary Lafz repository on Forge | yes: push Lafz branches and individual tags |
+| `github` | `magnumquest/lafz` public mirror | use `tools/publish_github.py vX.Y.Z` |
 | `upstream` | HeliBoard, read only | disabled |
 
-Commit identity in this repo: `Magnum Quest <139659490+magnumquest@users.noreply.github.com>` (local config), so the same commits can go to both remotes.
-Never `git push --tags` (it would push HeliBoard's tags); push your own tag by name.
+Do not push tags to HeliBoard. Push Lafz release tags by name; never use `git push --tags`.
 
 ## Releasing
-1. Release on forge (`git push origin main vX.Y.Z`, `tools/forge-release.py`).
-2. When it should go public: `tools/publish_github.py vX.Y.Z` (shows what changes, asks to confirm).
+1. Push the approved Lafz commit and version tag to Forge, build the signed APK with `tools/build-release.sh`, and create the Forge release with `tools/forge-release.py vX.Y.Z`.
+2. To publish the same commit and tag to GitHub, run `tools/publish_github.py vX.Y.Z`; confirm the displayed changes before publishing. Create the GitHub release and attach the APK so in-app update checks can find it.
 
 ## Taking HeliBoard changes
-Ask Claude: `/upstream-review` (or "check new upstream commits"). `tools/upstream_sync.py new` lists only commits not yet reviewed;
-decisions (merged / ignored / later) are stored in `docs/upstream-sync.tsv`, so they are never shown again. Baseline: everything up to `e97acdbe` is already in main.
+Follow [the upstream review and integration workflow](upstream-workflow.md). `tools/upstream_sync.py new` fetches HeliBoard and lists commits that are new or deferred; it does not change Lafz code. Decisions are recorded in `docs/upstream-sync.tsv`. HeliBoard remains read-only, and the “behind” count on GitHub is not a measure of Lafz review coverage.

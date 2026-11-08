@@ -1,13 +1,10 @@
 ---
-description: Review new HeliBoard (upstream) commits, merge the useful ones, mark the rest as ignored
+description: Review new HeliBoard commits for possible Lafz integration
 ---
-Review new upstream HeliBoard commits for Lafz. Do not push anything.
+Review pending HeliBoard commits for Lafz using `docs/upstream-workflow.md`.
 
-1. Run `python3 tools/upstream_sync.py new`. If it says nothing is new, say so and stop.
-2. For each new commit (`git show <sha>`), judge it against Lafz: our changes live in `latin/urdu/`, `Suggest.kt`, `InputLogic.kt`, settings, layouts, theme/branding, the voice and swipe code (see CLAUDE.md).
-   * Useful = bug fix or feature that helps Lafz and does not touch or break our code paths. Skip translations-only, release chores, upstream CI/docs, features we removed or replaced.
-   * Check overlap: `git diff --name-only <sha>^ <sha>` against files we changed (`git diff --name-only $(git merge-base main upstream/main) main`).
-3. Give me a table: sha, subject, verdict (merge / ignore / later), one-line reason. Wait for my OK unless I already said to go ahead.
-4. Merge approved ones with `git cherry-pick -x <sha>` (resolve conflicts, keep our behaviour), build/test what is affordable (`./gradlew testDebugUnitTest`), commit on main.
-5. Record every reviewed commit: `python3 tools/upstream_sync.py mark merged|ignored|later <sha...> -m "reason"`, then commit `docs/upstream-sync.tsv`.
-Reviewed commits are never listed again. Only `later` is meant to be revisited (`tools/upstream_sync.py log`).
+1. Run `tools/upstream_sync.py new` and inspect each new or deferred commit and its context without modifying the working tree.
+2. Prepare a concise summary, an adopt/skip/defer recommendation for each commit, and a proposed integration and verification plan.
+3. Review the plan with the maintainer before changing code.
+4. If integration is approved, work from the latest Forge `main` on an isolated branch. Preserve Lafz-specific behavior, verify the affected features, then record decisions using `tools/upstream_sync.py mark`.
+5. Do not push to the HeliBoard remote. Follow the repository's release and mirror workflow for any publishing.

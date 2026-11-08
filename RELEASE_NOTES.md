@@ -14,7 +14,7 @@
 - **Plain "Allah" is back in the suggestions.** Typing Allah used to show only "Allah Subhanahu Wa Ta'ala". Now the plain word is offered next to its honorific forms, and long honorifics no longer push every other suggestion out of the bar.
 
 ## 0.6.3
-- **GIF and sticker search.** Find reactions on GIPHY, preview them, and insert or share them in supported messaging apps.
+- **GIF and sticker search.** Find reactions, preview them, and insert or share them in supported messaging apps.
 - **Redesigned emoji panel.** Rounded Emoji, GIFs and Stickers tabs match the keyboard theme, with a scrollable category bar and clearer selection indicators.
 - **Local media library.** Save reactions for later or import GIF, WebP, PNG and JPEG images. Browse and share saved media offline.
 - **WhatsApp sticker packs.** Create packs from 3–30 local static images, or share animated reactions as GIFs.
@@ -26,23 +26,14 @@
 - **Clipboard suggestions that stay visible.** Suggestions refresh when you copy with the keyboard open, recover the latest copy missed while it was inactive, and are no longer hidden by the toolbar or replaced by a late prediction update. Scroll through extracted details above the keys, or choose “Paste full text”. Normal word suggestions resume when you type.
 - **Better extraction and privacy.** Recognises local and international phone numbers, including Urdu and Arabic digits, alongside the existing bank details and codes. IBAN and card checksums are checked; nearby labels help distinguish phones, accounts and verification codes. Numeric fields filter out incompatible details. Content marked sensitive by its source app is masked in suggestions and excluded from saved history; password fields mask previews too. Extraction runs entirely on the device.
 - **Refreshed toolbar icons.** A consistent set of 34 rounded outline icons for the main and clipboard toolbars, with matching sizes and stroke weights. Icons follow the selected theme colours and respect custom icon choices.
-- **In-place upgrade.** Uses the same package ID and release signing certificate as 0.6.1, with version code 6002. Install the release APK over the existing app to keep your settings and data.
 - **Settings.** Smart clipboard and clipboard suggestions remain optional in Settings → Text correction. Clipboard history, retention and pinned ordering remain in Settings → Preferences.
 
 ## 0.6.1
-- **UI / Design fixes.** The keyboard now follows Gboard's look and measurements, in dp and sp, so it scales with the system display size and font size like Gboard does.
-  - Key height, row spacing, key gaps, letter size and the space bar text match Gboard. The number row is an extra row on top: the other rows keep their size instead of being squeezed.
-  - Gboard's key structure: flat keys, rounded-rectangle shift, delete, comma and period keys, round `?123` and enter keys.
-  - Colours follow the system (Material You) on Android 12 and newer. Settings you changed yourself (theme, height, gaps, font size) are kept.
+- **Keyboard appearance.** Refined key shapes, spacing and sizing. The keyboard follows system display and font sizes, uses system colors on Android 12 and newer, and keeps your custom appearance settings.
 
 ## 0.6.0
-- **Offline voice typing (experimental, off by default).** Settings → Voice typing → "Dictate with the microphone key". Tap the microphone key in the toolbar, speak, tap it again: the text is typed at the cursor. Urdu, Arabic and English, chosen by the keyboard language you are using. Everything runs on the phone; the audio never leaves it.
-  - The speech models are large and are not part of the app: copy them to the phone and pick the folder in the same Settings screen (Urdu: Whisper small 190 MB, English: Whisper base.en 60 MB, Arabic: Omnilingual 300M 350 MB).
-  - Only the model for the current keyboard language is loaded, it stays loaded while you type, it is swapped when you change the language and freed when you switch dictation off. With the switch off nothing is loaded and no microphone permission is used.
-  - Runs in its own process, so it never slows down typing. The microphone permission is asked for when you switch dictation on.
-  - Measured on a Nothing phone (8 cores): English and Arabic transcribe about 5 times faster than real time, Urdu about 1.3 times faster. Urdu word error rate about 25 % on clean read speech. Details: `docs/research/voice-typing.md`.
-- Settings → Voice typing also has a speed test (quick and full) with the result saved as a text file.
-- If dictation is off, the toolbar microphone key behaves as before (hands over to an installed voice keyboard such as FUTO Voice Input).
+- **Offline voice typing (experimental, off by default).** Add a speech model in Settings → Voice typing, then use the microphone key to dictate in English, Urdu or Arabic. Recognition runs on your device.
+- Voice typing settings include a speed test for imported models. Dictation can be switched off at any time.
 
 ## 0.5.0
 - **Learns from your typing (Roman Urdu and Roman Arabic), on the device only.** Lafz remembers the words you commit, which word follows which and the spellings you use, and ranks suggestions accordingly.
@@ -54,11 +45,9 @@
 - **Contacts in Roman Urdu and Roman Arabic.** With "Use contacts" on, names from your contacts appear as suggestions while you type in the Urdu and Arabic layouts (never auto-committed).
 - **Settings switch for the religious honorific suggestions.**
 - **Key size and spacing:** slightly taller rows, more room between keys and no tiny hint characters on the keys. These are the defaults for new installs; settings you changed yourself stay as they are.
-- Voice typing research is in `docs/research/voice-typing.md` (nothing ships yet; the toolbar voice key still hands over to an installed voice keyboard such as FUTO Voice Input).
 
 ## 0.4.3
-- Swipe typing off now means off: nothing swipe-related is loaded (no native swipe library, no model copy, no diagnostics), and turning it off releases the engines and word lists that were already in memory.
-- Version bump only otherwise; swipe behaviour is unchanged from 0.4.2.
+- Improved swipe typing controls and resource handling when swipe typing is disabled.
 
 ## 0.4.2
 - Fixed the keyboard vanishing while swiping on arm64 phones (a native crash in the old gesture path), words dropped from fast swipes, and the slow first swipe (engines now load in the background).

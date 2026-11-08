@@ -1,3 +1,11 @@
-Please make sure you are at least reasonably close to the contribution guidelines, especially regarding LLM use: https://github.com/HeliBorg/HeliBoard/blob/main/CONTRIBUTING.md#guidelines
-Due to maintainer availability, your PR may take quite some time to be addressed. This especially applies to large PRs.
-<!-- (please remove the text above before submitting the PR) -->
+## Summary
+
+Describe the change and the user-visible effect.
+
+## Verification
+
+List the build, tests, or device checks you performed.
+
+## Screenshots
+
+Add screenshots when they help explain a visual change.

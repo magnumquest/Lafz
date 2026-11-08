@@ -5,138 +5,44 @@
 <h1 align="center">Lafz &nbsp;·&nbsp; لفظ</h1>
 
 <p align="center">
-  <b>An offline Android keyboard that turns Roman Urdu and Roman Arabic into native script as you type.</b><br>
-  Type <code>mein kal aonga</code>, get <span dir="rtl">میں کل آؤں گا</span>.
+  <b>A multilingual Android keyboard for English, Urdu and Arabic.</b><br>
+  Type Urdu or Arabic in Latin letters and see it in native script as you type.<br>
+  <code>mein kal aonga</code> → <span dir="rtl">میں کل آؤں گا</span>
 </p>
 
-<p align="center"><b>Latest: version 0.6.3.</b> Optional GIF and sticker search, a local media library, WhatsApp sticker packs and a redesigned emoji panel. Includes offline voice typing for Urdu, Arabic and English. See the <a href="RELEASE_NOTES.md">release notes</a>.</p>
+<p align="center"><a href="https://github.com/magnumquest/Lafz/releases/latest"><b>Download Lafz for Android</b></a> · <a href="RELEASE_NOTES.md">What's new</a> · Latest version: <b>0.6.6</b></p>
 
 ---
 
-## What it does
+## Type naturally in Urdu and Arabic
 
-Lafz is a fork of [HeliBoard](https://github.com/Helium314/HeliBoard) with built-in **abc → اردو** and **abc → عربي** transliteration engines.
-You type the way you text, in Latin letters. The text field shows the native script **while you type** (like Gboard), the best
-word replaces it as the decoder settles, and space commits what you see. The suggestion strip offers alternatives.
+Use the English letter layout to type Roman Urdu or Roman Arabic. Lafz shows native-script suggestions as you type, with word suggestions and next-word predictions to help you continue. Switch to English or another installed keyboard language whenever you need it.
 
-- **Live transliteration (Urdu and Arabic).** Typing `kiya` shows کیا immediately, then the model's best word. Words the model
-  doesn't know stay in Roman letters, so English words still work. Turn it off in Settings → Text correction ("Live transliteration while typing").
-- **Arabic (abc → عربي).** Trained on Qur'an and Hadith text plus real Arabizi chat (digits like `3 7 5 9` work as letters).
-  `innama alamalu binniyyat` → إنما الأعمال بالنيات. Prefixes like و ف ب ل ال join the next word automatically.
-- **Native numerals and punctuation** on the symbol page: Arabic-Indic digits ٠١٢٣ with ، ؛ ؟ for Arabic, Urdu digits ۰۱۲۳ with ۔ ، ؟ for Urdu.
-  (Number/phone fields still show Western digits.)
-- **Swipe typing, offline.** Glide across the letters in English, Roman Urdu or Roman Arabic. Decoding uses [FUTO Swipe](https://github.com/futo-org/swipe-library)
-  on the device. Settings → Gesture typing lets you pick the engine, and has a diagnostics page to share if swiping misbehaves.
-  With swipe typing switched off, none of its engines or word lists are loaded, and anything loaded earlier is released.
-- **Learns from you, on the device.** Roman Urdu and Roman Arabic remember the words you commit, which word follows which, and the spellings you
-  use. Only the final word you commit (space, punctuation or tapping a suggestion) counts, never keystrokes, and a backspace right after an auto-commit
-  takes it back. Nothing is learned in password fields or incognito. Turn it off or clear it in Settings → Text correction.
-- **Smart clipboard.** Open the toolbar arrow → clipboard icon for a scrollable screen with pinned clips, detected details and recent history. Phone numbers, IBANs, bank accounts, cards, verification codes, emails and links are listed separately; tap to paste a detail, hold to pin it, or swipe a recent clip left to delete it.
-  Recently copied details also appear in scrollable chips above the keyboard, with a full-text paste option. Smart clipboard and clipboard suggestions can be switched off in Settings → Text correction; history and retention are in Settings → Preferences. An option keeps copied codes out of history.
-- **Contacts.** With "Use contacts" on, names from your contacts are suggested in the Roman Urdu and Roman Arabic layouts too.
-- **Back up what Lafz learned.** Export and import learned words in Settings → Text correction; they are also part of the full backup.
-- **Fast typing.** Suggestions are computed off the UI thread, so keys never wait for the decoder.
-- **Contextual emoji suggestions.** Bundled keywords suggest relevant emoji in English, Urdu, and Arabic, including Roman Urdu and Roman Arabic input. Suggestions work offline.
+- **Urdu and Arabic transliteration:** type the way you pronounce words; Lafz offers matching native-script words and phrases.
+- **Roman Urdu suggestions on English:** get Urdu suggestions while using the English layout.
+- **Personalized suggestions:** Lafz can learn words and phrases you commit, on your device. You can turn learning off or clear learned words in Settings.
+- **Scientific and technical vocabulary:** additional English and Urdu medical, biological, engineering and physics terms appear as you type, while everyday suggestions stay prominent.
+- **Swipe typing:** glide across letters in English, Roman Urdu or Roman Arabic.
+- **Voice typing:** optional and off by default. Import a speech model in Settings to dictate English, Urdu or Arabic. Recognition runs on your device.
+- **Smart clipboard:** review recent clips, pin useful items and paste detected details such as phone numbers, email addresses and links. Clipboard features can be adjusted in Settings.
+- **Emoji suggestions:** find relevant emoji while typing in English, Urdu or Arabic.
+- **GIFs and stickers:** optional search and sharing tools, disabled by default. Search requires an internet connection and is started only when you use the media browser.
+- **Themes and layouts:** customize the keyboard's appearance, languages, key layout, sound and vibration.
 
-- **Not a fixed phonetic map.** Spelling is free: `kal`, `kl`, `kaal` all find کل. The engine scores dictionary words
-  against what you typed, using a language model plus a learned model of how people romanize Urdu.
-- **Dictionary-only output.** Every suggestion is a real Urdu word, so gibberish gives nothing instead of nonsense.
-- **Whole phrases.** `aonga` → آؤں گا / آؤں گی, `karunga` → کروں گا, and about 1,200 more future-tense verb phrases.
-- **English loanwords.** `computer` → کمپیوٹر, `message` → میسج, `laptop` → لیپ ٹاپ.
-- **Next-word prediction** and prefix completion while you type.
-- **Native punctuation.** `.` `?` `,` become `۔` `؟` `،`.
-- **Islamic honorifics and terms**, in English, Roman-Urdu and Urdu: `Umar` → Umar Radiallahu Anhu, `Rasul` → Rasulullah ﷺ,
-  bismillah, inshallah, jazakallah and more. (The list in `app/src/main/assets/honorifics/honorifics.tsv` is waiting for review by someone with religious knowledge.)
-- **English typing is unchanged**, and you can switch languages like any other keyboard.
-- **Offline typing.** Typing, suggestions, voice models and emoji work offline. Optional GIF/sticker search uses the internet only when you open media; it is disabled by default.
-- A Gboard-style look (rounded keys, light and dark themes).
-- A redesigned Settings screen groups options by task and makes commonly used settings easier to find.
+## Privacy
 
-## GIFs and stickers
-
-Enable **Settings → Emoji, GIFs & stickers → Enable GIFs & stickers**, then open the emoji keyboard and choose GIFs or Stickers from the rounded media tabs. The panel uses the keyboard’s colors, with a scrollable row of emoji categories below. This private build bundles the GIPHY key from the root `.env` entry `GIFFY_KEY=...`, so recipients do not need an account or key entry. Disable **Use GIPHY API with web fallback** to use keyless public-page search; this also acts as a fallback when API requests fail. Keyless search shows the website’s initial batch of results, so refine the query for more. `.env` is ignored by Git and is not copied into APK assets. On the Pakistan-connected emulator, GIF and sticker search, previews and full downloads passed using both the bundled API key and the keyless web path.
-
-Tap a result to preview, then insert into a compatible editor or choose Share and pick WhatsApp. Local accepts imported GIF/WebP/PNG/JPEG files and works offline. To make a native WhatsApp sticker pack, import 3–30 static images and choose **Add local stickers to WhatsApp**. Online animated stickers are delivered as GIF reactions; animated native sticker packs are not yet supported.
-
-The browser opens as a separate screen so searches use the normal keyboard. It makes no requests during ordinary typing, does not send conversation text, and uses bounded downloads and static grid previews. Transfers older than 24 hours are cleaned on the next download; clear them in settings after the receiving app finishes reading. Local media is kept until removed. [Design, sources and validation](docs/media-plan.md).
-
-## How accurate is it?
-
-Urdu, on held-out romanized sentences from Google's Dakshina dataset: **89.6 % top-1** and **93.4 % top-3**,
-at about 1 ms per word on a desktop (Arabic about 1.6 ms). Those sentences are Wikipedia-style text, so casual chat will score lower.
-It's a work in progress.
+Keyboard input, transliteration, suggestions and personal word learning stay on your device. Lafz does not upload text from the app where you are typing. Voice recognition runs on the device. Optional GIF and sticker searches send the search query to the media service when you search. Update checks run only when you choose **Settings → About → Check for updates**.
 
 ## Install
 
-1. Download the latest `Lafz_*-release.apk` from [**Releases**](../../releases/latest) and open it on your phone
-   (allow "install unknown apps" if asked).
+1. Download the latest APK from [Lafz Releases](https://github.com/magnumquest/Lafz/releases/latest) and open it on your Android device. Android may ask you to allow installs from your browser or file manager.
 2. Open Lafz and follow the prompts to enable it and select it as your keyboard.
-3. Go to **Settings → Languages & layouts**, add **Urdu (abc → اردو)** and/or **Arabic (abc → عربي)**, and start typing.
+3. In **Settings → Languages & layouts**, add Urdu (**abc → اردو**) or Arabic (**abc → عربي**), then switch to that layout when typing.
 
-Requires Android 5.0 (API 21) or newer.
+Lafz supports Android 5.0 (API 21) and newer. To update an installed release, use **Settings → About → Check for updates** or download the APK from Releases.
 
-## How it works
+## Open source
 
-The method follows Google's paper on [transliterated mobile keyboard input with weighted finite-state transducers](https://research.google/pubs/transliterated-mobile-keyboard-input-via-weighted-finite-state-transducers/)
-(Hellsten et al., 2017), using a small custom decoder instead of OpenFst:
+Lafz is free software under the [GNU General Public License v3.0](LICENSE). It builds on [HeliBoard](https://github.com/Helium314/HeliBoard) and the Android Open Source Project keyboard. Swipe typing uses [FUTO Swipe](https://github.com/futo-org/swipe-library). See the repository's license and attribution files for details.
 
-```
-score(word) = ln P(word | previous word)  +  1.4 · ln P(roman | word)
-```
-
-- `P(roman | word)` is a character-alignment channel model learned by EM from human-written romanizations.
-- Urdu: unigram plus pruned bigram over 8.8M tokens of Urdu Wikipedia (60k words), a 3.5 MB asset.
-- A native-script Urdu dictionary is bundled for the dictionary system; it does not replace the Roman Urdu model. Its provenance and license are documented in [`docs/dictionaries/`](docs/dictionaries/README.md).
-- Arabic: unigram, bigram and trigram model over Qur'an, Hadith and web text (400k words, about 2.7B tokens counted), a 37 MB asset.
-  It can also glue up to three words together, so `wakitab` finds و كتاب.
-- Everything runs on the device.
-
-The engine is pure Java: `app/src/main/java/helium314/keyboard/latin/urdu/RomanTransliterator.java`.
-The data pipelines and evaluation tools are in [`tools/urdu/`](tools/urdu/README.md) and [`tools/arabic/`](tools/arabic/README.md).
-
-## Build from source
-
-You need JDK 17+ and the Android SDK (with NDK).
-
-```bash
-./gradlew assembleDebug                                   # debug APK
-./gradlew testDebugUnitTest --tests '*RomanTransliteratorTest*'   # engine tests
-tools/build-release.sh                                    # signed release APK in dist/
-```
-
-`tools/build-release.sh` creates a signing key at `~/.android/lafz-release.jks` on first run.
-Back that key up and never commit it: updates must be signed with the same key.
-
-## Roadmap
-
-- [x] Offline swipe typing (FUTO Swipe) for English, Roman Urdu and Roman Arabic (0.4.x)
-- [x] Swipe engines fully unloaded when swipe typing is off (0.4.3)
-- [ ] Swipe quality: double-letter words (`hello`), less common Arabic words, a user-dictionary trie
-- [x] Learning from your typing (words, word pairs, spellings) for Urdu and Arabic, on the device only
-- [ ] Better casual-chat accuracy through conversational training data
-- [ ] More verb forms (past, continuous, imperative) and slang
-- [ ] Native digits in number/phone fields
-- [x] Settings toggle for the honorific suggestions
-- [x] Smart clipboard (codes and numbers as chips), contacts in Roman Urdu/Arabic, backup of learned words (0.5.0)
-- [x] Offline voice typing, Urdu/Arabic/English, off by default, models side-loaded (0.6.0)
-- [x] Keyboard sizing, key shapes and Material You colours (0.6.1)
-- [x] Scrollable clipboard screen with separate detected details, pinned clips and recent history; phone, email and link extraction (0.6.2)
-- [x] Reliable clipboard suggestions, individual-detail pinning and consistent rounded toolbar icons (0.6.2)
-- [x] Offline on-device learning for every language with backup and restore (0.5.0): Roman Urdu and Roman Arabic use Lafz's own learning model (export/import file, plus part of the full backup); all other languages learn through the user history dictionary, which the full backup also covers
-- [x] Offline voice model speed and accuracy benchmarks (`docs/research/voice-typing.md`)
-- [ ] Voice typing: improve Urdu accuracy on everyday speech and test noisy recordings
-- [ ] Clipboard history search and filters
-- [x] Optional GIF/sticker browser, local media library and static WhatsApp sticker packs ([setup and limitations](docs/media-plan.md))
-
-## License and credits
-
-Lafz is licensed under the **GNU GPL v3.0**, like HeliBoard. See [LICENSE](LICENSE); the Apache 2.0 and CC BY-SA 4.0 notices for AOSP and the icon are in
-[LICENSE-Apache-2.0](LICENSE-Apache-2.0) and [LICENSE-CC-BY-SA-4.0](LICENSE-CC-BY-SA-4.0).
-
-- Swipe decoding uses [FUTO Swipe](https://github.com/futo-org/swipe-library) (powered by FUTO Swipe), build recipe in [`tools/futo-swipe/`](tools/futo-swipe/README.md).
-  Google's proprietary gesture library is deliberately not bundled.
-- Built on [HeliBoard](https://github.com/Helium314/HeliBoard), itself based on OpenBoard and the Android Open Source Project keyboard. Thanks to their authors.
-- The transliteration model is trained on the [Dakshina dataset](https://github.com/google-research-datasets/dakshina) (Google, CC BY-SA 4.0).
-  The model file `urdu_translit.bin` is derived from it and carries the same license.
-- The Arabic model is derived from Qur'an, Hadith and web-corpus text (see [`tools/arabic/README.md`](tools/arabic/README.md) for sources).
-  The Arabic honorific column needs review by someone with religious knowledge.
+For help or to report a problem, use the repository's Issues page. Developers can start with [CONTRIBUTING.md](CONTRIBUTING.md).
