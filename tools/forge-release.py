@@ -2,7 +2,7 @@
 """Creates the Forgejo releases for Lafz: one per tag v0.x.y, with the notes from RELEASE_NOTES.md and the APK from dist/.
 
 A Forgejo "release" is a tag plus a title, a text and attached files. Pushing a tag alone only shows it under "Tags".
-The repository is thomas/Lafz on https://git.qnap.haizum.net (its certificate is self-signed: it is fetched once and pinned, see PIN below).
+The source host and repository are read from the local origin remote, not hard-coded in public source.
 
   tools/forge-release.py --dry-run            show what would be created, no token needed
   tools/forge-release.py                      create the missing releases and upload the missing APKs (safe to repeat)
@@ -12,11 +12,16 @@ A one-time token can be supplied through LAFZ_FORGE_TOKEN without saving it to d
 Token: Forgejo > Settings > Applications > "Generate new token", scope "write:repository" (and "read:user"), saved as the single line of
   ~/.config/lafz-forge-token      (chmod 600; never commit it, never put it on a command line)
 """
-import argparse, hashlib, json, mimetypes, os, re, ssl, subprocess, sys, urllib.error, urllib.request, uuid
+import argparse, hashlib, json, mimetypes, os, re, ssl, subprocess, sys, urllib.error, urllib.parse, urllib.request, uuid
 
-BASE = "https://git.qnap.haizum.net"
-REPO = "thomas/Lafz"
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_origin = subprocess.run(["git", "-C", ROOT, "remote", "get-url", "origin"], capture_output=True, text=True, check=True).stdout.strip()
+if "://" not in _origin:
+    _host, _path = _origin.rsplit("@", 1)[-1].split(":", 1)
+    _origin = f"ssh://{_host}/{_path}"
+_source = urllib.parse.urlsplit(_origin)
+BASE = os.environ.get("LAFZ_FORGE_URL", f"https://{_source.hostname}")
+REPO = os.environ.get("LAFZ_FORGE_REPO", _source.path.strip("/").removesuffix(".git"))
 TOKEN_FILE = os.path.expanduser("~/.config/lafz-forge-token")
 PIN = os.path.expanduser("~/.config/lafz-forge.pem")  # the server certificate, trusted for this host only
 
@@ -46,8 +51,8 @@ def sha256(path):
 
 def context():
     if not os.path.exists(PIN):  # first use: fetch and pin the certificate (trust on first use; compare the fingerprint with the forge if in doubt)
-        pem = subprocess.run("echo | openssl s_client -connect git.qnap.haizum.net:443 -servername git.qnap.haizum.net 2>/dev/null | openssl x509 -outform PEM",
-                             shell=True, capture_output=True, text=True, check=True).stdout
+        host = urllib.parse.urlsplit(BASE).hostname
+        pem = ssl.get_server_certificate((host, urllib.parse.urlsplit(BASE).port or 443))
         os.makedirs(os.path.dirname(PIN), exist_ok=True)
         open(PIN, "w").write(pem)
         print("pinned the forge certificate in", PIN)

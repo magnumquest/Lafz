@@ -1,6 +1,6 @@
 # Reviewing and integrating HeliBoard updates
 
-Lafz is maintained as its own project. Forge (`origin`) is the source of truth for Lafz; HeliBoard (`upstream`) is a read-only source of candidate changes. GitHub is a public mirror and its “ahead/behind” count is not the Lafz upstream review status: it compares commit ancestry, which does not reflect selectively ported or adapted changes.
+Lafz is maintained as its own project. The source repository (`origin`) is the source of truth for Lafz; HeliBoard (`upstream`) is a read-only source of candidate changes. GitHub is a public mirror and its “ahead/behind” count is not the Lafz upstream review status: it compares commit ancestry, which does not reflect selectively ported or adapted changes.
 
 ## When to review
 
@@ -45,7 +45,7 @@ The maintainer reviews and approves the plan before integration begins. If imple
 
 ## 3. Integrate on an isolated branch
 
-Start from the latest Forge `main`, not from `upstream/main`:
+Start from the latest `origin/main`, not from `upstream/main`:
 
 ```sh
 git switch main
@@ -57,7 +57,7 @@ For an independent, compatible commit, use `git cherry-pick -x <sha>` so the sou
 
 After each related group, inspect the diff and run the relevant checks. Before merging, build and run the appropriate tests; use the emulator for user-visible keyboard behavior or settings changes. Compare the resulting behavior against the accepted plan. Do not merge if the build, tests, or protected Lafz behavior regress.
 
-When the branch is ready, merge it into `main` locally, then push `main` to Forge. Do not push to the read-only `upstream` remote. Preserve normal release and mirror rules from `docs/upstream-sync.md`.
+When the branch is ready, merge it into `main` locally, then push `main` to the source repository. Do not push to the read-only `upstream` remote. Preserve normal release and mirror rules from `docs/upstream-sync.md`.
 
 ## 4. Record each decision
 
@@ -97,7 +97,7 @@ Commit the updated ledger with the Lafz integration. Do not mark deferred or unr
 | `tools/upstream_sync.py log` | Print the committed review ledger. |
 | `tools/upstream_sync.py mark <decision> <sha>... -m "reason"` | Add or update a decision (`merged`, `ignored` or `later`) for one commit or a reviewed range. |
 | `tools/build-release.sh` | Build the signed production APK; use only for a release, not for ordinary upstream review. |
-| `tools/forge-release.py vX.Y.Z` | Create/upload a versioned release on Forge after its tag and APK are ready. |
-| `tools/publish_github.py vX.Y.Z` | Explicitly mirror the committed Forge `main` and named release tag to GitHub. It does not push to HeliBoard. |
+| `tools/forge-release.py vX.Y.Z` | Create/upload a versioned release on the source repository after its tag and APK are ready. |
+| `tools/publish_github.py vX.Y.Z` | Explicitly mirror the committed source `main` and named release tag to GitHub. It does not push to HeliBoard. |
 
 See [repository and release setup](upstream-sync.md) for remotes and release ordering.

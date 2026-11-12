@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Copies a finished release from the forge (the source of truth) to GitHub magnumquest/lafz. Nothing else ever pushes to GitHub.
+"""Copies a finished release from the source repository to GitHub magnumquest/lafz. Nothing else ever pushes to GitHub.
 
   tools/publish_github.py v0.6.0 [v0.5.0 ...]   push main + those tags (asks first)
   tools/publish_github.py v0.6.0 --force    allow replacing a diverged GitHub main (asks twice)
@@ -29,9 +29,9 @@ if git("rev-parse", "--abbrev-ref", "HEAD") != "main":
 if git("status", "--porcelain", "--untracked-files=no"):
     sys.exit("Uncommitted tracked changes: commit first.")
 git("fetch", "origin", "--no-tags")
-head, forge = git("rev-parse", "main"), git("rev-parse", "origin/main")
-if head != forge:
-    sys.exit("Local main differs from forge main. Push/pull on forge first: forge is the source of truth.")
+head, source = git("rev-parse", "main"), git("rev-parse", "origin/main")
+if head != source:
+    sys.exit("Local main differs from origin/main. Push/pull on origin first: origin is the source of truth.")
 for tag in tags:
     if git("tag", "-l", tag) != tag:
         sys.exit(f"No tag {tag}.")

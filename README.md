@@ -23,7 +23,7 @@ Use the English letter layout to type Roman Urdu or Roman Arabic. Lafz shows nat
 - **Personalized suggestions:** Lafz can learn words and phrases you commit, on your device. You can turn learning off or clear learned words in Settings.
 - **Scientific and technical vocabulary:** additional English and Urdu medical, biological, engineering and physics terms appear as you type, while everyday suggestions stay prominent.
 - **Swipe typing:** glide across letters in English, Roman Urdu or Roman Arabic.
-- **Hold-to-talk voice typing:** hold the microphone to dictate English, Urdu or Arabic, then release to insert your words. Slide up to lock recording for longer text. [Download a voice model](models/README.md) and enable it in Settings → Voice typing. Recognition runs on your device.
+- **Hold-to-talk voice typing:** hold the microphone to dictate English, Urdu or Arabic, then release to insert your words. Slide up to lock recording for longer text. [Download a voice model](https://fromsmash.com/LafzVoiceModels) and enable it in Settings → Voice typing. Recognition runs on your device.
 - **Smart clipboard:** review recent clips, pin useful items and paste detected details such as phone numbers, email addresses and links. Clipboard features can be adjusted in Settings.
 - **Emoji suggestions:** find relevant emoji while typing in English, Urdu or Arabic.
 - **GIFs and stickers:** optional search and sharing tools, disabled by default. Search requires an internet connection and is started only when you use the media browser.
@@ -43,11 +43,17 @@ Lafz supports Android 5.0 (API 21) and newer. To update an installed release, us
 
 ## Set up voice typing
 
-1. Download the [English, Urdu or Arabic voice model pack](models/README.md) and unzip it on your phone.
+1. Download the [English, Urdu or Arabic voice model pack](https://fromsmash.com/LafzVoiceModels) and unzip it on your phone.
 2. In **Settings → Voice typing**, choose the extracted model folder and turn on **Dictate with the microphone key**.
 3. Hold the microphone to speak, then release it to insert text. For longer dictation, slide up while holding to lock recording, then tap the microphone to finish.
 
 Voice typing is optional and off by default. Once the model is installed, it works offline. If you already imported a model, you can keep using it.
+
+Voice models (each ZIP includes its license texts and notices):
+
+- **English:** [OpenAI Whisper base.en](https://huggingface.co/openai/whisper-base.en), GGML q5_1, MIT license.
+- **Urdu:** [Hamza Amin's Whisper Small Urdu v2](https://huggingface.co/hamza-amin/whisper-small-urdu-v2), based on [khawajaaliarshad/whisper-small-urdu](https://huggingface.co/khawajaaliarshad/whisper-small-urdu) and OpenAI Whisper small; GGML q5_1, Apache-2.0 with original Whisper MIT attribution.
+- **Arabic:** [Meta Omnilingual ASR CTC 300M](https://huggingface.co/facebook/omniASR-CTC-300M), ONNX int8, Apache-2.0.
 
 ## Open source
 

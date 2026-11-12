@@ -1,17 +1,17 @@
 # Repository and release workflow
 
-Forge is the source of truth for Lafz. The remotes have distinct roles:
+The source repository is the source of truth for Lafz. The remotes have distinct roles:
 
 | Remote | Purpose | Push |
 |---|---|---|
-| `origin` | primary Lafz repository on Forge | yes: push Lafz branches and individual tags |
+| `origin` | primary Lafz source repository | yes: push Lafz branches and individual tags |
 | `github` | `magnumquest/lafz` public mirror | use `tools/publish_github.py vX.Y.Z` |
 | `upstream` | HeliBoard, read only | disabled |
 
 Do not push tags to HeliBoard. Push Lafz release tags by name; never use `git push --tags`.
 
 ## Releasing
-1. Push the approved Lafz commit and version tag to Forge, build the signed APK with `tools/build-release.sh`, and create the Forge release with `tools/forge-release.py vX.Y.Z`.
+1. Push the approved Lafz commit and version tag to the source repository, build the signed APK with `tools/build-release.sh`, and create the source release with `tools/forge-release.py vX.Y.Z`.
 2. To publish the same commit and tag to GitHub, run `tools/publish_github.py vX.Y.Z`; confirm the displayed changes before publishing. Create the GitHub release and attach the APK so in-app update checks can find it.
 
 ## Taking HeliBoard changes
