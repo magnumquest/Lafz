@@ -8,10 +8,11 @@ The repository is thomas/Lafz on https://git.qnap.haizum.net (its certificate is
   tools/forge-release.py                      create the missing releases and upload the missing APKs (safe to repeat)
   tools/forge-release.py v0.6.0               only that tag
 
+A one-time token can be supplied through LAFZ_FORGE_TOKEN without saving it to disk.
 Token: Forgejo > Settings > Applications > "Generate new token", scope "write:repository" (and "read:user"), saved as the single line of
   ~/.config/lafz-forge-token      (chmod 600; never commit it, never put it on a command line)
 """
-import hashlib, json, os, re, ssl, subprocess, sys, urllib.error, urllib.request, uuid
+import argparse, hashlib, json, mimetypes, os, re, ssl, subprocess, sys, urllib.error, urllib.request, uuid
 
 BASE = "https://git.qnap.haizum.net"
 REPO = "thomas/Lafz"
@@ -56,7 +57,7 @@ def context():
 class Api:
     def __init__(self):
         self.ctx = context()
-        self.token = open(TOKEN_FILE).read().strip()
+        self.token = os.environ.get("LAFZ_FORGE_TOKEN") or open(TOKEN_FILE).read().strip()
 
     def call(self, method, path, body=None, raw=None, ctype=None):
         data = raw if raw is not None else (json.dumps(body).encode() if body is not None else None)
@@ -75,14 +76,23 @@ class Api:
     def upload(self, release_id, path):
         name = os.path.basename(path)
         b = uuid.uuid4().hex
-        head = f'--{b}\r\nContent-Disposition: form-data; name="attachment"; filename="{name}"\r\nContent-Type: application/vnd.android.package-archive\r\n\r\n'.encode()
+        mime = mimetypes.guess_type(name)[0] or "application/octet-stream"
+        head = f'--{b}\r\nContent-Disposition: form-data; name="attachment"; filename="{name}"\r\nContent-Type: {mime}\r\n\r\n'.encode()
         raw = head + open(path, "rb").read() + f"\r\n--{b}--\r\n".encode()
         return self.call("POST", f"/repos/{REPO}/releases/{release_id}/assets?name={name}", raw=raw, ctype=f"multipart/form-data; boundary={b}")
 
 
 def main():
-    args = [a for a in sys.argv[1:] if not a.startswith("--")]
-    dry = "--dry-run" in sys.argv
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("tags", nargs="*")
+    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--asset", action="append", default=[], help="Additional release attachment (repeatable; requires one tag)")
+    options = parser.parse_args()
+    args, dry = options.tags, options.dry_run
+    if options.asset and len(args) != 1:
+        parser.error("--asset requires exactly one release tag")
+    for path in options.asset:
+        if not os.path.isfile(path): parser.error(f"Missing attachment: {path}")
     notes = notes_by_version()
     tags = [t for t in git_tags() if not args or t in args]
     api = None if dry else Api()
@@ -106,13 +116,17 @@ def main():
             print(f"   lookup failed: {status} {rel}"); continue
         else:
             print("   release exists")
-        if has_apk:
-            have = {a["name"] for a in rel.get("assets", [])}
-            if os.path.basename(apk) in have:
-                print("   apk already attached")
+        have = {a["name"] for a in rel.get("assets", [])}
+        for path in ([apk] if has_apk else []) + options.asset:
+            name = os.path.basename(path)
+            if name in have:
+                print(f"   {name} already attached")
             else:
-                status, r = api.upload(rel["id"], apk)
-                print("   apk uploaded" if status == 201 else f"   upload failed: {status} {r}")
+                status, r = api.upload(rel["id"], path)
+                if status != 201:
+                    sys.exit(f"   upload failed: {status} {r}")
+                have.add(name)
+                print(f"   {name} uploaded")
 
 
 if __name__ == "__main__":

@@ -9,7 +9,7 @@ object VoiceProtocol {
     const val MSG_UNLOAD = 9
     /** client -> service; data: [KEY_MODEL_DIR]. Starts the microphone; loads the model if [MSG_LOAD] has not done so yet. */
     const val MSG_START = 1
-    /** client -> service. Stops the microphone and transcribes; answered by [MSG_RESULT] or [MSG_ERROR]. */
+    /** client -> service. Stops the microphone and drains queued phrases; answered by [MSG_RESULT] or [MSG_ERROR]. */
     const val MSG_STOP = 2
     /** client -> service. Drops the recording without a result. */
     const val MSG_CANCEL = 3
@@ -17,16 +17,20 @@ object VoiceProtocol {
     const val MSG_RESULT = 4
     /** service -> client; data: [KEY_ERROR] */
     const val MSG_ERROR = 5
-    /** service -> client: the maximum length was reached, the service continues with transcribing by itself (a [MSG_RESULT] follows) */
+    /** service -> client: capture ended; [KEY_STOP_REASON] distinguishes a requested stop from backlog termination */
     const val MSG_LIMIT = 6
     /** service -> client: the microphone is open */
     const val MSG_LISTENING = 7
+    /** A completed phrase; the microphone continues listening. arg1 identifies the session on every message. */
+    const val MSG_PHRASE = 10
+
+    const val KEY_STOP_REASON = "stop_reason"
+    const val STOP_REQUESTED = 0
+    const val STOP_BACKLOG = 1
 
     const val KEY_MODEL_DIR = "model_dir"
     const val KEY_TEXT = "text"
     const val KEY_ERROR = "error"
 
-    /** Whisper looks at 30 s windows; a longer recording would need chunking */
-    const val MAX_SECONDS = 28
     const val SAMPLE_RATE = 16000
 }

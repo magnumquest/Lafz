@@ -58,6 +58,14 @@ class KeyboardActionListenerImpl(private val latinIME: LatinIME, private val inp
         latinIME.hapticAndAudioFeedback(primaryCode, repeatCount, hapticEvent)
     }
 
+    override fun onVoiceInput(action: KeyboardActionListener.VoiceAction) {
+        if (action == KeyboardActionListener.VoiceAction.PRESS)
+            latinIME.hapticAndAudioFeedback(KeyCode.VOICE_INPUT, 0, HapticEvent.KEY_PRESS)
+        else if (action == KeyboardActionListener.VoiceAction.LOCK)
+            performHapticFeedback(HapticEvent.KEY_LONG_PRESS)
+        latinIME.onVoiceInput(action)
+    }
+
     override fun onLongPressKey(primaryCode: Int) {
         metaOnLongPressKey(primaryCode)
         performHapticFeedback(HapticEvent.KEY_LONG_PRESS)

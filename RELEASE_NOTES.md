@@ -1,5 +1,13 @@
 # Release notes
 
+## 0.7.0
+- **Hold to talk.** Dictate in Urdu, English or Arabic by holding the microphone key. Release it to finish and insert your words.
+- **Hands-free recording.** Slide up while holding the microphone to lock recording for longer text. Tap the microphone again to finish.
+- **A microphone closer to your left thumb.** The microphone sits to the left of the emoji key, leaving the suggestion bar free for words.
+- **Less waiting between recordings.** The voice model for your selected keyboard language stays ready in memory. Cancelling and starting again is more responsive.
+- **Clearer feedback and fewer lost words.** Recording and processing now look different, and completed words are kept if a recording is interrupted by an error.
+- **Voice models are available to download.** Download an English, Urdu or Arabic model pack from this release, unzip it, then choose its folder in Settings → Voice typing and enable dictation. Existing models still work. Speech recognition stays on your device.
+
 ## 0.6.6
 - **More scientific and technical suggestions.** English and Urdu now include additional medical, biological, engineering and physics terms while keeping everyday word suggestions prominent.
 - **Check for updates.** Open Settings → About to check for a newer release, download it and install it.

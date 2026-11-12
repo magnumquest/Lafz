@@ -74,6 +74,11 @@ public final class MainKeyboardView extends KeyboardView implements DrawingProxy
 
     /** Listener for {@link KeyboardActionListener}. */
     private KeyboardActionListener mKeyboardActionListener;
+    private final VoiceKeyGesture mVoiceKeyGesture = new VoiceKeyGesture(
+            48 * getResources().getDisplayMetrics().density, action -> {
+                mKeyboardActionListener.onVoiceInput(action);
+                return kotlin.Unit.INSTANCE;
+            });
 
     /* Space key and its icon and background. */
     private Key mSpaceKey;
@@ -474,6 +479,7 @@ public final class MainKeyboardView extends KeyboardView implements DrawingProxy
 
     @Override
     protected void onDetachedFromWindow() {
+        mVoiceKeyGesture.cancel();
         super.onDetachedFromWindow();
         mDrawingPreviewPlacerView.removeAllViews();
     }
@@ -583,9 +589,15 @@ public final class MainKeyboardView extends KeyboardView implements DrawingProxy
     @SuppressLint("ClickableViewAccessibility")
     @Override
     public boolean onTouchEvent(final MotionEvent event) {
-        if (getKeyboard() == null) {
-            return false;
+        boolean mic = false;
+        if (event.getActionMasked() == MotionEvent.ACTION_DOWN && getKeyboard() != null
+                && Settings.getValues().mDictationKeyEnabled
+                && PointerTracker.getActivePointerTrackerCount() == 0) {
+            final Key hit = mKeyDetector.detectHitKey((int) event.getX(), (int) event.getY());
+            mic = hit != null && hit.getCode() == KeyCode.VOICE_INPUT && hit.isEnabled();
         }
+        if (mVoiceKeyGesture.onTouch(event, mic)) return true;
+        if (getKeyboard() == null) return false;
         if (mNonDistinctMultitouchHelper != null) {
             if (event.getPointerCount() > 1 && mTimerHandler.isInKeyRepeat()) {
                 // Key repeating timer will be canceled if 2 or popup keys are in action.
@@ -613,6 +625,7 @@ public final class MainKeyboardView extends KeyboardView implements DrawingProxy
     }
 
     public void cancelAllOngoingEvents() {
+        mVoiceKeyGesture.cancel();
         mTimerHandler.cancelAllMessages();
         PointerTracker.setReleasedKeyGraphicsToAllKeys();
         mGestureFloatingTextDrawingPreview.dismissGestureFloatingPreviewText();

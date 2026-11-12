@@ -328,6 +328,22 @@ f""", // no newline at the end
         assertIsExpected("""[[{ "label": "emoji" }]]""", Expected(KeyCode.EMOJI, icon = "emoji", background = Key.BACKGROUND_TYPE_FUNCTIONAL))
     }
 
+    @Test fun dictationKeyUsesLeftSpacebarSlotOnlyWhenAllowed() {
+        val json = latinIME.assets.open("layouts/functional/functional_keys.json").bufferedReader().use { it.readText() }
+        val row = LayoutParser.parseJsonString(json).last()
+        fun labels() = row.mapNotNull { it.compute(params)?.label }
+        params.mId = params.mId.copy(dictationKeyEnabled = true, hasShortcutKey = true, emojiKeyEnabled = true)
+        val enabled = labels()
+        assertEquals("voice", enabled[enabled.indexOf("emoji") - 1])
+        assertTrue(enabled.indexOf("voice") < enabled.indexOf("space"))
+        params.mId = params.mId.copy(dictationKeyEnabled = false)
+        assertTrue("voice" !in labels())
+        params.mId = params.mId.copy(dictationKeyEnabled = true, hasShortcutKey = false)
+        assertTrue("voice" !in labels())
+        params.mId = params.mId.copy(hasShortcutKey = true, deviceLocked = true)
+        assertTrue("voice" !in labels())
+    }
+
     @Test fun invalidKeys() {
         assertFailsWith<KeySpecParserError> {
             LayoutParser.parseJsonString("""[[{ "label": "!icon/clipboard_action_key" }]]""")

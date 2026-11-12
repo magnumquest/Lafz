@@ -209,6 +209,7 @@ data class VariationSelector(
 @SerialName("keyboard_state_selector")
 class KeyboardStateSelector(
     val emojiKeyEnabled: AbstractKeyData? = null,
+    val dictationKeyEnabled: AbstractKeyData? = null,
     val languageKeyEnabled: AbstractKeyData? = null,
     /** Lafz: like [languageKeyEnabled], but for the slot right of the space bar (used when the user chose that position) */
     val languageKeyRightEnabled: AbstractKeyData? = null,
@@ -221,6 +222,8 @@ class KeyboardStateSelector(
     val emojiSearchAvailable: AbstractKeyData? = null,
 ) : AbstractKeyData {
     override fun compute(params: KeyboardParams, isPopup: Boolean): KeyData? {
+        if (params.mId.dictationKeyEnabled && params.mId.hasShortcutKey && !params.mId.deviceLocked)
+            dictationKeyEnabled?.compute(params)?.let { return it }
         if (params.mId.emojiKeyEnabled)
             emojiKeyEnabled?.compute(params)?.let { return it }
         if (params.mId.languageSwitchKeyEnabled) {

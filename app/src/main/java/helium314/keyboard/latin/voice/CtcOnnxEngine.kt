@@ -34,20 +34,21 @@ class CtcOnnxEngine(private val info: VoiceModelInfo, dir: File, threads: Int) :
     }
 
     /** [samples]: mono audio at the model's sample rate, values in -1..1. Long audio is processed in 30 s pieces. */
-    override fun transcribe(samples: FloatArray): String {
+    override fun transcribe(samples: FloatArray, cancellation: SpeechCancellation): String {
         val piece = 30 * info.sampleRate
         val parts = ArrayList<String>()
         var start = 0
         while (start < samples.size) {
+            cancellation.throwIfCancelled()
             val end = minOf(samples.size, start + piece)
             if (end - start >= info.sampleRate / 10) // anything shorter than 0.1 s is noise
-                parts.add(transcribeChunk(samples.copyOfRange(start, end)))
+                parts.add(transcribeChunk(samples.copyOfRange(start, end), cancellation))
             start = end
         }
         return parts.filter { it.isNotEmpty() }.joinToString(" ")
     }
 
-    private fun transcribeChunk(x: FloatArray): String {
+    private fun transcribeChunk(x: FloatArray, cancellation: SpeechCancellation): String {
         if (info.normalize) { // zero mean, unit variance: the models are trained on normalised audio
             var sum = 0.0
             for (v in x) sum += v
@@ -58,20 +59,26 @@ class CtcOnnxEngine(private val info: VoiceModelInfo, dir: File, threads: Int) :
             for (i in x.indices) x[i] = ((x[i] - mean) * inv).toFloat()
         }
         OnnxTensor.createTensor(env, FloatBuffer.wrap(x), longArrayOf(1, x.size.toLong())).use { input ->
-            session.run(mapOf(inputName to input)).use { result ->
-                val logits = result.get(0) as OnnxTensor
-                val shape = logits.info.shape // [1, frames, vocabulary]
-                val frames = shape[1].toInt()
-                val vocab = shape[2].toInt()
-                return greedy(logits.floatBuffer, frames, vocab)
+            OrtSession.RunOptions().use { options ->
+                return cancellation.withHook({ options.setTerminate(true) }) {
+                    cancellation.throwIfCancelled()
+                    session.run(mapOf(inputName to input), options).use { result ->
+                        val logits = result.get(0) as OnnxTensor
+                        val shape = logits.info.shape // [1, frames, vocabulary]
+                        val frames = shape[1].toInt()
+                        val vocab = shape[2].toInt()
+                        greedy(logits.floatBuffer, frames, vocab, cancellation)
+                    }
+                }
             }
         }
     }
 
-    private fun greedy(scores: FloatBuffer, frames: Int, vocab: Int): String {
+    private fun greedy(scores: FloatBuffer, frames: Int, vocab: Int, cancellation: SpeechCancellation): String {
         val sb = StringBuilder()
         var previous = -1
         for (t in 0 until frames) {
+            if (t % 32 == 0) cancellation.throwIfCancelled()
             val base = t * vocab
             var best = 0
             var bestScore = scores.get(base)

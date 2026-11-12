@@ -3,13 +3,34 @@
 #include <jni.h>
 #include <android/log.h>
 #include <string>
+#include <atomic>
 #include "whisper.h"
 #include "ggml-backend.h"
 
 #define TAG "LafzWhisper"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, TAG, __VA_ARGS__)
 
+static bool should_abort(void *data) {
+    return data && static_cast<std::atomic_bool *>(data)->load(std::memory_order_relaxed);
+}
+
 extern "C" {
+
+JNIEXPORT jlong JNICALL
+Java_app_lafz_whisper_WhisperLib_createCancellation(JNIEnv *, jobject) {
+    return reinterpret_cast<jlong>(new std::atomic_bool(false));
+}
+
+JNIEXPORT void JNICALL
+Java_app_lafz_whisper_WhisperLib_cancelRun(JNIEnv *, jobject, jlong ptr) {
+    reinterpret_cast<std::atomic_bool *>(ptr)->store(true, std::memory_order_relaxed);
+}
+
+JNIEXPORT void JNICALL
+Java_app_lafz_whisper_WhisperLib_freeCancellation(JNIEnv *, jobject, jlong ptr) {
+    delete reinterpret_cast<std::atomic_bool *>(ptr);
+}
+
 
 JNIEXPORT void JNICALL
 Java_app_lafz_whisper_WhisperLib_loadBackends(JNIEnv *env, jobject, jstring dir) {
@@ -35,8 +56,10 @@ Java_app_lafz_whisper_WhisperLib_freeContext(JNIEnv *, jobject, jlong ptr) {
 
 /** beamSize 1 = greedy. Returns the text of all segments, or null if whisper failed. */
 JNIEXPORT jstring JNICALL
-Java_app_lafz_whisper_WhisperLib_runWhisper(JNIEnv *env, jobject, jlong ptr, jint threads, jint beamSize, jstring language, jfloatArray audio) {
+Java_app_lafz_whisper_WhisperLib_runWhisper(JNIEnv *env, jobject, jlong ptr, jint threads, jint beamSize, jstring language, jfloatArray audio, jlong cancellation) {
     auto *ctx = (whisper_context *) ptr;
+    auto *cancel = reinterpret_cast<std::atomic_bool *>(cancellation);
+    if (should_abort(cancel)) return nullptr;
     jfloat *samples = env->GetFloatArrayElements(audio, nullptr);
     const jsize count = env->GetArrayLength(audio);
     const char *lang = env->GetStringUTFChars(language, nullptr);
@@ -53,6 +76,10 @@ Java_app_lafz_whisper_WhisperLib_runWhisper(JNIEnv *env, jobject, jlong ptr, jin
     params.print_progress = false;
     params.print_timestamps = false;
     params.print_special = false;
+    params.abort_callback = should_abort;
+    params.abort_callback_user_data = cancel;
+    params.encoder_begin_callback = [](whisper_context *, whisper_state *, void *data) { return !should_abort(data); };
+    params.encoder_begin_callback_user_data = cancel;
 
     int rc = whisper_full(ctx, params, samples, count);
     env->ReleaseFloatArrayElements(audio, samples, JNI_ABORT);

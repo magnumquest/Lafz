@@ -10,7 +10,7 @@
   <code>mein kal aonga</code> → <span dir="rtl">میں کل آؤں گا</span>
 </p>
 
-<p align="center"><a href="https://github.com/magnumquest/Lafz/releases/latest"><b>Download Lafz for Android</b></a> · <a href="RELEASE_NOTES.md">What's new</a> · Latest version: <b>0.6.6</b></p>
+<p align="center"><a href="https://github.com/magnumquest/Lafz/releases/latest"><b>Download Lafz for Android</b></a> · <a href="RELEASE_NOTES.md">What's new</a> · Latest version: <b>0.7.0</b></p>
 
 ---
 
@@ -23,7 +23,7 @@ Use the English letter layout to type Roman Urdu or Roman Arabic. Lafz shows nat
 - **Personalized suggestions:** Lafz can learn words and phrases you commit, on your device. You can turn learning off or clear learned words in Settings.
 - **Scientific and technical vocabulary:** additional English and Urdu medical, biological, engineering and physics terms appear as you type, while everyday suggestions stay prominent.
 - **Swipe typing:** glide across letters in English, Roman Urdu or Roman Arabic.
-- **Voice typing:** optional and off by default. Import a speech model in Settings to dictate English, Urdu or Arabic. Recognition runs on your device.
+- **Hold-to-talk voice typing:** hold the microphone to dictate English, Urdu or Arabic, then release to insert your words. Slide up to lock recording for longer text. [Download a voice model](models/README.md) and enable it in Settings → Voice typing. Recognition runs on your device.
 - **Smart clipboard:** review recent clips, pin useful items and paste detected details such as phone numbers, email addresses and links. Clipboard features can be adjusted in Settings.
 - **Emoji suggestions:** find relevant emoji while typing in English, Urdu or Arabic.
 - **GIFs and stickers:** optional search and sharing tools, disabled by default. Search requires an internet connection and is started only when you use the media browser.
@@ -40,6 +40,14 @@ Keyboard input, transliteration, suggestions and personal word learning stay on 
 3. In **Settings → Languages & layouts**, add Urdu (**abc → اردو**) or Arabic (**abc → عربي**), then switch to that layout when typing.
 
 Lafz supports Android 5.0 (API 21) and newer. To update an installed release, use **Settings → About → Check for updates** or download the APK from Releases.
+
+## Set up voice typing
+
+1. Download the [English, Urdu or Arabic voice model pack](models/README.md) and unzip it on your phone.
+2. In **Settings → Voice typing**, choose the extracted model folder and turn on **Dictate with the microphone key**.
+3. Hold the microphone to speak, then release it to insert text. For longer dictation, slide up while holding to lock recording, then tap the microphone to finish.
+
+Voice typing is optional and off by default. Once the model is installed, it works offline. If you already imported a model, you can keep using it.
 
 ## Open source
 

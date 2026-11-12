@@ -17,28 +17,31 @@ import android.os.Messenger
 import android.util.Log
 import java.io.File
 
-/**
- * Records from the microphone and runs the speech model, in its own process (`:voice`, see the manifest).
- * Exactly one model is loaded: the one for the keyboard's current language ([VoiceProtocol.MSG_LOAD]); it stays loaded, and is replaced when the language
- * changes and freed when dictation is switched off or the keyboard unbinds. Nothing is loaded before the keyboard asks.
- * Nothing leaves the device; the service has no network access of any kind.
- */
+/** Microphone capture and serial inference run independently; control messages never wait for a model. */
 class VoiceTypingService : Service() {
     private lateinit var thread: HandlerThread
     private lateinit var handler: Handler
     private lateinit var messenger: Messenger
-
-    // everything below is only touched on `thread`
+    private val inference = java.util.concurrent.Executors.newSingleThreadExecutor()
+    // Engine ownership belongs exclusively to the inference executor, including destruction.
     private var engine: SpeechEngine? = null
     private var engineDir: String? = null
-    private var client: Messenger? = null
-    private var recorder: AudioRecord? = null
-    private var recording: Thread? = null
-    @Volatile private var stopRequested = false
+    @Volatile private var session: Session? = null
+
+    private class Session(val id: Int, val client: Messenger) {
+        @Volatile var stop = false
+        @Volatile var cancelled = false
+        @Volatile var recorder: AudioRecord? = null
+        var capture: Thread? = null
+        val backlog = VoiceBacklog()
+        val cancellation = SpeechCancellation()
+        @Volatile var failure: String? = null
+        val terminalSent = java.util.concurrent.atomic.AtomicBoolean()
+    }
 
     override fun onCreate() {
         super.onCreate()
-        thread = HandlerThread("lafz-voice").also { it.start() }
+        thread = HandlerThread("lafz-voice-control").also { it.start() }
         handler = Handler(thread.looper) { handle(it); true }
         messenger = Messenger(handler)
     }
@@ -46,13 +49,17 @@ class VoiceTypingService : Service() {
     override fun onBind(intent: Intent?): IBinder = messenger.binder
 
     override fun onUnbind(intent: Intent?): Boolean {
-        handler.post { cancelRecording(); closeEngine() }
+        handler.post { cancelRecording(); inference.execute { closeEngine() } }
         return false
     }
 
     override fun onDestroy() {
-        thread.quitSafely()
-        engine?.close()
+        handler.post {
+            cancelRecording()
+            inference.execute { closeEngine() }
+            inference.shutdown()
+            thread.quitSafely()
+        }
         super.onDestroy()
     }
 
@@ -60,109 +67,156 @@ class VoiceTypingService : Service() {
         when (msg.what) {
             VoiceProtocol.MSG_LOAD -> {
                 val dir = msg.data.getString(VoiceProtocol.KEY_MODEL_DIR) ?: return
-                // while recording, the model for the recording is the one that counts
-                if (recording == null) VoiceModels.installed(this).firstOrNull { it.dirName == dir }?.let { ensureEngine(it, report = false) }
-            }
-            VoiceProtocol.MSG_UNLOAD -> { cancelRecording(); closeEngine() }
-            VoiceProtocol.MSG_START -> {
-                client = msg.replyTo
-                start(msg.data.getString(VoiceProtocol.KEY_MODEL_DIR) ?: return reply(VoiceProtocol.MSG_ERROR, VoiceProtocol.KEY_ERROR, "no model"))
-            }
-            VoiceProtocol.MSG_STOP -> { client = msg.replyTo ?: client; stopAndTranscribe() }
-            VoiceProtocol.MSG_CANCEL -> cancelRecording()
-        }
-    }
-
-    private fun reply(what: Int, key: String? = null, value: String? = null) {
-        val m = Message.obtain(null, what)
-        if (key != null) m.data = Bundle().apply { putString(key, value) }
-        try { client?.send(m) } catch (e: Exception) { Log.w(TAG, "client is gone: ${e.message}") }
-    }
-
-    private fun start(modelDir: String) {
-        cancelRecording()
-        val info = VoiceModels.installed(this).firstOrNull { it.dirName == modelDir } ?: return reply(VoiceProtocol.MSG_ERROR, VoiceProtocol.KEY_ERROR, "model $modelDir not found")
-        val pcm = ShortArray(VoiceProtocol.SAMPLE_RATE * VoiceProtocol.MAX_SECONDS)
-        val injected = injectedAudio()
-        if (injected == null) {
-            val minBuffer = AudioRecord.getMinBufferSize(VoiceProtocol.SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
-            val rec = try {
-                AudioRecord(MediaRecorder.AudioSource.MIC, VoiceProtocol.SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, maxOf(minBuffer, 16384) * 2)
-            } catch (e: Exception) { return reply(VoiceProtocol.MSG_ERROR, VoiceProtocol.KEY_ERROR, "microphone: ${e.message}") }
-            if (rec.state != AudioRecord.STATE_INITIALIZED) {
-                rec.release()
-                return reply(VoiceProtocol.MSG_ERROR, VoiceProtocol.KEY_ERROR, "microphone not available (permission?)")
-            }
-            recorder = rec
-        }
-        stopRequested = false
-        recorded = 0
-        samples = pcm
-        reply(VoiceProtocol.MSG_LISTENING)
-        // the recording runs on its own thread so that loading the model (on `thread`) does not make us miss audio
-        val rec = recorder
-        recording = Thread({
-            if (injected != null) { // debug builds only: audio from a file instead of the microphone
-                val n = minOf(injected.size, pcm.size); System.arraycopy(injected, 0, pcm, 0, n); recorded = n
-                while (!stopRequested) Thread.sleep(20)
-            } else if (rec != null) {
-                rec.startRecording()
-                while (!stopRequested && recorded < pcm.size) {
-                    val n = rec.read(pcm, recorded, minOf(4096, pcm.size - recorded))
-                    if (n <= 0) break
-                    recorded += n
+                if (session == null) inference.execute {
+                    VoiceModels.installed(this).firstOrNull { it.dirName == dir }?.let {
+                        try { ensureEngine(it) } catch (t: Throwable) { Log.e(TAG, "preload failed", t) }
+                    }
                 }
-                try { rec.stop() } catch (_: Exception) {}
-                if (!stopRequested) handler.post { reply(VoiceProtocol.MSG_LIMIT); stopAndTranscribe() }
             }
-        }, "lafz-voice-record").also { it.start() }
-        ensureEngine(info)
+            VoiceProtocol.MSG_UNLOAD -> { cancelRecording(); inference.execute { closeEngine() } }
+            VoiceProtocol.MSG_START -> {
+                val client = msg.replyTo ?: return
+                val dir = msg.data.getString(VoiceProtocol.KEY_MODEL_DIR) ?: return
+                start(dir, Session(msg.arg1, client))
+            }
+            VoiceProtocol.MSG_STOP -> session?.takeIf { it.id == msg.arg1 }?.stop = true
+            VoiceProtocol.MSG_CANCEL -> if (session?.id == msg.arg1) cancelRecording()
+        }
     }
 
-    @Volatile private var recorded = 0
-    private var samples: ShortArray? = null
+    private fun reply(s: Session, what: Int, key: String? = null, value: String? = null) {
+        if (s.cancelled) return
+        val m = Message.obtain(null, what).apply { arg1 = s.id }
+        if (key != null) m.data = Bundle().apply { putString(key, value) }
+        try { s.client.send(m) } catch (e: Exception) { Log.w(TAG, "client is gone: ${e.message}") }
+    }
 
-    private fun ensureEngine(info: VoiceModelInfo, report: Boolean = true) {
+    private fun fail(s: Session, error: Throwable) {
+        synchronized(s) {
+            if (s.cancelled || s.failure != null) return
+            Log.e(TAG, "dictation failed", error)
+            s.failure = "Dictation failed: ${error.message}"
+            s.stop = true
+        }
+        abortInference(s)
+        // A microphone error can originate on capture. Order the terminal error after
+        // already published/decoding phrases so completed held text remains recoverable.
+        inference.execute { complete(s) }
+    }
+
+    private fun complete(s: Session) {
+        if (!s.terminalSent.compareAndSet(false, true)) return
+        // Do not report IDLE while the failed/stopped capture still owns the microphone.
+        s.capture?.join(2000)
+        val failure = s.failure
+        if (failure == null) reply(s, VoiceProtocol.MSG_RESULT, VoiceProtocol.KEY_TEXT, "")
+        else reply(s, VoiceProtocol.MSG_ERROR, VoiceProtocol.KEY_ERROR, failure)
+        handler.post { if (session === s) session = null }
+    }
+
+    private fun abortInference(s: Session) {
+        try { s.cancellation.cancel() }
+        catch (t: Exception) { Log.w(TAG, "could not interrupt inference", t) }
+    }
+
+    private fun start(modelDir: String, s: Session) {
+        cancelRecording()
+        session = s
+        val info = VoiceModels.installed(this).firstOrNull { it.dirName == modelDir }
+        if (info == null) { fail(s, IllegalStateException("model $modelDir not found")); return }
+        // Queue model loading before any audio; keep it warm between phrases and mic taps.
+        inference.execute {
+            if (!s.cancelled && s.failure == null) try { ensureEngine(info) } catch (t: Throwable) { fail(s, t) }
+        }
+        val capture = Thread({
+            var rec: AudioRecord? = null
+            try {
+                if (s.cancelled || s.failure != null) return@Thread
+                val injected = injectedAudio()
+                if (injected == null) {
+                    val min = AudioRecord.getMinBufferSize(VoiceProtocol.SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
+                    require(min > 0) { "microphone format unavailable" }
+                    rec = AudioRecord(MediaRecorder.AudioSource.VOICE_RECOGNITION, VoiceProtocol.SAMPLE_RATE,
+                        AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, maxOf(min, 16384))
+                    require(rec.state == AudioRecord.STATE_INITIALIZED) { "microphone unavailable" }
+                    s.recorder = rec
+                    rec.startRecording()
+                }
+                reply(s, VoiceProtocol.MSG_LISTENING)
+                val segmenter = VoiceSegmenter()
+                val frame = ShortArray(VoiceProtocol.SAMPLE_RATE / 50)
+                var offset = 0
+                var stopReason = VoiceProtocol.STOP_REQUESTED
+                while (!s.stop) {
+                    val n = if (injected != null) {
+                        val count = minOf(frame.size, injected.size - offset)
+                        if (count <= 0) break
+                        injected.copyInto(frame, 0, offset, offset + count)
+                        offset += count
+                        Thread.sleep(20) // exercise the same capture/inference overlap in debug tests
+                        count
+                    } else rec!!.read(frame, 0, frame.size)
+                    check(n > 0) { "microphone read failed ($n)" }
+                    segmenter.add(frame, n)?.let { enqueue(s, it) }
+                    if (s.backlog.isFull) { stopReason = VoiceProtocol.STOP_BACKLOG; break }
+                }
+                if (s.failure == null && !s.cancelled) segmenter.finish()?.let { enqueue(s, it) }
+                if (!s.cancelled && s.failure == null) {
+                    val ended = Message.obtain(null, VoiceProtocol.MSG_LIMIT).apply {
+                        arg1 = s.id
+                        data = Bundle().apply { putInt(VoiceProtocol.KEY_STOP_REASON, stopReason) }
+                    }
+                    try { s.client.send(ended) } catch (e: Exception) { Log.w(TAG, "client is gone", e) }
+                    inference.execute { complete(s) }
+                }
+            } catch (t: Throwable) { if (!s.cancelled) fail(s, t) }
+            finally {
+                try { rec?.stop() } catch (_: Exception) {}
+                rec?.release()
+                s.recorder = null
+            }
+        }, "lafz-voice-record")
+        s.capture = capture
+        capture.start()
+    }
+
+    private fun enqueue(s: Session, pcm: ShortArray) {
+        s.backlog.add(pcm.size)
+        inference.execute {
+            var started = 0L
+            try {
+                if (!s.cancelled && s.failure == null && !VoiceText.isSilent(pcm)) {
+                    started = android.os.SystemClock.elapsedRealtime()
+                    Log.i(TAG, "transcribing ${pcm.size * 1000L / VoiceProtocol.SAMPLE_RATE} ms audio")
+                    val text = VoiceText.clean(checkNotNull(engine).transcribe(VoiceText.toFloat(pcm), s.cancellation))
+                    Log.i(TAG, "phrase ${pcm.size * 1000L / VoiceProtocol.SAMPLE_RATE} ms audio, ${android.os.SystemClock.elapsedRealtime() - started} ms inference")
+                    if (text.isNotEmpty()) reply(s, VoiceProtocol.MSG_PHRASE, VoiceProtocol.KEY_TEXT, text)
+                }
+            } catch (t: Throwable) {
+                if (!s.cancelled) fail(s, t)
+                else if (started != 0L) Log.i(TAG, "cancelled inference after ${android.os.SystemClock.elapsedRealtime() - started} ms")
+            } finally { s.backlog.remove(pcm.size) }
+        }
+    }
+
+    private fun ensureEngine(info: VoiceModelInfo) {
         if (engineDir == info.dirName && engine != null) return
         closeEngine()
-        try {
-            engine = SpeechEngine.create(this, info, VoiceModels.dir(this, info), VoiceModels.defaultThreads)
-            engineDir = info.dirName
-            Log.i(TAG, "loaded ${info.dirName}")
-        } catch (t: Throwable) {
-            Log.e(TAG, "cannot load ${info.name}", t)
-            if (report) { cancelRecording(); reply(VoiceProtocol.MSG_ERROR, VoiceProtocol.KEY_ERROR, "cannot load ${info.name}: ${t.message}") }
-        }
-    }
-
-    private fun stopAndTranscribe() {
-        val rec = recording
-        val pcm = samples
-        if (rec == null || pcm == null) return // nothing running (already stopped by the limit)
-        stopRequested = true
-        rec.join(2000)
-        recording = null
-        recorder?.release(); recorder = null
-        samples = null
-        val n = recorded
-        val e = engine
-        if (e == null) return // an error was already reported
-        if (n < VoiceProtocol.SAMPLE_RATE / 4 || VoiceText.isSilent(pcm, n)) {
-            reply(VoiceProtocol.MSG_RESULT, VoiceProtocol.KEY_TEXT, "")
-        } else try {
-            val text = VoiceText.clean(e.transcribe(VoiceText.toFloat(pcm, n)))
-            reply(VoiceProtocol.MSG_RESULT, VoiceProtocol.KEY_TEXT, text)
-        } catch (t: Throwable) {
-            Log.e(TAG, "transcribe failed", t)
-            reply(VoiceProtocol.MSG_ERROR, VoiceProtocol.KEY_ERROR, "transcribing failed: ${t.message}")
-        }
+        engine = SpeechEngine.create(this, info, VoiceModels.dir(this, info), VoiceModels.defaultThreads)
+        engineDir = info.dirName
+        Log.i(TAG, "loaded ${info.dirName}")
     }
 
     private fun cancelRecording() {
-        stopRequested = true
-        recording?.join(2000); recording = null
-        recorder?.release(); recorder = null
-        samples = null
+        val s = session ?: return
+        s.cancelled = true
+        s.stop = true
+        // Abort the run without freeing the reusable engine from this control thread.
+        abortInference(s)
+        // Unblock a microphone read before joining.
+        try { s.recorder?.stop() } catch (_: Exception) {}
+        s.capture?.join(2000)
+        session = null
     }
 
     private fun closeEngine() {

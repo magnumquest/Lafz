@@ -46,6 +46,18 @@ import java.util.HashSet;
 /** A view that renders a virtual {@link Keyboard}. */
 // todo: this ThemeStyle-dependent stuff really should not be in here!
 public class KeyboardView extends View {
+    private boolean mVoiceListening;
+    private boolean mVoiceLocked;
+    private boolean mVoiceProcessing;
+    private final Paint mVoiceBadgePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+    public void setVoiceState(final boolean listening, final boolean locked, final boolean processing) {
+        mVoiceListening = listening;
+        mVoiceLocked = locked;
+        mVoiceProcessing = processing;
+        if (getKeyboard() != null) invalidateKey(getKeyboard().getKey(KeyCode.VOICE_INPUT));
+    }
+
     // XML attributes
     private final KeyVisualAttributes mKeyVisualAttributes;
     // Default keyLabelFlags from {@link KeyboardTheme}.
@@ -348,7 +360,32 @@ public class KeyboardView extends View {
                     mKeyBackground, mFunctionalKeyBackground, mSpacebarBackground, mActionKeyBackground);
             onDrawKeyBackground(key, canvas, background);
         }
-        onDrawKeyTopVisuals(key, canvas, paint, params);
+        if (key.getCode() == KeyCode.VOICE_INPUT && mVoiceProcessing) {
+            mVoiceBadgePaint.setStyle(Paint.Style.FILL);
+            mVoiceBadgePaint.setColor(mColors.get(ColorType.KEY_ICON));
+            final float radius = Math.min(key.getDrawWidth(), key.getHeight()) / 22f;
+            for (int i = -1; i <= 1; i++)
+                canvas.drawCircle(key.getDrawWidth() / 2f + i * radius * 4,
+                        key.getHeight() / 2f, radius, mVoiceBadgePaint);
+        } else {
+            onDrawKeyTopVisuals(key, canvas, paint, params);
+        }
+        if (key.getCode() == KeyCode.VOICE_INPUT && mVoiceListening) {
+            final float unit = Math.min(key.getDrawWidth(), key.getHeight()) / 12f;
+            final float x = key.getDrawWidth() - 3 * unit;
+            final float y = 2 * unit;
+            mVoiceBadgePaint.setColor(0xFFE53935);
+            mVoiceBadgePaint.setStrokeWidth(Math.max(1f, unit / 3));
+            mVoiceBadgePaint.setStyle(Paint.Style.STROKE);
+            if (mVoiceLocked) {
+                canvas.drawArc(x - unit / 2, y - unit, x + unit / 2, y + unit, 180, 180, false, mVoiceBadgePaint);
+                canvas.drawRoundRect(x - unit, y, x + unit, y + 1.5f * unit, unit / 4, unit / 4, mVoiceBadgePaint);
+            } else {
+                canvas.drawLine(x, y + unit, x, y - unit, mVoiceBadgePaint);
+                canvas.drawLine(x - unit / 2, y - unit / 2, x, y - unit, mVoiceBadgePaint);
+                canvas.drawLine(x + unit / 2, y - unit / 2, x, y - unit, mVoiceBadgePaint);
+            }
+        }
 
         canvas.translate(-keyDrawX, -keyDrawY);
     }
@@ -642,7 +679,9 @@ public class KeyboardView extends View {
     }
 
     private void setKeyIconColor(Key key, Drawable icon, Keyboard keyboard) {
-        if (key.hasActionKeyBackground()) {
+        if (key.getCode() == KeyCode.VOICE_INPUT && mVoiceListening) {
+            icon.setColorFilter(0xFFE53935, PorterDuff.Mode.SRC_IN);
+        } else if (key.hasActionKeyBackground()) {
             mColors.setColor(icon, ColorType.ACTION_KEY_ICON);
         } else if (key.isShift() && keyboard != null) {
             if (keyboard.mId.getElement().isAlphabetShifted())

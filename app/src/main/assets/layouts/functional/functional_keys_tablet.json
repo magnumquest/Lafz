@@ -26,6 +26,7 @@
     },
     { "$": "keyboard_state_selector", "languageKeyEnabled": { "$": "keyboard_state_selector", "alphabet": { "label": "language_switch" }}},
     { "$": "keyboard_state_selector", "symbols": { "label": "numpad" } },
+    { "$": "keyboard_state_selector", "dictationKeyEnabled": { "$": "keyboard_state_selector", "alphabet": { "label": "voice" }}},
     { "label": "space" },
     { "$": "keyboard_state_selector",
       "symbols": { "$": "keyboard_state_selector", "dpadKeyEnabled": { "label": "dpad" } },

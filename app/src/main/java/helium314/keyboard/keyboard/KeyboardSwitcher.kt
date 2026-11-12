@@ -668,7 +668,7 @@ class KeyboardSwitcher private constructor() {
             inputView.keyboardView.setKeyboard(newKeyboard)
             inputView.root.setKeyboardTopPadding(newKeyboard.mTopPadding)
             inputView.keyboardView.setKeyPreviewPopupEnabled(currentSettingsValues.mKeyPreviewPopupOn)
-            inputView.keyboardView.updateShortcutKey(richImm.isShortcutImeReady)
+            inputView.keyboardView.updateShortcutKey(currentSettingsValues.mDictationKeyEnabled || richImm.isShortcutImeReady)
             val subtypeChanged = (oldKeyboard == null) || newKeyboard.mId.subtype != oldKeyboard.mId.subtype
             val languageOnSpacebarFormatType = LanguageOnSpacebarUtils.getLanguageOnSpacebarFormatType(newKeyboard.mId.subtype)
             val hasMultipleEnabledIMEsOrSubtypes = richImm.hasMultipleEnabledIMEsOrSubtypes(true)

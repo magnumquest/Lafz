@@ -18,6 +18,11 @@ import helium314.keyboard.latin.common.InputPointers;
 import helium314.keyboard.latin.utils.RecapitalizeMode;
 
 public interface KeyboardActionListener {
+    enum VoiceAction { PRESS, RELEASE, LOCK, CANCEL }
+
+    /** Dedicated mic gestures bypass typing, key-repeat and long-press popup handling. */
+    default void onVoiceInput(VoiceAction action) {}
+
     /**
      * Called when the user presses a key. This is sent before the {@link #onCodeInput} is called.
      * For keys that repeat, this is only called once.

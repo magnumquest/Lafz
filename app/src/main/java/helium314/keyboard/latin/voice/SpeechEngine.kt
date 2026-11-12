@@ -8,7 +8,7 @@ import java.io.File
 /** A loaded speech recognition model. [close] gives all of its memory back. */
 interface SpeechEngine : AutoCloseable {
     /** [samples]: mono audio at the model's sample rate, values in -1..1 */
-    fun transcribe(samples: FloatArray): String
+    fun transcribe(samples: FloatArray, cancellation: SpeechCancellation = SpeechCancellation()): String
 
     companion object {
         /** loads the model described by [info]; throws if it cannot run on this device */
@@ -29,7 +29,15 @@ class WhisperEngine(context: Context, private val info: VoiceModelInfo, dir: Fil
         model = WhisperLib.Model(File(dir, info.modelFile))
     }
 
-    override fun transcribe(samples: FloatArray): String = model.transcribe(samples, info.language, threads, beamSize)
+    override fun transcribe(samples: FloatArray, cancellation: SpeechCancellation): String {
+        cancellation.throwIfCancelled()
+        return WhisperLib.Cancellation().use { token ->
+            cancellation.withHook(token::cancel) {
+                try { model.transcribe(samples, info.language, threads, beamSize, token) }
+                catch (t: Exception) { cancellation.throwIfCancelled(); throw t }
+            }
+        }
+    }
 
     override fun close() = model.close()
 }

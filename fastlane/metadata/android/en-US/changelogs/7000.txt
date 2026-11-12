@@ -1,0 +1,4 @@
+Hold the microphone to dictate, then release to insert text. Slide up to lock recording for longer messages; tap to finish.
+The microphone now sits to the left of emoji, keeping the suggestion bar free.
+Voice models stay ready between recordings, with clearer recording and processing feedback and fewer lost words after errors.
+English, Urdu and Arabic voice model packs are available with this release. Recognition stays on your device.

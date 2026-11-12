@@ -783,6 +783,7 @@ public class LatinIME extends InputMethodService implements
 
     private void onStartInputInternal(EditorInfo editorInfo, boolean restarting) {
         super.onStartInput(editorInfo, restarting);
+        if (!restarting && mVoiceDictation != null) mVoiceDictation.cancel();
 
         RichInputMethodSubtype subtypeForApp = editorInfo == null
             ? null
@@ -970,6 +971,7 @@ public class LatinIME extends InputMethodService implements
     void onFinishInputInternal() {
         super.onFinishInput();
         Log.i(TAG, "onFinishInput");
+        if (mVoiceDictation != null) mVoiceDictation.cancel();
 
         mDictionaryFacilitator.onFinishInput();
         closeMainKeyboard();
@@ -1287,6 +1289,17 @@ public class LatinIME extends InputMethodService implements
         mKeyboardSwitcher.onEvent(event, getCurrentAutoCapsState(), getCurrentRecapitalizeState());
     }
 
+    public void onVoiceInput(KeyboardActionListener.VoiceAction action) {
+        if (!VoiceDictation.Companion.isEnabled(this)) return;
+        final VoiceDictation voice = getVoiceDictation();
+        switch (action) {
+            case PRESS: voice.press(mRichImm.getCurrentSubtypeLocale()); break;
+            case RELEASE: voice.release(); break;
+            case LOCK: voice.lock(); break;
+            case CANCEL: voice.cancel(); break;
+        }
+    }
+
     private VoiceDictation mVoiceDictation;
 
     /** loads the dictation model for the current language if dictation is on, frees it if not; does nothing (not even creating the helper) while it never was on */
@@ -1298,10 +1311,23 @@ public class LatinIME extends InputMethodService implements
     private VoiceDictation getVoiceDictation() {
         if (mVoiceDictation == null) mVoiceDictation = new VoiceDictation(this, new VoiceDictation.Listener() {
             @Override public void onVoiceStateChanged(@NonNull VoiceDictation.State state) {
-                if (mSuggestionStripView != null) mSuggestionStripView.setVoiceListening(state != VoiceDictation.State.IDLE);
+                final boolean recording = state == VoiceDictation.State.LISTENING || state == VoiceDictation.State.LOCKED;
+                if (mSuggestionStripView != null) mSuggestionStripView.setVoiceListening(recording);
+                if (mKeyboardSwitcher.getMainKeyboardView() != null)
+                    mKeyboardSwitcher.getMainKeyboardView().setVoiceState(
+                            recording, state == VoiceDictation.State.LOCKED, state == VoiceDictation.State.TRANSCRIBING);
+                if (mKeyboardSwitcher.getMainKeyboardView() != null) {
+                    if (state == VoiceDictation.State.LOCKED)
+                        mKeyboardSwitcher.getMainKeyboardView().announceForAccessibility(getString(R.string.voice_recording_locked));
+                    else if (state == VoiceDictation.State.TRANSCRIBING)
+                        mKeyboardSwitcher.getMainKeyboardView().announceForAccessibility(getString(R.string.voice_processing));
+                }
             }
             @Override public void onVoiceText(@NonNull String text) {
                 onTextInput(VoiceText.INSTANCE.withLeadingSpace(text, mInputLogic.mConnection.getCodePointBeforeCursor()));
+            }
+            @Override public void onVoiceNotice(@NonNull String message) {
+                android.widget.Toast.makeText(LatinIME.this, message, android.widget.Toast.LENGTH_LONG).show();
             }
             @Override public void onVoiceError(@NonNull String message) {
                 android.widget.Toast.makeText(LatinIME.this, message, android.widget.Toast.LENGTH_LONG).show();

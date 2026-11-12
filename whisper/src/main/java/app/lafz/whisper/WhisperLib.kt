@@ -31,15 +31,23 @@ object WhisperLib {
 
     fun systemInfo(): String = systemInfoNative()
 
+    /** Per-run flag; safe to set from the control thread while native inference owns the model. */
+    class Cancellation : AutoCloseable {
+        internal var ptr = createCancellation()
+            private set
+        @Synchronized fun cancel() { if (ptr != 0L) cancelRun(ptr) }
+        @Synchronized override fun close() { if (ptr != 0L) { freeCancellation(ptr); ptr = 0L } }
+    }
+
     /** a loaded model; [close] gives its memory back */
     class Model(path: File) : AutoCloseable {
         private var ptr = initContext(path.path)
         init { require(ptr != 0L) { "could not load ${path.name}" } }
 
         /** [samples]: mono 16 kHz audio in -1..1. [beamSize] 1 is greedy and fastest. Audio longer than 30 s is split by whisper itself. */
-        fun transcribe(samples: FloatArray, language: String, threads: Int, beamSize: Int = 5): String {
+        fun transcribe(samples: FloatArray, language: String, threads: Int, beamSize: Int = 5, cancellation: Cancellation? = null): String {
             check(ptr != 0L) { "closed" }
-            return runWhisper(ptr, threads, beamSize, language, samples)?.trim() ?: throw IllegalStateException("whisper failed")
+            return runWhisper(ptr, threads, beamSize, language, samples, cancellation?.ptr ?: 0L)?.trim() ?: throw IllegalStateException("whisper failed")
         }
 
         override fun close() { if (ptr != 0L) { freeContext(ptr); ptr = 0L } }
@@ -48,6 +56,9 @@ object WhisperLib {
     @JvmStatic private external fun loadBackends(dir: String)
     @JvmStatic private external fun initContext(modelPath: String): Long
     @JvmStatic private external fun freeContext(ptr: Long)
-    @JvmStatic private external fun runWhisper(ptr: Long, threads: Int, beamSize: Int, language: String, audio: FloatArray): String?
+    @JvmStatic private external fun runWhisper(ptr: Long, threads: Int, beamSize: Int, language: String, audio: FloatArray, cancellation: Long): String?
+    @JvmStatic private external fun createCancellation(): Long
+    @JvmStatic private external fun cancelRun(ptr: Long)
+    @JvmStatic private external fun freeCancellation(ptr: Long)
     @JvmStatic private external fun systemInfoNative(): String
 }

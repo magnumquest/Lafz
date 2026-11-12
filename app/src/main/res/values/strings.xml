@@ -206,7 +206,10 @@
     <string name="voice_needs_android_7">Voice typing needs Android 7 or newer.</string>
     <string name="voice_dictation_category">Dictation</string>
     <string name="voice_dictation_title">Dictate with the microphone key</string>
-    <string name="voice_dictation_summary">Tap the microphone key, speak, tap it again: the text is typed at the cursor. Uses the models below, works offline, needs the microphone permission and is off by default. Urdu, Arabic and English</string>
+    <string name="voice_dictation_summary">Hold the microphone to speak, then release to insert the text. Slide up while holding to lock recording for long text; tap the microphone to finish. Uses the models below, works offline, and needs microphone permission. Urdu, Arabic and English. Off by default.</string>
+    <string name="voice_processing">Processing speech. Recording has stopped.</string>
+    <string name="voice_backlog_stopped">Recording stopped to finish processing. Wait for the text, then hold the microphone again.</string>
+    <string name="voice_recording_locked">Recording locked. Tap the microphone to finish.</string>
     <string name="voice_dictation_failed">Dictation failed</string>
     <string name="voice_dictation_language">No dictation for %s</string>
     <string name="voice_dictation_no_model">No %s voice model imported (Settings > Voice typing)</string>
