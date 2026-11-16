@@ -105,6 +105,10 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
         val trailingSingleQuotesCount = StringUtils.getTrailingSingleQuotesCount(typedWordString)
         val capsMode = getCapsModeForTyping(wordComposer, keyboard)
         val suggestionsContainer = ArrayList(suggestionResults)
+        if (!resultsArePredictions) {
+            keepCommonWordsAheadOfLearnedCompletions(suggestionsContainer, typedWordString)
+            moveCaseVariantsOfTypedBack(suggestionsContainer, typedWordString)
+        }
 
         // add suggestions for the "extended word" at cursor
         // using a different iterator that also includes digits and maybe more
@@ -196,12 +200,45 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
         addHonorificSuggestions(suggestionsList, typedWordString, ngramContext, resultsArePredictions,
             if (resultsArePredictions) 0 else if (hasAutoCorrection || correctToCapitalizedWord) 3 else 1, null)
         addContextEmoji(suggestionsList, typedWordString, ngramContext, resultsArePredictions,
-            if (resultsArePredictions) 1 else if (hasAutoCorrection || correctToCapitalizedWord) 3 else 2)
+            if (resultsArePredictions) 1 else if (hasAutoCorrection || correctToCapitalizedWord) 4 else 3)
         val isTypedWordValid = firstOccurrenceOfTypedWordInSuggestions > -1 || (!resultsArePredictions && !allowsToBeAutoCorrected)
         addRomanUrduOnEnglishSuggestions(suggestionsList, typedWordString, ngramContext, resultsArePredictions, isTypedWordValid)
         addTechnicalCompletion(suggestionsList, typedWordString, resultsArePredictions, wordComposer)
+        if (BuildConfig.DEBUG) Log.d("LafzSugg", "typed=[$typedWordString] ac=$hasAutoCorrection valid=$isTypedWordValid " +
+            suggestionsList.take(8).joinToString(" | ") { "${it.word}{${it.score},${it.sourceDict.mDictType}}" })
         return SuggestedWords(suggestionsList, suggestionResults.rawSuggestions, typedWordInfo,
             isTypedWordValid, hasAutoCorrection || correctToCapitalizedWord, false, inputStyle, sequenceNumber)
+    }
+
+    /**
+     * A word learned from typing (user history, not in the dictionary) may not become the first suggestion / auto-correction
+     * for only 1-3 typed letters when the dictionary has a common word with that start: after typing "Shoaib" a few times,
+     * "sho" must still offer "show" / "should" first, with "Shoaib" right behind. From 4 letters on learned words rank freely.
+     */
+    private fun keepCommonWordsAheadOfLearnedCompletions(list: ArrayList<SuggestedWordInfo>, typed: String) {
+        if (typed.isEmpty() || typed.length > 3 || list.isEmpty()) return
+        val first = list[0]
+        if (first.sourceDict.mDictType != Dictionary.TYPE_USER_HISTORY || first.word.length < typed.length + 2) return
+        val common = list.indexOfFirst { it.sourceDict.mDictType == Dictionary.TYPE_MAIN && it.word.length > typed.length
+                && it.word.startsWith(typed, ignoreCase = true) }
+        if (common < 1) return
+        list.removeAt(0)
+        list.add(common, first) // right behind the common word
+    }
+
+    /**
+     * "wor" -> "WOR", "pri" -> "PRI", "vis" -> "VI's": the typed letters as an abbreviation in capitals (or with an apostrophe)
+     * only repeat what is already in the text field. Behind the first three real suggestions they stay reachable.
+     */
+    private fun moveCaseVariantsOfTypedBack(list: ArrayList<SuggestedWordInfo>, typed: String) {
+        if (typed.length < 2 || typed.any { it.isUpperCase() } || list.size < 4) return
+        fun bare(w: String) = w.filter { it.isLetterOrDigit() }.lowercase()
+        // capitalized forms stay ("mexico" -> "Mexico" is wanted): only abbreviations in capitals and forms with punctuation
+        val variants = list.filterIndexed { i, it -> i < 4 && it.word != typed && bare(it.word) == typed
+                && (it.word.none { c -> c.isLowerCase() } || it.word.any { c -> !c.isLetterOrDigit() }) }
+        if (variants.isEmpty()) return
+        list.removeAll(variants.toSet())
+        list.addAll(min(3, list.size), variants)
     }
 
     /** Adds at most one low-priority STEM completion; it never changes conversational ranking or autocorrection. */
@@ -217,8 +254,8 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
         val source = Dictionary.PhonyDictionary("technical_terms")
         val technical = SuggestedWordInfo(candidate, "", 300, SuggestedWordInfo.KIND_COMPLETION,
             source, SuggestedWordInfo.NOT_AN_INDEX, SuggestedWordInfo.NOT_A_CONFIDENCE)
-        // Keep the typed word and the best conversational alternative ahead of the technical term.
-        suggestions.add(min(2, suggestions.size), technical)
+        // Rare technical terms ("stanozolol" for "stan") only behind the visible suggestions, unless nothing else matches.
+        suggestions.add(if (suggestions.size <= 2) suggestions.size else min(4, suggestions.size), technical)
     }
 
     /**
@@ -297,7 +334,10 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
         matches.addAll(keywords.suggest(query, 2))
         // Keep the typed word and the automatic correction protected. Emoji are explicit choices only.
         var index = insertIndex.coerceAtMost(list.size)
+        var placed = 0
         matches.filterNot { SupportedEmojis.isUnsupported(it) }.take(2).forEach { emoji ->
+            // while a word is typed only one emoji takes a visible slot (rightmost), the second one waits behind the words
+            if (!prediction && placed++ == 1) index = list.size
             val info = useDefaultEmojiSkinTone(SuggestedWordInfo(emoji, "", 850,
                 SuggestedWordInfo.KIND_PREDICTION, emojiSource,
                 SuggestedWordInfo.NOT_AN_INDEX, SuggestedWordInfo.NOT_A_CONFIDENCE))
@@ -341,24 +381,43 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
             shortcuts.afterWord(prev, forcedScript ?: scriptOf(prev), 2)
         } else {
             if (typed.isEmpty()) return
-            shortcuts.suggest(typed, prev, forcedScript ?: scriptOf(typed), if (insertIndex <= 1) 3 else 2)
+            shortcuts.suggest(typed, prev, forcedScript ?: scriptOf(typed), 3)
         }
-        var index = insertIndex.coerceAtMost(list.size)
+        if (forms.isEmpty()) return
+        // a clear match (exact term "alhamdu", "Umar rad", "nabi", 5+ letters) gets a visible slot: the plain word first
+        // ("Alhamdulillah", not "Alhamdulillahi Rabbil Alamin"), the longer forms only in the expanded list. Weak partial
+        // matches never push ordinary words ("should", "show") out of the strip.
+        val strong = isPrediction || shortcuts.isStrongMatch(typed, prev)
+        // an honorific typed after a name ("Nabi sal") shows two forms (written out and ﷺ), everything else one
+        val visible = if (isPrediction || (strong && prev != null && !shortcuts.isStrongMatch(typed, null))) 2 else 1
+        var index = if (strong) insertIndex.coerceAtMost(list.size) else list.size.coerceAtMost(4)
+        val tail = ArrayList<SuggestedWordInfo>()
+        var shown = 0
+        fun add(info: SuggestedWordInfo) {
+            if (list.any { it.word == info.word } || tail.any { it.word == info.word }) return
+            // "alhamdulillah" learned mid-sentence: show it once, in the canonical spelling, where it already ranks
+            val learned = list.indexOfFirst { it.word.equals(info.word, ignoreCase = true) }
+            if (learned >= 1) {
+                list.removeAt(learned)
+                if (learned < index) index--
+            }
+            if (shown < visible) { list.add(index++, info); shown++ } else tail.add(info)
+        }
         // the typed word is not shown in the strip while typing, and names like "Allah" are often not in the
         // dictionary: offer the plain word next to its honorific forms (not for abbreviations like "ra")
         if (!isPrediction && forcedScript == null) {
-            val head = forms.firstOrNull()?.substringBefore(' ')
-            if (head != null && head.equals(typed, ignoreCase = true) && list.drop(1).none { it.word == head }) {
-                list.add(index++, SuggestedWordInfo(head, "", 901, SuggestedWordInfo.KIND_COMPLETION,
+            val head = forms.first().substringBefore(' ')
+            if (head.equals(typed, ignoreCase = true) && list.drop(1).none { it.word == head }) {
+                add(SuggestedWordInfo(head, "", 901, SuggestedWordInfo.KIND_COMPLETION,
                     honorificsDictionary, SuggestedWordInfo.NOT_AN_INDEX, SuggestedWordInfo.NOT_A_CONFIDENCE))
             }
         }
         for (form in forms) {
-            if (list.any { it.word == form }) continue
-            list.add(index++, SuggestedWordInfo(form, "", 900,
+            add(SuggestedWordInfo(form, "", 900,
                 if (isPrediction) SuggestedWordInfo.KIND_PREDICTION else SuggestedWordInfo.KIND_COMPLETION,
                 honorificsDictionary, SuggestedWordInfo.NOT_AN_INDEX, SuggestedWordInfo.NOT_A_CONFIDENCE))
         }
+        list.addAll(tail)
     }
 
     /**
@@ -374,7 +433,7 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
         if (!sv.mRomanUrduOnEnglish || sv.mInputAttributes.mIsPasswordField) return
         val engine = RomanScript.URDU.engine(Settings.getCurrentContext()) ?: return
         val lexicon = engine.romanLexicon()
-        val words: List<String>
+        var words: List<String>
         val insertAt: Int
         if (isPrediction) {
             val prev = if (ngramContext.prevWordCount > 0 && !ngramContext.isBeginningOfSentenceContext)
@@ -387,12 +446,17 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
             if (t.length < 2 || !t.all { it in 'a'..'z' || it == '\'' }) return
             val found = lexicon.complete(t, 4).filter { it.length > t.length || it != t || !isTypedWordValid }
             words = if (t.length >= 3) found else found.filter { it == t }
-            insertAt = if (isTypedWordValid) list.size else 3
+            // only a complete Roman-Urdu word that is not English ("kahan", "zaroorat") takes the right-hand slot; guesses
+            // from a partial word ("sho" -> shohrat) wait behind the English words instead of hiding "show" / "should"
+            insertAt = if (isTypedWordValid || !lexicon.isWord(t)) list.size else 3
+            if (insertAt == 3) words = listOf(t) + words.filter { it != t } // the word itself, completions behind it
         }
         val capitalize = typed.firstOrNull()?.isUpperCase() == true
         var index = insertAt.coerceAtMost(list.size)
         var added = 0
-        for (w in words) {
+        for ((i, w) in words.withIndex()) {
+            // completions of a complete Roman-Urdu word go behind the English words, only the word itself is in front
+            if (insertAt == 3 && i == 1) index = list.size
             val shown = if (capitalize) w.replaceFirstChar { it.uppercase() } else w
             if (list.drop(if (isPrediction) 0 else 1).any { it.word.equals(shown, ignoreCase = true) }) continue
             list.add(index++, SuggestedWordInfo(shown, "", 700 - added, if (isPrediction) SuggestedWordInfo.KIND_PREDICTION else SuggestedWordInfo.KIND_COMPLETION,

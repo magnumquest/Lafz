@@ -27,6 +27,7 @@ public final class ReligiousShortcuts {
 
     private static final class Entry {
         char type;            // 0 for explicit phrase entries, otherwise H P Q M F D W
+        char kind;            // N name that expands (only type H), C name used as context only, S honorific suffix, X phrase
         String latinName, urduName, arabicName;
         String[] latin, urdu, arabic; // explicit forms for phrase entries
     }
@@ -61,8 +62,9 @@ public final class ReligiousShortcuts {
                 final String[] p = line.split("\t", -1);
                 if (p.length < 5) continue;
                 final Entry e = new Entry();
+                e.kind = p[0].charAt(0);
                 final boolean hasArabic = p.length > 5 && !p[5].isEmpty();   // column 6, falls back to the Urdu spelling
-                if (p[0].equals("N")) { e.type = p[1].charAt(0); e.latinName = p[3]; e.urduName = p[4]; e.arabicName = hasArabic ? p[5] : p[4]; }
+                if (e.kind == 'N' || e.kind == 'C') { e.type = p[1].charAt(0); e.latinName = p[3]; e.urduName = p[4]; e.arabicName = hasArabic ? p[5] : p[4]; }
                 else { e.latin = p[3].split("\\|"); e.urdu = p[4].split("\\|"); e.arabic = (hasArabic ? p[5] : p[4]).split("\\|"); }
                 r.entries.add(e);
                 for (String t : p[2].split(",")) {
@@ -115,6 +117,12 @@ public final class ReligiousShortcuts {
         return sb.toString();
     }
 
+    private boolean isExpandingName(String word) {
+        final List<Entry> l = exact.get(normalize(word));
+        if (l != null) for (Entry e : l) if (e.kind == 'N' && e.type == 'H') return true;
+        return false;
+    }
+
     private char typeOfName(String word) {
         if (word == null) return 0;
         final List<Entry> l = exact.get(normalize(word));
@@ -130,10 +138,28 @@ public final class ReligiousShortcuts {
         return s == null ? new String[0] : s[script];
     }
 
-    private static void expand(Entry e, int script, LinkedHashSet<String> out) {
+    /** names expand into "Name + honorific" only for the Prophet ﷺ written as Nabi / Rasul / Huzoor (kind N, type H) */
+    private static boolean expands(Entry e) {
+        return e.kind == 'X' || e.kind == 'S' || (e.kind == 'N' && e.type == 'H');
+    }
+
+    private static void expand(Entry e, int script, char prevType, LinkedHashSet<String> out) {
+        if (e.kind == 'S' && prevType != 0) {
+            // e.g. "rad" after Aisha: Radiallahu Anha first. Honorific glyphs and "(RA)" keep their place
+            final String[] own = script == ARABIC ? e.arabic : script == URDU ? e.urdu : e.latin;
+            for (String f : suffix(prevType, script))
+                for (String o : own) if (o.equals(f) && hasLetter(f)) out.add(f);
+        }
         if (e.type == 0) { addAll(out, script == ARABIC ? e.arabic : script == URDU ? e.urdu : e.latin); return; }
         final String name = script == ARABIC ? e.arabicName : script == URDU ? e.urduName : e.latinName;
         for (String s : suffix(e.type, script)) out.add(name + " " + s);
+    }
+
+    /** a written-out honorific ("Radiallahu Anha"), not a glyph (ﷺ) or an abbreviation ("(RA)") */
+    private static boolean hasLetter(String s) {
+        if (s.indexOf('(') >= 0) return false;
+        for (int i = 0; i < s.length(); i++) if (s.charAt(i) != 'ﷺ' && Character.isLetter(s.charAt(i))) return true;
+        return false;
     }
 
     /** Contextual abbreviations like "ra" after a name: suffix-only forms, or null if t is not an abbreviation. */
@@ -182,20 +208,24 @@ public final class ReligiousShortcuts {
             final List<String> a = abbreviation(key, prev, script);
             if (a != null) { for (String s : a) { if (result.size() < max) result.add(s); } return result; }
         }
-        final int minPrefix = urduTyped ? 3 : 4; // short prefixes (all, fat, mar ...) would fire on ordinary words
+        final char prevType = typeOfName(prev);
         final ArrayList<Entry> hit = new ArrayList<>();
         final ArrayList<Integer> rank = new ArrayList<>();
         final List<Entry> ex = exact.get(key);
-        if (ex != null) for (Entry e : ex) { hit.add(e); rank.add(0); }
+        if (ex != null) for (Entry e : ex) if (expands(e)) { hit.add(e); rank.add(0); }
         final String fk = fold(key);
         final List<Entry> fex = foldExact.get(fk);
-        if (fex != null) for (Entry e : fex) if (!hit.contains(e)) { hit.add(e); rank.add(0); }
-        if (key.length() >= minPrefix) {
-            for (int i = 0; i < foldTriggers.size(); i++) {
-                final String t = foldTriggers.get(i);
-                if (t.length() > fk.length() && t.startsWith(fk) && !hit.contains(triggerEntry.get(i))) {
-                    hit.add(triggerEntry.get(i)); rank.add(1 + t.length() - fk.length());
-                }
+        if (fex != null) for (Entry e : fex) if (expands(e) && !hit.contains(e)) { hit.add(e); rank.add(0); }
+        for (int i = 0; i < foldTriggers.size(); i++) {
+            final Entry e = triggerEntry.get(i);
+            if (!expands(e) || hit.contains(e)) continue;
+            // short prefixes (all, fat, mar ...) would fire on ordinary words; honorific suffixes ("rad", "sal") from 3 letters.
+            // Both the typed and the folded key must be long enough: folding shortens "shou" to "sho"
+            final int min = e.kind == 'S' ? 3 : urduTyped ? 3 : 4;
+            if (key.length() < min || fk.length() < min) continue;
+            final String t = foldTriggers.get(i);
+            if (t.length() > fk.length() && t.startsWith(fk)) {
+                hit.add(e); rank.add(1 + t.length() - fk.length() - (e.kind == 'S' && prevType != 0 ? 100 : 0));
             }
         }
         // stable sort by rank
@@ -203,9 +233,31 @@ public final class ReligiousShortcuts {
         for (int i = 0; i < idx.length; i++) idx[i] = i;
         java.util.Arrays.sort(idx, (x, y) -> rank.get(x) != rank.get(y).intValue() ? Integer.compare(rank.get(x), rank.get(y)) : Integer.compare(x, y));
         final LinkedHashSet<String> out = new LinkedHashSet<>();
-        for (int i : idx) expand(hit.get(i), script, out);
+        for (int i : idx) expand(hit.get(i), script, prevType, out);
         for (String s : out) { if (result.size() < max) result.add(s); }
         return result;
+    }
+
+    /**
+     * Whether the suggestions for [typed] are a clear match that deserves a visible slot: an exact trigger (bismillah,
+     * alhamdu, nabi), an honorific suffix typed after a known name ("Umar rad"), a contextual abbreviation ("Umar ra"),
+     * or a long prefix (5+ letters). Short partial matches are only offered after the regular suggestions.
+     */
+    public boolean isStrongMatch(String typed, String prev) {
+        final String key = normalize(typed);
+        if (key.length() < 2) return false;
+        final boolean urduTyped = isUrduScript(typed);
+        if (!urduTyped) {
+            final List<String> a = abbreviation(key, prev, LATIN);
+            if (a != null) return !a.isEmpty() && typeOfName(prev) != 0;
+        }
+        final String fk = fold(key);
+        for (List<Entry> l : java.util.Arrays.asList(exact.get(key), foldExact.get(fk)))
+            if (l != null) for (Entry e : l) if (expands(e) && (e.kind != 'S' || typeOfName(prev) != 0 || key.length() >= 6)) return true;
+        if (typeOfName(prev) != 0 && key.length() >= 3)
+            for (int i = 0; i < foldTriggers.size(); i++)
+                if (triggerEntry.get(i).kind == 'S' && foldTriggers.get(i).startsWith(fk)) return true;
+        return key.length() >= 5 && !suggest(typed, prev, LATIN, 1).isEmpty();
     }
 
     /** Honorific forms to offer right after a committed name, e.g. after "Umar " -> "Radiallahu Anhu". */
@@ -216,7 +268,7 @@ public final class ReligiousShortcuts {
     public List<String> afterWord(String prev, int script, int max) {
         final ArrayList<String> out = new ArrayList<>();
         final char t = typeOfName(prev);
-        if (t == 0) return out;
+        if (t == 0 || !isExpandingName(prev)) return out;
         for (String s : suffix(t, script)) if (out.size() < max) out.add(s);
         return out;
     }

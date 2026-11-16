@@ -802,6 +802,7 @@ public class LatinIME extends InputMethodService implements
         super.onStartInputView(editorInfo, restarting);
 
         setGestureDataGatheringMode(editorInfo, restarting);
+        if (BuildConfig.DEBUG) helium314.keyboard.latin.utils.SuggestionEval.INSTANCE.maybeRun(this, mInputLogic.mSuggest, mInputLogic::runOnSuggestionThread);
 
         mDictionaryFacilitator.onStartInput();
         // Switch to the null consumer to handle cases leading to early exit below, for which we

@@ -16,11 +16,31 @@ class ReligiousShortcutsTest {
         assertEquals("رسول اللہ ﷺ", r.suggest("رسول", null, true, 3).first())
     }
 
-    @Test fun companionsAndProphets() {
-        assertEquals("Umar Radiallahu Anhu", r.suggest("Umar", null, false, 3).first())
-        assertEquals("Isa Alaihis Salaam", r.suggest("Isa", null, false, 3).first())
-        assertEquals("Fatima Radiallahu Anha", r.suggest("Fatima", null, false, 3).first())
-        assertEquals("عیسیٰ علیہ السلام", r.suggest("isa", null, true, 3).first())
+    @Test fun namesStayNames() {
+        // owner: "Umar" is usually a person; the honorific is offered only when it is typed ("Umar rad")
+        for (name in listOf("Umar", "Isa", "Fatima", "Muhammad", "Mustafa", "Ali", "Shoaib", "Shuaib", "Hasnain"))
+            assertTrue(r.suggest(name, null, false, 3).isEmpty(), name)
+        assertTrue(r.suggest("isa", null, true, 3).isEmpty())
+        assertTrue(r.suggest("shou", null, false, 3).isEmpty()) // folded to "sho": must not reach Shuaib
+        // the Prophet ﷺ written as Nabi / Huzoor still expands
+        assertEquals("Nabi Kareem ﷺ", r.suggest("nabi", null, false, 3).first())
+        assertEquals("Huzoor ﷺ", r.suggest("Huzoor", null, false, 3).first())
+    }
+
+    @Test fun honorificSuffixTypedAfterName() {
+        assertEquals("Radiallahu Anhu", r.suggest("rad", "Umar", false, 3).first())
+        assertEquals("Radiallahu Anha", r.suggest("rad", "Aisha", false, 3).first())
+        assertEquals("Radiallahu Anhuma", r.suggest("radi", "Hasnain", false, 3).first())
+        assertEquals("Sallallahu Alaihi Wasallam", r.suggest("sal", "Nabi", false, 3).first())
+        assertEquals("Sallallahu Alaihi Wasallam", r.suggest("sall", "Muhammad", false, 3).first())
+        assertEquals("Alaihis Salaam", r.suggest("alai", "Isa", false, 3).first())
+        assertEquals("Rahimahullah", r.suggest("rah", "Bukhari", false, 3).first())
+        assertEquals("رضی اللہ عنہا", r.suggest("rad", "Aisha", ReligiousShortcuts.URDU, 3).first())
+        assertTrue(r.isStrongMatch("rad", "Umar"))
+        assertTrue(!r.isStrongMatch("rad", "the"))  // "rad" alone is an English word: offered, but not in a main slot
+        assertTrue(!r.isStrongMatch("Umar", null))
+        assertTrue(r.isStrongMatch("alhamdu", null))
+        assertTrue(r.isStrongMatch("nabi", null))
     }
 
     @Test fun abbreviationsDependOnPreviousName() {
@@ -34,9 +54,11 @@ class ReligiousShortcutsTest {
         assertTrue(r.suggest("all", null, false, 4).isEmpty())
     }
 
-    @Test fun afterNameOffersHonorific() {
-        assertEquals("Radiallahu Anhu", r.afterWord("Umar", false, 3).first())
-        assertEquals("رضی اللہ عنہا", r.afterWord("عائشہ", true, 3).first())
+    @Test fun afterNameOffersHonorificOnlyForTheProphet() {
+        assertEquals("ﷺ", r.afterWord("Nabi", false, 3).first())
+        assertTrue(r.afterWord("Umar", false, 3).isEmpty())
+        assertTrue(r.afterWord("Muhammad", false, 3).isEmpty())
+        assertTrue(r.afterWord("عائشہ", true, 3).isEmpty())
         assertTrue(r.afterWord("the", false, 3).isEmpty())
     }
 
@@ -50,5 +72,7 @@ class ReligiousShortcutsTest {
         assertEquals("ان شاء اللہ", r.suggest("inshallah", null, true, 3).first())
         assertEquals("JazakAllahu Khairan", r.suggest("jazakallah", null, false, 3).first())
         assertEquals("Namaz", r.suggest("namaz", null, false, 3).first())
+        assertEquals("Alhamdulillah", r.suggest("Alhamdu", null, false, 3).first())
+        assertEquals("Alhamdulillah", r.suggest("Alham", null, false, 3).first())
     }
 }

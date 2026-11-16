@@ -364,6 +364,10 @@ class DictionaryFacilitatorImpl : DictionaryFacilitator {
                 val decapitalizedInHistory = histDict.isInDictionary(decapitalizedWord)
                 if (wordInHistory && !decapitalizedInHistory) return word
                 else if (!wordInHistory && decapitalizedInHistory) return decapitalizedWord
+                // Lafz: a word no dictionary knows, at the start of a message ("Alhamdulillah", "Yaar"): chat messages often
+                // are a single such word, so not learning it here meant it was never learned. Learn the lower-case form if the
+                // capital came from auto-capitalization; suggestions are re-capitalized at sentence start anyway.
+                if (!wordValid && !decapitalizedValid && !wordInHistory) return decapitalizedWord
             }
             return null // can't determine reliably enough, better add nothing (wasAutoCapitalizedOrIsBeginningOfSentence is unusual anyway)
         } else {

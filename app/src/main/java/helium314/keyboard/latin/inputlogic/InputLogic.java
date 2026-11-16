@@ -1883,6 +1883,11 @@ public final class InputLogic {
                 timeStampInSeconds, settingsValues.mBlockPotentiallyOffensive);
     }
 
+    /** debug tooling ({@link helium314.keyboard.latin.utils.SuggestionEval}): runs work on the suggestion thread */
+    public void runOnSuggestionThread(final Runnable r) {
+        mInputLogicHandler.getSuggestedWords(r);
+    }
+
     // the last word learned by learnRomanScriptWord, so that a revert right after the commit can take it back
     private RomanScript mLastLearnScript;
     private String mLastLearnWord, mLastLearnRoman, mLastLearnPrev;

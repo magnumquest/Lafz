@@ -36,8 +36,8 @@ field) $A shell input keyevent KEYCODE_HOME; $A shell ime set $IME >/dev/null
   $A shell am start -a android.settings.APP_SEARCH_SETTINGS >/dev/null 2>&1; sleep 3; $A shell input tap 540 156; sleep 2 ;;
 type) shift; T="$1"; D="${2:-0.2}"
   declare -A X=([q]=54 [w]=162 [e]=270 [r]=378 [t]=486 [y]=594 [u]=702 [i]=810 [o]=918 [p]=1026 [a]=108 [s]=216 [d]=324 [f]=432 [g]=540 [h]=648 [j]=756 [k]=864 [l]=972 [z]=216 [x]=324 [c]=432 [v]=540 [b]=648 [n]=756 [m]=864)
-  for ((i=0;i<${#T};i++)); do c=${T:$i:1}; if [ "$c" = " " ]; then $A shell input tap 540 2252; else
-    case "qwertyuiop" in *$c*) y=1842;; esac; case "asdfghjkl" in *$c*) y=1980;; esac; case "zxcvbnm" in *$c*) y=2114;; esac
+  for ((i=0;i<${#T};i++)); do c=${T:$i:1}; if [ "$c" = " " ]; then $A shell input tap 590 2242; else
+    case "qwertyuiop" in *$c*) y=1776;; esac; case "asdfghjkl" in *$c*) y=1932;; esac; case "zxcvbnm" in *$c*) y=2088;; esac
     $A shell input tap ${X[$c]} $y; fi; sleep $D; done ;;
 field2) # Google Messages compose box (multi-line, normal suggestions; the settings search field has NO_SUGGESTIONS)
   $A shell input keyevent KEYCODE_HOME; sleep 1

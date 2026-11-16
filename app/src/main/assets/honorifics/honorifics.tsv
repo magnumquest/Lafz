@@ -1,11 +1,13 @@
 # kind	type	triggers	latin	urdu	arabic
-# N: person/entity, honorific generated from type (H Muhammad, P prophet/angel, Q female prophet, M/F/D companions, W scholar)
+# N: person/entity, honorific generated from type (H Muhammad, P prophet/angel, Q female prophet, M/F/D companions, W scholar). Only H names written with kind N expand when typed (Nabi, Rasul, Huzoor)
+# C: name used only as context (which honorific a following "rad"/"sal"/"ra" offers first); typing the name gives just the name
+# S: honorific suffix, offered once its first letters are typed (from 3 letters), forms ordered by the previous name's type
 # X: explicit phrases, "|" separated alternatives; triggers are lower-case latin or Urdu script
-N	H	muhammad,mohammad,muhammed,mohammed,mohd,محمد,mohamed,mohamad,muhamad,mhmd	Muhammad	محمد	محمد
+C	H	muhammad,mohammad,muhammed,mohammed,mohd,محمد,mohamed,mohamad,muhamad,mhmd	Muhammad	محمد	محمد
 N	H	rasul,rasool,rasulullah,rasoolullah,rasulallah,rasoolallah,rasulullahi,رسول,رسولاللہ	Rasulullah	رسول اللہ	رسول الله
 N	H	nabi,nabikareem,nabipak,nabiakram,نبی	Nabi Kareem	نبی کریم	النبي الكريم
 N	H	huzoor,hazoor,huzur,حضور	Huzoor	حضور	رسول الله
-N	H	mustafa,مصطفیٰ,مصطفی	Mustafa	مصطفیٰ	مصطفى
+C	H	mustafa,مصطفیٰ,مصطفی	Mustafa	مصطفیٰ	مصطفى
 N	P	adam,آدم	Adam	آدم	آدم
 N	P	idris,idrees,ادریس	Idris	ادریس	إدريس
 N	P	nuh,nooh,noah,نوح	Nuh	نوح	نوح
@@ -94,15 +96,15 @@ N	W	rumi,رومی	Maulana Rumi	مولانا رومی	جلال الدين الر�
 N	W	kathir,کثیر	Ibn Kathir	ابن کثیر	ابن كثير
 N	W	taymiyyah,taimiyyah,تیمیہ	Ibn Taymiyyah	ابن تیمیہ	ابن تيمية
 N	W	iqbal,اقبال	Allama Iqbal	علامہ اقبال	العلامة إقبال
-X		ali,علی	Ali Karamallahu Wajhahu	علی کرم اللہ وجہہ	علي كرم الله وجهه
-X		hasnain,حسنین	Hasan wa Husain Radiallahu Anhuma	حسن و حسین رضی اللہ عنہما	الحسن والحسين رضي الله عنهما
+C	M	ali,علی	Ali	علی	علي
+C	D	hasnain,حسنین	Hasnain	حسنین	الحسنين
 X		ahlebait,ahlulbayt,ahlebayt,اہلبیت	Ahl-e-Bayt Alaihimus Salaam|Ahl al-Bayt	اہل بیت علیہم السلام|اہل بیت	أهل البيت عليهم السلام|أهل البيت
 X		sahaba,sahabah,companions,صحابہ	Sahaba Radiallahu Anhum|Sahaba Karam Radiallahu Anhum	صحابہ رضی اللہ عنہم|صحابہ کرام رضی اللہ عنہم	الصحابة رضي الله عنهم|الصحابة الكرام رضي الله عنهم
-X		sallallahu,sallallah,salallahu,salallah,sallalahu,salalahu,sallallahualaihiwasallam,pbuh,sws,صلی	Sallallahu Alaihi Wasallam|ﷺ|Sallallahu Alaihi Wa Aalihi Wasallam	ﷺ|صلی اللہ علیہ وآلہ وسلم|صلی اللہ علیہ وسلم	ﷺ|صلى الله عليه وسلم|صلى الله عليه وآله وسلم
-X		alaihi,alayhi,alaihis,alayhis,alaihissalam,alaihisalam,alaihisalaam,alaihissalaam,علیہ	Alaihis Salaam|Alayhis Salam|(AS)	علیہ السلام	عليه السلام
-X		alaiha,alayha,alaihas,alayhas,alaihassalam,علیہا	Alaihas Salaam|Alayhas Salam	علیہا السلام	عليها السلام
-X		radi,radhi,radiallahu,radiyallahu,radiallah,radiyallah,radiallahuanhu,رضی	Radiallahu Anhu|Radiallahu Anha|Radiallahu Anhuma|Radiallahu Anhum	رضی اللہ عنہ|رضی اللہ عنہا|رضی اللہ عنہما|رضی اللہ عنہم	رضي الله عنه|رضي الله عنها|رضي الله عنهما|رضي الله عنهم
-X		rahimahullah,rahmatullah,rahmatullahi,rahimahumullah,rahmat,رحمہ,رحمۃ	Rahimahullah|Rahmatullahi Alaihi|Rahmatullahi Alaiha|Rahimahumullah	رحمہ اللہ|رحمۃ اللہ علیہ|رحمۃ اللہ علیہا|رحمہم اللہ	رحمه الله|رحمة الله عليه|رحمة الله عليها|رحمهم الله
+S		sallallahu,sallallah,salallahu,salallah,sallalahu,salalahu,sallallahualaihiwasallam,pbuh,sws,صلی	Sallallahu Alaihi Wasallam|ﷺ|Sallallahu Alaihi Wa Aalihi Wasallam	ﷺ|صلی اللہ علیہ وآلہ وسلم|صلی اللہ علیہ وسلم	ﷺ|صلى الله عليه وسلم|صلى الله عليه وآله وسلم
+S		alaihi,alayhi,alaihis,alayhis,alaihissalam,alaihisalam,alaihisalaam,alaihissalaam,علیہ	Alaihis Salaam|Alayhis Salam|(AS)	علیہ السلام	عليه السلام
+S		alaiha,alayha,alaihas,alayhas,alaihassalam,علیہا	Alaihas Salaam|Alayhas Salam	علیہا السلام	عليها السلام
+S		radi,radhi,radiallahu,radiyallahu,radiallah,radiyallah,radiallahuanhu,رضی	Radiallahu Anhu|Radiallahu Anha|Radiallahu Anhuma|Radiallahu Anhum	رضی اللہ عنہ|رضی اللہ عنہا|رضی اللہ عنہما|رضی اللہ عنہم	رضي الله عنه|رضي الله عنها|رضي الله عنهما|رضي الله عنهم
+S		rahimahullah,rahmatullah,rahmatullahi,rahimahumullah,رحمہ,رحمۃ	Rahimahullah|Rahmatullahi Alaihi|Rahmatullahi Alaiha|Rahimahumullah	رحمہ اللہ|رحمۃ اللہ علیہ|رحمۃ اللہ علیہا|رحمہم اللہ	رحمه الله|رحمة الله عليه|رحمة الله عليها|رحمهم الله
 X		swt,subhanahu,subhanahuwataala,jalla,سبحانہ	Subhanahu Wa Ta'ala|SWT|Azza Wa Jal|Jalla Jalaluhu	سبحانہ و تعالیٰ|عز و جل|جل جلالہ	سبحانه وتعالى|عز وجل|جل جلاله
 X		allah,allahu,اللہ	Allah Subhanahu Wa Ta'ala|Allah Ta'ala|Allah Azza Wa Jal	اللہ سبحانہ و تعالیٰ|اللہ تعالیٰ|اللہ عز و جل	الله سبحانه وتعالى|الله تعالى|الله عز وجل
 X		bismillah,bismilah,بسم	Bismillah ir-Rahman ir-Raheem|Bismillah|Bismillahi Tawakkaltu Alallah	بسم اللہ الرحمن الرحیم|بسم اللہ|بسم اللہ توکلت علی اللہ	بسم الله الرحمن الرحيم|بسم الله|بسم الله توكلت على الله
