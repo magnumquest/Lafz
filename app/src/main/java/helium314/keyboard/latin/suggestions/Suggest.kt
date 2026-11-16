@@ -268,6 +268,7 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
                                           settingsValuesForSuggestion: SettingsValuesForSuggestion): SuggestedWords? {
         val engine = script.engine(Settings.getCurrentContext()) ?: return null
         engine.personal = if (Settings.getValues()?.mLearnRomanTyping == true) script.personal else null
+        engine.phoneticEnabled = Settings.getValues()?.mSoundSpelling != false && script == RomanScript.URDU
         val typed = wordComposer.typedWord
         val prevInfo = if (ngramContext.prevWordCount > 0) ngramContext.getNthPrevWord(1) else null
         val atStart = ngramContext.isBeginningOfSentenceContext || prevInfo == null
@@ -314,7 +315,7 @@ class Suggest(private val mDictionaryFacilitator: DictionaryFacilitator) {
             SuggestedWordInfo.NOT_AN_INDEX, SuggestedWordInfo.NOT_A_CONFIDENCE)
         list.add(3.coerceAtMost(list.size), romanChoice)
         addContactSuggestions(list, wordComposer, ngramContext, keyboard, settingsValuesForSuggestion, typed)
-        addContextEmoji(list, typed, ngramContext, false, 2)
+        addContextEmoji(list, typed, ngramContext, false, 4)
         return SuggestedWords(list, null, typedInfo, false, willAutoCorrect, false, inputStyleIfNotPrediction, sequenceNumber)
     }
 

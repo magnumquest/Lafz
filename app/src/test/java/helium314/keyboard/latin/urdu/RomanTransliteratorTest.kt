@@ -48,10 +48,13 @@ class RomanTransliteratorTest {
         assertEquals("ڈاکٹر", sentence("doctor"))
     }
 
-    @Test fun neverSuggestsOutOfDictionaryWords() {
-        assertTrue(engine.suggest("xyzqw", null, true, 5).isEmpty())
-        for (w in listOf("karunga", "mein", "kaise", "computer", "ka")) {
-            engine.suggest(w, null, true, 6).forEach { assertTrue(engine.isKnownWord(it.text), "$w -> ${it.text}") }
+    @Test fun outOfDictionaryWordsAreOnlySoundSpellings() {
+        // owner (2026-11-17): words the dictionary does not have are spelled by sound; such candidates are marked
+        for (w in listOf("karunga", "mein", "kaise", "computer", "ka", "xyzqw")) {
+            engine.suggest(w, null, true, 6).forEach { assertTrue(engine.isKnownWord(it.text) || it.phonetic, "$w -> ${it.text}") }
         }
+        // a dictionary word is never displaced by a sound spelling
+        for ((w, u) in listOf("karunga" to "کروں گا", "mein" to "میں", "computer" to "کمپیوٹر"))
+            assertEquals(u, engine.suggest(w, null, true, 6).first().text)
     }
 }

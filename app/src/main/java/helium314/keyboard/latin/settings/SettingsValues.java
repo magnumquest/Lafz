@@ -116,6 +116,8 @@ public class SettingsValues {
     public final boolean mHonorificSuggestions;
     public final boolean mRomanUrduOnEnglish;
     public final boolean mLearnRomanTyping;
+    public final boolean mSoundSpelling;
+    public final boolean mLetterEdit;
     public final boolean mSuggestPunctuation;
     public final boolean mCenterSuggestionTextToEnter;
     public final boolean mGestureInputEnabled;
@@ -259,6 +261,8 @@ public class SettingsValues {
         mHonorificSuggestions = prefs.getBoolean(Settings.PREF_HONORIFIC_SUGGESTIONS, Defaults.PREF_HONORIFIC_SUGGESTIONS);
         mRomanUrduOnEnglish = prefs.getBoolean(Settings.PREF_ROMAN_URDU_ON_ENGLISH, Defaults.PREF_ROMAN_URDU_ON_ENGLISH);
         mLearnRomanTyping = prefs.getBoolean(Settings.PREF_LEARN_ROMAN_TYPING, Defaults.PREF_LEARN_ROMAN_TYPING);
+        mSoundSpelling = prefs.getBoolean(Settings.PREF_SOUND_SPELLING, Defaults.PREF_SOUND_SPELLING);
+        mLetterEdit = prefs.getBoolean(Settings.PREF_LETTER_EDIT, Defaults.PREF_LETTER_EDIT);
         mSuggestPunctuation = prefs.getBoolean(Settings.PREF_SUGGEST_PUNCTUATION, Defaults.PREF_SUGGEST_PUNCTUATION);
         mSuggestClipboardContent = prefs.getBoolean(Settings.PREF_SUGGEST_CLIPBOARD_CONTENT, Defaults.PREF_SUGGEST_CLIPBOARD_CONTENT);
         mSmartClipboard = prefs.getBoolean(Settings.PREF_SMART_CLIPBOARD, Defaults.PREF_SMART_CLIPBOARD);

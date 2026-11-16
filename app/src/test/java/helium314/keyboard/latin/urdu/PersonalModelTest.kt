@@ -89,6 +89,48 @@ class PersonalModelTest {
         } finally { engine.personal = null }
     }
 
+    @Test fun onePickPutsTheWordFirstAndTheLatestPickWins() {
+        val cands = engine.suggest("data", null, false, 6).map { it.text }
+        val other = cands[1]
+        val pm = PersonalModel()
+        pm.learn("data", other, null, 2f)          // one manual pick
+        engine.personal = pm
+        try {
+            assertEquals(other, engine.suggest("data", null, false, 6).first().text)
+            pm.learn("data", cands[0], null, 2f)   // changed mind: picked the first one again
+            assertEquals(cands[0], engine.suggest("data", null, false, 6).first().text)
+        } finally { engine.personal = null }
+    }
+
+    @Test fun unknownWordIsSpelledBySound() {
+        // no dictionary word: the sound spelling comes first, with the hard t / d (ٹ ڈ) version next to it
+        val c = engine.suggest("pompom", null, false, 6)
+        assertEquals("پمپوم", c.first().text)
+        assertTrue(c.first().phonetic)
+        // listed loanwords are dictionary words even where the letter channel cannot align the spelling
+        assertEquals("واٹس ایپ", engine.suggest("whatsapp", null, false, 6).first().text)
+        assertEquals("ٹک ٹاک", engine.suggest("tiktok", null, false, 6).first().text)
+        // a dictionary word keeps its place; the sound spelling is only offered behind it
+        val d = engine.suggest("download", null, false, 6)
+        assertEquals("ڈاؤن لوڈ", d.first().text)
+        // a word spelled by sound and picked is offered first next time
+        val pm = PersonalModel()
+        pm.learn("faargive", "فارگیو", null, 2f)
+        engine.personal = pm
+        try { assertEquals("فارگیو", engine.suggest("faargive", null, false, 6).first().text) } finally { engine.personal = null }
+    }
+
+    @Test fun lettersForAKey() {
+        assertEquals(listOf("ت", "ٹ", "ط"), engine.lettersFor("t").take(3))
+        assertEquals("خ", engine.lettersFor("kh").first())
+        assertTrue(engine.lettersFor("z").containsAll(listOf("ز", "ذ", "ض", "ظ")))
+    }
+
+    @Test fun hardTAndDVariantForUnknownWords() {
+        val c = engine.suggest("dodnot", null, false, 6).map { it.text }
+        assertTrue(c.any { it.contains('ڈ') || it.contains('ٹ') }, c.toString())
+    }
+
     @Test fun learnedNextWordComesFirst() {
         val pm = PersonalModel()
         pm.learn("x", "کتاب", "میں", 2f)

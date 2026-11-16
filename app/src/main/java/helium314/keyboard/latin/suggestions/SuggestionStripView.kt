@@ -5,6 +5,7 @@
  */
 package helium314.keyboard.latin.suggestions
 
+import helium314.keyboard.latin.urdu.RomanScript
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.SharedPreferences
@@ -77,6 +78,8 @@ class SuggestionStripView(context: Context, attrs: AttributeSet?, defStyle: Int)
         fun pickSuggestionManually(word: SuggestedWordInfo?)
         fun onCodeInput(primaryCode: Int, x: Int, y: Int, isKeyRepeat: Boolean)
         fun removeSuggestion(word: String?)
+        /** long press, check mark: Roman Urdu / Arabic = this word first for the typed spelling, otherwise add the typed word to the personal dictionary */
+        fun teachSuggestion(info: SuggestedWordInfo)
         fun removeExternalSuggestions()
         fun onSwipeDownOnToolbar()
     }
@@ -384,36 +387,52 @@ class SuggestionStripView(context: Context, attrs: AttributeSet?, defStyle: Int)
     @SuppressLint("ClickableViewAccessibility") // no need for View#performClick, we only return false mostly anyway
     private fun onLongClickSuggestion(wordView: TextView): Boolean {
         var showIcon = true
+        var info: SuggestedWordInfo? = null
         if (wordView.tag is Int) {
             val index = wordView.tag as Int
-            val type = suggestedWords.getInfo(index).sourceDict
+            if (index < suggestedWords.size) info = suggestedWords.getInfo(index)
+            val type = info?.sourceDict
             if (type == Dictionary.DICTIONARY_USER_TYPED || type == Dictionary.DICTIONARY_HARDCODED)
                 showIcon = false
         }
-        if (showIcon) {
-            val icon = KeyboardIconsSet.instance.getNewDrawable(KeyboardIconsSet.NAME_BIN, context)!!
-            Settings.getValues().mColors.setColor(icon, ColorType.REMOVE_SUGGESTION_ICON)
-            val w = icon.intrinsicWidth
-            val h = icon.intrinsicHeight
-            wordView.setCompoundDrawablesWithIntrinsicBounds(icon, null, null, null)
+        // Lafz: a check mark teaches the word (Roman Urdu / Arabic: for the typed spelling; English: the typed word)
+        val romanScript = RomanScript.of(Settings.getValues().mLocale) != null
+        val teachable = info != null && info.sourceDict.mDictType != "lafz_letter_edit"
+                && (if (romanScript) info.sourceDict != Dictionary.DICTIONARY_USER_TYPED else info.sourceDict == Dictionary.DICTIONARY_USER_TYPED)
+        if (showIcon || teachable) {
+            val icon = if (showIcon) KeyboardIconsSet.instance.getNewDrawable(KeyboardIconsSet.NAME_BIN, context)!! else null
+            icon?.let { Settings.getValues().mColors.setColor(it, ColorType.REMOVE_SUGGESTION_ICON) }
+            val teach = if (teachable) KeyboardIconsSet.instance.getNewDrawable(KeyboardIconsSet.NAME_DONE_KEY, context) else null
+            teach?.let { Settings.getValues().mColors.setColor(it, ColorType.REMOVE_SUGGESTION_ICON) }
+            val w = icon?.intrinsicWidth ?: 0
+            val h = icon?.intrinsicHeight ?: teach?.intrinsicHeight ?: 0
+            val tw = teach?.intrinsicWidth ?: 0
+            wordView.setCompoundDrawablesWithIntrinsicBounds(icon, null, teach, null)
             wordView.ellipsize = TextUtils.TruncateAt.END
             val downOk = AtomicBoolean(false)
+            val downTeach = AtomicBoolean(false)
             wordView.setOnTouchListener { _, motionEvent ->
-                if (motionEvent.action == MotionEvent.ACTION_UP && downOk.get()) {
-                    val x = motionEvent.x
-                    val y = motionEvent.y
-                    if (0 < x && x < w && 0 < y && y < h) {
+                val x = motionEvent.x
+                val y = motionEvent.y
+                val onBin = icon != null && 0 < x && x < w && 0 < y && y < wordView.height
+                val onTeach = teach != null && x > wordView.width - tw - wordView.paddingRight && x < wordView.width && 0 < y && y < wordView.height
+                if (motionEvent.action == MotionEvent.ACTION_UP && (downOk.get() || downTeach.get())) {
+                    if (onBin && downOk.get()) {
                         removeSuggestion(wordView)
                         wordView.cancelLongPress()
                         wordView.isPressed = false
                         return@setOnTouchListener true
                     }
-                } else if (motionEvent.action == MotionEvent.ACTION_DOWN) {
-                    val x = motionEvent.x
-                    val y = motionEvent.y
-                    if (0 < x && x < w && 0 < y && y < h) {
-                        downOk.set(true)
+                    if (onTeach && downTeach.get() && info != null) {
+                        listener.teachSuggestion(info)
+                        wordView.setCompoundDrawablesWithIntrinsicBounds(icon, null, null, null)
+                        wordView.cancelLongPress()
+                        wordView.isPressed = false
+                        return@setOnTouchListener true
                     }
+                } else if (motionEvent.action == MotionEvent.ACTION_DOWN) {
+                    if (onBin) downOk.set(true)
+                    if (onTeach) downTeach.set(true)
                 }
                 false
             }

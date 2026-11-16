@@ -1501,6 +1501,12 @@ public class LatinIME extends InputMethodService implements
     }
 
     @Override
+    public void teachSuggestion(final SuggestedWordInfo info) {
+        final String taught = mInputLogic.teachSuggestion(info);
+        if (taught != null) KeyboardSwitcher.getInstance().showToast(getString(R.string.taught_word, taught), true);
+    }
+
+    @Override
     public void removeExternalSuggestions() {
         setNeutralSuggestionStrip();
         mHandler.postResumeSuggestions(false);

@@ -46,6 +46,7 @@ import helium314.keyboard.latin.BuildConfig;
 import helium314.keyboard.latin.LatinIME;
 import helium314.keyboard.latin.urdu.PhoneticFallback;
 import helium314.keyboard.latin.urdu.RomanScript;
+import helium314.keyboard.latin.urdu.RomanTransliterator;
 import helium314.keyboard.latin.NgramContext;
 import helium314.keyboard.latin.RichInputConnection;
 import helium314.keyboard.latin.SingleDictionaryFacilitator;
@@ -331,6 +332,10 @@ public final class InputLogic {
         Event event = Event.createSuggestionPickedEvent(suggestionInfo);
         InputTransaction inputTransaction = new InputTransaction(settingsValues, event,
             SystemClock.uptimeMillis(), mSpaceState, keyboardCapsMode);
+        if (pickNativeLetter(suggestionInfo)) {
+            inputTransaction.setDidAffectContents();
+            return inputTransaction;
+        }
         // Manual pick affects the contents of the editor, so we take note of this. It's important
         // for the sequence of language switching.
         inputTransaction.setDidAffectContents();
@@ -1134,6 +1139,7 @@ public final class InputLogic {
         // make it shorter (possibly cut into several pieces). Also factor
         // handleNonSpecialCharacterEvent which has the same name as other handle* methods but is
         // not the same.
+        if (handleNativeLetterEdit(event, settingsValues, inputTransaction)) return;
         boolean isComposingWord = mWordComposer.isComposingWord();
         mWordComposer.unsetBatchMode(); // relevant in case we continue a batch word with normal typing
         if (!isComposingWord) insertRtlMarkIfNeeded(settingsValues);
@@ -1886,6 +1892,125 @@ public final class InputLogic {
     /** debug tooling ({@link helium314.keyboard.latin.utils.SuggestionEval}): runs work on the suggestion thread */
     public void runOnSuggestionThread(final Runnable r) {
         mInputLogicHandler.getSuggestedWords(r);
+    }
+
+    // ---- letter editing inside Urdu / Arabic words (Roman keyboard): "t" next to or inside فائنل inserts ت and offers ٹ ط
+    public static final Dictionary LETTER_EDIT_SOURCE = new Dictionary.PhonyDictionary("lafz_letter_edit");
+    private String mLetterSpan;      // text the last letter key produced (what a strip pick replaces)
+    private String mLetterKey;       // Roman key(s) behind mLetterSpan, for two-key letters ("k" + "h" = خ)
+    private int mLetterEnd = -1;     // cursor position right after mLetterSpan
+
+    private static boolean isNativeLetter(final int cp) {
+        if (cp < 0x0600) return false;
+        final boolean block = cp <= 0x06FF || (cp >= 0x0750 && cp <= 0x077F) || (cp >= 0xFB50 && cp <= 0xFDFF) || (cp >= 0xFE70 && cp <= 0xFEFF);
+        return block && (Character.isLetter(cp) || Character.getType(cp) == Character.NON_SPACING_MARK);
+    }
+
+    private static boolean hasNativeLetter(final CharSequence s) {
+        for (int i = 0; i < s.length(); i++) if (isNativeLetter(s.charAt(i))) return true;
+        return false;
+    }
+
+    /**
+     * Roman Urdu / Arabic: a Roman letter typed with the cursor inside or right next to a native-script word (moved there, or
+     * after deleting letters of it) inserts the most likely letter at the cursor, joining the word, and the strip offers every
+     * letter the key can stand for. Ordinary typing is untouched: after a space, a phantom space, while composing a Roman word,
+     * or with a selection this returns false.
+     */
+    private boolean handleNativeLetterEdit(final Event event, final SettingsValues settingsValues, final InputTransaction inputTransaction) {
+        final int cp = event.getCodePoint();
+        if (!settingsValues.mLetterEdit || !((cp >= 'a' && cp <= 'z') || (cp >= 'A' && cp <= 'Z'))) return false;
+        final RomanScript script = RomanScript.Companion.of(getDictionaryFacilitatorLocale());
+        if (script == null || inputTransaction.getSpaceState() == SpaceState.PHANTOM || mConnection.hasSelection()) return false;
+        final boolean composing = mWordComposer.isComposingWord();
+        if (composing && !hasNativeLetter(mWordComposer.getTypedWord())) return false; // a Roman word being typed
+        final int before = mConnection.getCodePointBeforeCursor();
+        final CharSequence afterText = mConnection.getTextAfterCursor(1, 0);
+        final int after = afterText == null || afterText.length() == 0 ? -1 : Character.codePointAt(afterText, 0);
+        if (!isNativeLetter(before) && !isNativeLetter(after)) return false;
+        final RomanTransliterator engine = script.engine(mLatinIME);
+        if (engine == null) return false;
+        if (composing) // a word resumed by moving the cursor into it: keep its text, edit letters instead
+            resetEntireInputState(mConnection.getExpectedSelectionStart(), mConnection.getExpectedSelectionEnd(), false);
+        final String key = String.valueOf((char) Character.toLowerCase(cp));
+        // two keys for one letter ("kh" = خ, "sh" = ش) or an aspirate ("bh" = بھ): only right after the previous letter key
+        final int cursor = mConnection.getExpectedSelectionStart();
+        final boolean chained = mLetterSpan != null && cursor == mLetterEnd && mLetterKey != null && mLetterKey.length() == 1
+                && mLetterSpan.contentEquals(mConnection.getTextBeforeCursor(mLetterSpan.length(), 0));
+        final ArrayList<String> options = new ArrayList<>();
+        String replaced = "";
+        if (chained) {
+            for (String l : engine.lettersFor(mLetterKey + key)) options.add(l);
+            if (key.equals("h") && "bptdkgjcr".contains(mLetterKey) && script == RomanScript.URDU) options.add(mLetterSpan + "ھ");
+            if (!options.isEmpty()) {
+                replaced = mLetterSpan;
+                for (String l : engine.lettersFor(key)) if (!options.contains(mLetterSpan + l)) options.add(mLetterSpan + l);
+            }
+        }
+        if (options.isEmpty()) options.addAll(engine.lettersFor(key));
+        if (options.isEmpty()) return false;
+        mConnection.beginBatchEdit();
+        if (!replaced.isEmpty()) mConnection.deleteTextBeforeCursor(replaced.length());
+        mConnection.commitText(options.get(0), 1);
+        mConnection.endBatchEdit();
+        mLetterSpan = options.get(0);
+        mLetterKey = replaced.isEmpty() ? key : mLetterKey + key;
+        mLetterEnd = mConnection.getExpectedSelectionStart();
+        showLetterOptions(options);
+        inputTransaction.setDidAffectContents();
+        return true;
+    }
+
+    private void showLetterOptions(final List<String> options) {
+        final ArrayList<SuggestedWordInfo> infos = new ArrayList<>();
+        for (int i = 0; i < options.size(); i++)
+            infos.add(new SuggestedWordInfo(options.get(i), "", 1000 - i, SuggestedWordInfo.KIND_PREDICTION, LETTER_EDIT_SOURCE,
+                    SuggestedWordInfo.NOT_AN_INDEX, SuggestedWordInfo.NOT_A_CONFIDENCE, null));
+        final SuggestedWords words = new SuggestedWords(infos, null, null, false, false, false,
+                InputStyle.PREDICTION, SuggestedWords.NOT_A_SEQUENCE_NUMBER);
+        mSuggestedWords = words;
+        mSuggestionStripViewAccessor.setSuggestions(words);
+    }
+
+    /** a letter picked from the strip replaces the letter(s) the last key inserted */
+    private boolean pickNativeLetter(final SuggestedWordInfo info) {
+        if (info.getSourceDict() != LETTER_EDIT_SOURCE) return false;
+        final String choice = info.getWord();
+        mConnection.beginBatchEdit();
+        if (mLetterSpan != null && mConnection.getExpectedSelectionStart() == mLetterEnd
+                && mLetterSpan.contentEquals(mConnection.getTextBeforeCursor(mLetterSpan.length(), 0)))
+            mConnection.deleteTextBeforeCursor(mLetterSpan.length());
+        mConnection.commitText(choice, 1);
+        mConnection.endBatchEdit();
+        mLetterSpan = choice;
+        mLetterKey = null;   // no two-key letters across a pick
+        mLetterEnd = mConnection.getExpectedSelectionStart();
+        return true;
+    }
+
+    /**
+     * Long press, check mark on a suggestion. Roman Urdu / Arabic: the word is shown first for the Roman spelling being typed
+     * from now on (strongest learning weight). Other languages: the typed word goes to the personal dictionary.
+     * @return what was taught, for a short confirmation, or null
+     */
+    public String teachSuggestion(final SuggestedWordInfo info) {
+        final String word = info.getWord();
+        if (word == null || word.isEmpty()) return null;
+        final RomanScript script = RomanScript.Companion.of(getDictionaryFacilitatorLocale());
+        if (script != null) {
+            if (!mWordComposer.isComposingWord()) return null;
+            final String roman = mWordComposer.getTypedWord();
+            final NgramContext ngram = mConnection.getNgramContextFromNthPreviousWord(Settings.getValues().mSpacingAndPunctuations, 2);
+            String prev = null;
+            if (ngram.getPrevWordCount() > 0 && !ngram.isBeginningOfSentenceContext() && ngram.getNthPrevWord(1) != null) {
+                final String t = ngram.getNthPrevWord(1).toString().replaceAll("[\u200e\u200f\u061c]", "").trim();
+                prev = t.isEmpty() ? null : t.substring(t.lastIndexOf(' ') + 1);
+            }
+            script.learn(roman, word, prev, 4f);
+            return word + "  ←  " + roman;
+        }
+        android.provider.UserDictionary.Words.addWord(mLatinIME, word, 250, null, getDictionaryFacilitatorLocale());
+        return word;
     }
 
     // the last word learned by learnRomanScriptWord, so that a revert right after the commit can take it back

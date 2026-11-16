@@ -215,6 +215,11 @@
     <string name="voice_dictation_no_model">No %s voice model imported (Settings > Voice typing)</string>
     <string name="voice_working">Working…</string>
     <string name="learn_roman_typing_title">Learn from my typing</string>
+    <string name="taught_word">Learned: %s</string>
+    <string name="sound_spelling_title">Spell new words by sound</string>
+    <string name="sound_spelling_summary">In Roman Urdu, words the dictionary does not know (names, new English words) are written by how they sound, with ٹ / ڈ versions offered</string>
+    <string name="letter_edit_title">Type letters inside Urdu words</string>
+    <string name="letter_edit_summary">With the cursor in or next to an Urdu / Arabic word, a Roman key inserts a letter and the strip shows every letter it can stand for (t: ت ٹ ط)</string>
     <string name="learn_roman_typing_summary">In Roman Urdu and Roman Arabic, remember the words, word pairs and spellings you use. Stays on this device</string>
     <string name="export_learned_words_title">Export learned words</string>
     <string name="export_learned_words_summary">Save what Roman Urdu and Roman Arabic learned to a file, for a new phone or as a backup</string>

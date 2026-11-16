@@ -15,14 +15,23 @@ for l in open('loanwords_curated.tsv', encoding='utf-8'):
     e, u = l.rstrip('\n').split('\t')
     if u not in V: words[u] = max(words.get(u, 0), 300)
     addv(u, e.lower(), 0.6)
-# 2. mined pairs confirmed by the decoder
-for l in open('mined_ok.tsv', encoding='utf-8'):
-    u, e, n = l.rstrip('\n').split('\t')
-    if u in V and zipf_frequency(e, 'en') >= 2.5: addv(u, e, 0.3)
-# 3. decoder-voted pairs for common English words
-for l in open('loanwords_raw.tsv', encoding='utf-8'):
-    e, u, v = l.rstrip('\n').split('\t')
-    if int(v) >= 3 and zipf_frequency(e, 'en') >= 3.5 and u in V: addv(u, e, 0.15)
+import os
+if os.path.exists('mined_ok.tsv') and os.path.exists('loanwords_raw.tsv'):
+    # 2. mined pairs confirmed by the decoder
+    for l in open('mined_ok.tsv', encoding='utf-8'):
+        u, e, n = l.rstrip('\n').split('\t')
+        if u in V and zipf_frequency(e, 'en') >= 2.5: addv(u, e, 0.3)
+    # 3. decoder-voted pairs for common English words
+    for l in open('loanwords_raw.tsv', encoding='utf-8'):
+        e, u, v = l.rstrip('\n').split('\t')
+        if int(v) >= 3 and zipf_frequency(e, 'en') >= 3.5 and u in V: addv(u, e, 0.15)
+else:
+    # the mining outputs (Wikipedia pairs, decoder votes) are not kept in git: keep what the committed extra.json has
+    print('mined_ok.tsv / loanwords_raw.tsv missing: keeping the variants and words of the existing extra.json')
+    old = json.load(open('extra.json', encoding='utf-8'))
+    for u, c in old['words'].items(): words[u] = max(words.get(u, 0), c)
+    for u, vs in old['variants'].items():
+        for e, w in vs.items(): addv(u, e, w)
 # 4. verb phrases (future tense), from infinitives attested in the corpus
 def forms(stem):
     last = stem[-1]

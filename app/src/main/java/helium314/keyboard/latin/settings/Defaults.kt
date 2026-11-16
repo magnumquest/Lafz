@@ -187,6 +187,8 @@ object Defaults {
     const val PREF_ROMAN_URDU_ON_ENGLISH = true
     const val PREF_VOICE_DICTATION = false
     const val PREF_LEARN_ROMAN_TYPING = true
+    const val PREF_SOUND_SPELLING = true
+    const val PREF_LETTER_EDIT = true
     const val PREF_DONT_SHOW_MISSING_DICTIONARY_DIALOG = false
     const val PREF_TOOLBAR_MODE = "EXPANDABLE"
     const val PREF_TOOLBAR_HIDING_GLOBAL = true

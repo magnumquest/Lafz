@@ -93,6 +93,8 @@ fun TextCorrectionScreen(
         Settings.PREF_HONORIFIC_SUGGESTIONS,
         Settings.PREF_ROMAN_URDU_ON_ENGLISH,
         Settings.PREF_LEARN_ROMAN_TYPING,
+        Settings.PREF_SOUND_SPELLING,
+        Settings.PREF_LETTER_EDIT,
         SettingsWithoutKey.EXPORT_LEARNED,
         SettingsWithoutKey.IMPORT_LEARNED,
         SettingsWithoutKey.CLEAR_LEARNED,
@@ -245,6 +247,16 @@ fun createCorrectionSettings(context: Context) = listOf(
         R.string.learn_roman_typing_title, R.string.learn_roman_typing_summary
     ) {
         SwitchPreference(it, Defaults.PREF_LEARN_ROMAN_TYPING)
+    },
+    Setting(context, Settings.PREF_SOUND_SPELLING,
+        R.string.sound_spelling_title, R.string.sound_spelling_summary
+    ) {
+        SwitchPreference(it, Defaults.PREF_SOUND_SPELLING)
+    },
+    Setting(context, Settings.PREF_LETTER_EDIT,
+        R.string.letter_edit_title, R.string.letter_edit_summary
+    ) {
+        SwitchPreference(it, Defaults.PREF_LETTER_EDIT)
     },
     Setting(context, SettingsWithoutKey.EXPORT_LEARNED, R.string.export_learned_words_title, R.string.export_learned_words_summary) {
         ExportLearnedWordsPreference(it)

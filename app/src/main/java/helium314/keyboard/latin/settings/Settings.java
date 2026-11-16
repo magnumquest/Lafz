@@ -190,6 +190,8 @@ public final class Settings implements SharedPreferences.OnSharedPreferenceChang
     public static final String PREF_ROMAN_URDU_ON_ENGLISH = "roman_urdu_on_english";
     public static final String PREF_VOICE_DICTATION = "voice_dictation"; // mic key dictates with the imported voice models
     public static final String PREF_LEARN_ROMAN_TYPING = "learn_roman_typing";
+    public static final String PREF_SOUND_SPELLING = "sound_spelling";
+    public static final String PREF_LETTER_EDIT = "letter_edit";
     public static final String PREF_DONT_SHOW_MISSING_DICTIONARY_DIALOG = "dont_show_missing_dict_dialog";
     public static final String PREF_QUICK_PIN_TOOLBAR_KEYS = "quick_pin_toolbar_keys";
     public static final String PREF_PINNED_TOOLBAR_KEYS = "pinned_toolbar_keys";

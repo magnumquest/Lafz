@@ -30,9 +30,17 @@ English top-3, fresh install, 2967 cases (`make_typo_set.py`), before -> after: 
 one-key typos 92.6-96.3 -> 92.6-97.3 (unchanged native engine). Autocorrect never fires inside the harness (not investigated).
 
 ### Task 3: Roman Urdu (ur-Latn) unknown words and teaching
-- [ ] Phonetic candidate for words the dictionary does not know (download, whatsapp), retroflex ٹ/ڈ variants offered
-- [ ] Committed phonetic words are learned; long-press a suggestion to teach / forget
-- [ ] Learned words rank first
+- [x] Phonetic candidate for words the dictionary does not know (download, whatsapp), retroflex ٹ/ڈ variants offered
+      (`RomanTransliterator.phonetic`: channel model + letter trigram model built at load from the dictionary; setting `PREF_SOUND_SPELLING`)
+- [x] Listed loanword spellings found even when the channel cannot align them (`listedSpelling`); +33 chat/app loanwords, model rebuilt
+- [x] Committed phonetic words are learned; long-press a suggestion -> check mark teaches it (English: typed word to personal dictionary)
+- [x] Learned words rank first (`PersonalModel.preferred`, latest hand-pick wins)
+- [x] Owner add-on: letter editing inside Urdu/Arabic words (`InputLogic.handleNativeLetterEdit`, `lettersFor`, setting `PREF_LETTER_EDIT`)
+
+Held-out Dakshina (20,445 tokens, `tools/urdu/eval/Eval.java`, data in `~/AI_Works/datasets/dakshina/dakshina_dataset_v1.0/ur`, set `DAKSHINA`):
+top-1 89.4 -> 89.7, top-3 93.1 -> 93.8, in-vocab top-1 91.1 -> 91.4, 1.8 -> 2.6 ms/query desktop. Urdu model heap +0.9 MB.
+Emulator-verified: whatsapp/tiktok/faargiv, t inside فائنل -> ت with ٹ ط offered and swapped, k+h -> خ, teach via long press,
+normal `mein kal aonga` unchanged. Not verified: real phone, Arabic letter editing, English long-press teach.
 
 ### Task 4: Real-time voice
 - [ ] Research a streaming approach that fits the existing models and phone speed

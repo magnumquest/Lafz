@@ -72,7 +72,15 @@ public final class PersonalModel {
         final String r = roman == null ? "" : normalizeRoman(roman);
         add(words, word, delta);
         if (usable(prev)) addNested(pairs, prev, word, delta);
-        if (!r.isEmpty() && r.length() <= MAX_TEXT) addNested(spellings, r, word, delta);
+        if (!r.isEmpty() && r.length() <= MAX_TEXT) {
+            // a word picked by hand (or taught) replaces earlier choices for this spelling: a mis-tap does not stick for good
+            final HashMap<String, Float> others = spellings.get(r);
+            if (delta >= 2f && others != null) {
+                others.replaceAll((k, v) -> k.equals(word) ? v : v / 2);
+                others.values().removeIf(v -> v < 0.4f);
+            }
+            addNested(spellings, r, word, delta);
+        }
         dirty = true;
     }
 
@@ -119,6 +127,18 @@ public final class PersonalModel {
         for (Map.Entry<String, Float> e : s.entrySet()) if (e.getValue() >= MIN_COUNT_TO_INJECT) out.add(e.getKey());
         out.sort((a, b) -> Float.compare(s.get(b), s.get(a)));
         return out.size() > max ? new ArrayList<>(out.subList(0, max)) : out;
+    }
+
+    /**
+     * The word the owner chose for exactly this (normalized) spelling: picked by hand once, taught by long press, or
+     * auto-committed twice without being reverted. Null if there is none. It is shown first for this spelling.
+     */
+    public synchronized String preferred(String roman) {
+        final HashMap<String, Float> s = spellings.get(roman);
+        if (s == null) return null;
+        String best = null; float bc = 0;
+        for (Map.Entry<String, Float> e : s.entrySet()) if (e.getValue() >= MIN_COUNT_TO_INJECT && e.getValue() > bc) { best = e.getKey(); bc = e.getValue(); }
+        return best;
     }
 
     /** words that followed [prev] at least once, most used first */

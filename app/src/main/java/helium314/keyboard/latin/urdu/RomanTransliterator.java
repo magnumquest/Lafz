@@ -32,8 +32,11 @@ public final class RomanTransliterator {
         public final double score;
         /** true if the typed Roman text is only a prefix of this word's romanization (word completion) */
         public final boolean completion;
-        Candidate(String text, double score, boolean completion) {
-            this.text = text; this.score = score; this.completion = completion;
+        /** spelled by sound ({@link #phonetic}), not a dictionary word */
+        public final boolean phonetic;
+        Candidate(String text, double score, boolean completion) { this(text, score, completion, false); }
+        Candidate(String text, double score, boolean completion, boolean phonetic) {
+            this.text = text; this.score = score; this.completion = completion; this.phonetic = phonetic;
         }
         @Override public String toString() { return text + (completion ? "…" : "") + String.format(" %.2f", score); }
     }
@@ -63,6 +66,22 @@ public final class RomanTransliterator {
     public double completionCommitGap = 4.0;
 
     private static final int MAXN = 24, MAXM = 48;
+
+    // --- spelling by sound for words the dictionary does not have ("whatsapp", "faargive"): the channel model picks the letters,
+    // a letter trigram model built from the dictionary words keeps the spelling Urdu-like
+    /** ln prior of "a word the dictionary does not know", added to the letter-model and channel scores of a sound spelling */
+    public double oovLn = -4.0;
+    public double letterLmWeight = 1.0;
+    /** the best sound spelling is always offered when the typed word has at least this many letters */
+    public int phoneticMinTyped = 3;
+    public boolean phoneticEnabled = true;
+    private char[] idxChar;          // channel alphabet index -> displayed letter
+    /** (word id * 256 + variant index) sorted by the variant spelling: a listed spelling is found even when the letter channel
+     *  cannot align it ("whatsapp" = واٹس ایپ). One int per variant. */
+    private int[] variantOrder = new int[0];
+    private int lmSize;              // alphabet + start + end symbols
+    private float[] lc1, lc2, lc3;   // letter unigram / bigram / trigram type counts
+    private float lcTotal;
 
     private static final class Chan {
         final char[][] chunks; final double[] p; final int[] len;
@@ -158,9 +177,16 @@ public final class RomanTransliterator {
 
         final HashMap<Character, Character> pseudo = new HashMap<>();
         if (version >= 2) t.channelWeight = 1.2;       // tuned on the v2 (scripture) models; v1 files keep the Urdu setting
+        // spelling by sound is for Roman Urdu (owner request); the v2 scripture models (Arabic) keep dictionary-only output
+        if (version >= 2) t.phoneticEnabled = false;
         if (version >= 2) {
             final int nm = in.readUnsignedByte();
             for (int i = 0; i < nm; i++) { final char a = (char) in.readUnsignedShort(); pseudo.put(a, (char) in.readUnsignedShort()); }
+        }
+        t.idxChar = new char[nChars + 1];
+        for (HashMap.Entry<Character, Integer> e : alpha.entrySet()) {
+            final Character d = pseudo.get(e.getKey());
+            t.idxChar[e.getValue()] = d == null ? e.getKey() : d;
         }
         final int nWords = in.readInt();
         t.words = new String[nWords];
@@ -238,6 +264,10 @@ public final class RomanTransliterator {
             }
         }
         t.buildBuckets();
+        if (t.phoneticEnabled) { // Roman Urdu only (memory: the Arabic model is large already)
+            t.buildLetterModel();
+            t.buildVariantIndex();
+        }
         return t;
     }
 
@@ -303,6 +333,190 @@ public final class RomanTransliterator {
             if (c.len[k] == 0) firstLetters(ix, pos, i + 1, seen, depth + 1);
             else { final int l = slot(c.chunks[k][0]); if (l >= 0) seen[l] = true; }
         }
+    }
+
+    /** letter trigram type counts over the single-word dictionary entries (each word counts once: loanwords and rare words
+     *  matter as much as frequent ones for how an unknown word is spelled) */
+    private void buildLetterModel() {
+        final int a = idxChar.length;           // 0 = unknown letter, 1..a-1 letters
+        lmSize = a + 2;
+        final int bos = a, eos = a + 1, n = lmSize;
+        lc1 = new float[n]; lc2 = new float[n * n]; lc3 = new float[n * n * n];
+        for (int w = 0; w < words.length; w++) {
+            if (words[w].indexOf(' ') >= 0) continue;
+            final int[] ix = wordCharIdx[w];
+            boolean ok = ix.length > 0;
+            for (int x : ix) if (x == 0) { ok = false; break; }
+            if (!ok) continue;
+            int p2 = bos, p1 = bos;
+            for (int k = 0; k <= ix.length; k++) {
+                final int c = k == ix.length ? eos : ix[k];
+                lc1[c]++; lc2[p1 * n + c]++; lc3[(p2 * n + p1) * n + c]++;
+                p2 = p1; p1 = c;
+            }
+        }
+        // context totals live in the same arrays shifted: lc1 total, bigram context = sum over lc2 row, trigram context = sum over lc3 row
+        lcTotal = 0;
+        for (float v : lc1) lcTotal += v;
+        ctx1 = new float[n]; ctx2 = new float[n * n];
+        for (int i = 0; i < n; i++) for (int c = 0; c < n; c++) ctx1[i] += lc2[i * n + c];
+        for (int i = 0; i < n * n; i++) for (int c = 0; c < n; c++) ctx2[i] += lc3[i * n + c];
+    }
+    private float[] ctx1, ctx2;
+
+    /** ln P(letter c | two letters before), interpolated trigram / bigram / unigram */
+    private double letterLn(int p2, int p1, int c) {
+        final int n = lmSize;
+        final double uni = (lc1[c] + 0.5) / (lcTotal + 0.5 * n);
+        final double c1 = ctx1[p1], c2 = ctx2[p2 * n + p1];
+        final double bi = c1 > 0 ? lc2[p1 * n + c] / c1 : 0, tri = c2 > 0 ? lc3[(p2 * n + p1) * n + c] / c2 : 0;
+        final double l3 = c2 > 0 ? 0.6 : 0, l2 = c1 > 0 ? (c2 > 0 ? 0.3 : 0.8) : 0;
+        return Math.log(l3 * tri + l2 * bi + (1 - l3 - l2) * uni);
+    }
+
+    private static final class PState {
+        final double sc; final int p2, p1; final String text; final int empties; final boolean lastEmpty;
+        PState(double sc, int p2, int p1, String text, int empties, boolean lastEmpty) {
+            this.sc = sc; this.p2 = p2; this.p1 = p1; this.text = text; this.empties = empties; this.lastEmpty = lastEmpty;
+        }
+    }
+
+    private static void beamAdd(ArrayList<PState> beam, PState s, int width) {
+        for (int i = 0; i < beam.size(); i++) {
+            final PState o = beam.get(i);
+            if (o.text.equals(s.text)) { if (o.sc >= s.sc) return; beam.remove(i); break; }
+        }
+        if (beam.size() >= width && s.sc <= beam.get(beam.size() - 1).sc) return;
+        int at = beam.size();
+        while (at > 0 && beam.get(at - 1).sc < s.sc) at--;
+        beam.add(at, s);
+        if (beam.size() > width) beam.remove(beam.size() - 1);
+    }
+
+    /**
+     * Spells typed Roman text by sound, without the dictionary: each Urdu letter emits a Roman chunk as learned for the channel
+     * model, a letter trigram model keeps the result Urdu-like. Scores are on the same scale as dictionary candidates
+     * ([oovLn] + letter model + channel). Returns up to [max] spellings, best first (often the dental and retroflex t / d both).
+     */
+    public List<Candidate> phonetic(String roman, int max) {
+        final ArrayList<Candidate> out = new ArrayList<>();
+        if (lc1 == null) return out;
+        final StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < roman.length() && sb.length() < MAXM; i++) {
+            final char c = Character.toLowerCase(roman.charAt(i));
+            if (slot(c) >= 0) sb.append(c);
+        }
+        final int m = sb.length();
+        if (m == 0) return out;
+        final char[] r = sb.toString().toCharArray();
+        final int a = idxChar.length, bos = a, eos = a + 1, width = 24;
+        @SuppressWarnings("unchecked") final ArrayList<PState>[] beam = new ArrayList[m + 1];
+        for (int i = 0; i <= m; i++) beam[i] = new ArrayList<>();
+        beam[0].add(new PState(0, bos, bos, "", 0, false));
+        for (int i = 0; i < m; i++) {
+            final int sl = slot(r[i]);
+            // letters written without a Roman letter of their own (ع in "ilm"), at most two per word and never two in a row
+            final ArrayList<PState> here = new ArrayList<>(beam[i]);
+            for (PState st : here) {
+                if (st.empties >= 2 || st.lastEmpty) continue;
+                for (int u = 1; u < a; u++) {
+                    final Chan ch = chans[u * 3 + (st.text.isEmpty() ? 0 : 1)];
+                    if (ch == null) continue;
+                    for (int k : ch.emptyIdx) {
+                        final double sc = st.sc + channelWeight * Math.log(ch.p[k]) + letterLmWeight * letterLn(st.p2, st.p1, u);
+                        beamAdd(beam[i], new PState(sc, st.p1, u, st.text + idxChar[u], st.empties + 1, true), width);
+                    }
+                }
+            }
+            for (PState st : beam[i]) {
+                for (int u = 1; u < a; u++) {
+                    for (int pos = 0; pos < 3; pos++) {
+                        if (st.text.isEmpty() ? pos != 0 : pos == 0) continue;
+                        final Chan ch = chans[u * 3 + pos];
+                        if (ch == null) continue;
+                        final double lm = letterLmWeight * letterLn(st.p2, st.p1, u);
+                        for (int k : ch.cand[sl]) {
+                            final int len = ch.len[k];
+                            if (len == 0 || i + len > m) continue;
+                            final int j = i + len;
+                            // position: a letter reaching the end of the typed text is word-final (a one-letter word stays initial)
+                            if (pos == 2 && j != m) continue;
+                            if (pos == 1 && j == m) continue;
+                            boolean match = true;
+                            for (int q = 0; q < len; q++) if (ch.chunks[k][q] != r[i + q]) { match = false; break; }
+                            if (!match) continue;
+                            final double sc = st.sc + channelWeight * Math.log(ch.p[k]) + lm;
+                            beamAdd(beam[j], new PState(sc, st.p1, u, st.text + idxChar[u], st.empties, false), width);
+                        }
+                    }
+                }
+            }
+        }
+        final ArrayList<PState> fin = new ArrayList<>();
+        for (PState st : beam[m]) fin.add(new PState(st.sc + letterLmWeight * letterLn(st.p2, st.p1, eos) + oovLn, 0, 0, st.text, 0, false));
+        Collections.sort(fin, (x, y) -> Double.compare(y.sc, x.sc));
+        // dictionary words are found (and scored) by the dictionary search: only spellings the dictionary does not have
+        for (int i = 0; i < fin.size() && out.size() < max; i++)
+            if (!wordId.containsKey(fin.get(i).text)) out.add(new Candidate(fin.get(i).text, fin.get(i).sc, false, true));
+        return out;
+    }
+
+    private String variantOf(int x) { return variants[x >> 8][x & 255]; }
+
+    private void buildVariantIndex() {
+        int n = 0;
+        for (String[] v : variants) n += v.length;
+        final Integer[] all = new Integer[n];
+        int k = 0;
+        for (int w = 0; w < variants.length; w++) for (int v = 0; v < variants[w].length && v < 256; v++) all[k++] = w * 256 + v;
+        Arrays.sort(all, 0, k, (a, b) -> variantOf(a).compareTo(variantOf(b)));
+        variantOrder = new int[k];
+        for (int i = 0; i < k; i++) variantOrder[i] = all[i];
+    }
+
+    /** words that list exactly this Roman spelling, as (word id * 256 + variant index) */
+    private int[] listedSpelling(String roman) {
+        int lo = 0, hi = variantOrder.length;
+        while (lo < hi) { final int mid = (lo + hi) >>> 1; if (variantOf(variantOrder[mid]).compareTo(roman) < 0) lo = mid + 1; else hi = mid; }
+        int end = lo;
+        while (end < variantOrder.length && variantOf(variantOrder[end]).equals(roman)) end++;
+        return Arrays.copyOfRange(variantOrder, lo, end);
+    }
+
+    /** letters that are always offered for a key, even where the trained channel rarely uses them (owner: hard t / d) */
+    private static final String[][] LETTER_EXTRAS = {{"t", "ٹ"}, {"d", "ڈ"}, {"r", "ڑ"}, {"n", "ں"}, {"h", "ھ"}, {"y", "ے"}, {"e", "ے"}, {"a", "آ"}};
+
+    /**
+     * Native letters that the Roman [keys] (one key, or two keys such as "kh") can stand for inside a word, most likely first:
+     * "t" = ت ٹ ط, "s" = س ص ث, "kh" = خ. From the channel model weighted by how common each letter is.
+     */
+    public List<String> lettersFor(String keys) {
+        final ArrayList<String> out = new ArrayList<>();
+        if (keys == null || keys.isEmpty()) return out;
+        final String k = keys.toLowerCase(java.util.Locale.ROOT);
+        final int a = idxChar.length;
+        final double[] score = new double[a];
+        for (int u = 1; u < a; u++) {
+            double best = 0;
+            for (int pos = 0; pos < 3; pos++) {
+                final Chan ch = chans[u * 3 + pos];
+                if (ch == null) continue;
+                for (int c = 0; c < ch.chunks.length; c++)
+                    if (ch.len[c] == k.length() && new String(ch.chunks[c]).equals(k)) best = Math.max(best, ch.p[c] * (pos == 1 ? 1.0 : 0.5));
+            }
+            score[u] = best * (lc1 == null ? 1 : lc1[u] + 1);
+        }
+        final Integer[] order = new Integer[a];
+        for (int i = 0; i < a; i++) order[i] = i;
+        Arrays.sort(order, (x, y) -> Double.compare(score[y], score[x]));
+        final double top = score[order[0]];
+        for (int i : order) {
+            if (i == 0 || score[i] <= 0 || score[i] < top * 0.002 || out.size() >= 6) break;
+            final String l = String.valueOf(idxChar[i]);
+            if (!out.contains(l)) out.add(l);
+        }
+        if (lc1 != null) for (String[] e : LETTER_EXTRAS) if (e[0].equals(k) && !out.contains(e[1])) out.add(Math.min(out.size(), 1), e[1]);
+        return out;
     }
 
     public boolean isKnownWord(String word) { return wordId.containsKey(word); }
@@ -491,6 +705,12 @@ public final class RomanTransliterator {
         final ArrayList<String> texts = new ArrayList<>();
         final ArrayList<Boolean> comps = new ArrayList<>();
         for (Seg s : singles) { scored.add(new double[]{s.score}); texts.add(shown[s.w]); comps.add(s.comp); }
+        for (int x : listedSpelling(sb.toString())) {
+            final int w = x >> 8;
+            if (texts.contains(shown[w])) continue;
+            final double lnChan = Math.log(observedBonus * variantP[w][x & 255]);
+            scored.add(new double[]{lmLn(w, ctx) + channelWeight * lnChan}); texts.add(shown[w]); comps.add(false);
+        }
         final int singleCount = scored.size();
         // --- glued words: "innamal'amal" = إنما الأعمال, "ma'al'usri" = مع العسر (each piece a dictionary word, scored with the bigram / trigram model)
         if (m >= segMinTyped && maxSegments > 1) {
@@ -529,6 +749,11 @@ public final class RomanTransliterator {
             }
             if (hyps[m] != null) for (Hyp h : hyps[m]) if (h.n >= 2 || h.text.indexOf(' ') < 0) { scored.add(new double[]{h.score}); texts.add(h.text); comps.add(h.comp); }
         }
+        final int segEnd = scored.size();
+        // --- spelled by sound: words the dictionary does not have ("tiktok" = ٹیکٹوک), and a manual choice for any word
+        List<Candidate> sound = phoneticEnabled && m >= phoneticMinTyped ? phonetic(sb.toString(), 2) : Collections.<Candidate>emptyList();
+        for (Candidate c : sound) { scored.add(new double[]{c.score}); texts.add(c.text); comps.add(false); }
+        final int phonEnd = scored.size();
         applyPersonal(sb.toString(), prev, scored, texts, comps);
         // --- merge: best score per distinct text, best first
         final int cnt = scored.size();
@@ -540,6 +765,7 @@ public final class RomanTransliterator {
         // membership quotas: segmented readings ("ثم ما") and completions ("ثمن…") may not crowd the plain whole-word readings out of the strip
         final int segCap = Math.max(1, (cap * 2 + 4) / 5), compCap = Math.max(1, (cap * 2 + 4) / 5);
         int nSeg = 0, nComp = 0;
+        boolean dictWord = false;   // a whole dictionary word (or learned word) is among the candidates
         final ArrayList<Candidate> skipped = new ArrayList<>();
         for (int oi = 0; oi < cnt; oi++) {
             final int i = order[oi];
@@ -547,15 +773,19 @@ public final class RomanTransliterator {
             if (top == Double.NEGATIVE_INFINITY) top = sc;
             if (sc < top - maxScoreGap) break;
             if (!seen.add(texts.get(i))) continue;
-            final Candidate cd = new Candidate(texts.get(i), sc, comps.get(i));
-            final boolean seg = i >= singleCount;
+            final boolean phon = i >= segEnd && i < phonEnd;
+            final Candidate cd = new Candidate(texts.get(i), sc, comps.get(i), phon);
+            // sound spellings count against the segmented quota: both are guesses beside the dictionary words
+            final boolean seg = (i >= singleCount && i < segEnd) || phon;
             if (out.size() < cap && (seg ? nSeg < segCap : cd.completion ? nComp < compCap : true)) {
                 out.add(cd);
                 if (seg) nSeg++; else if (cd.completion) nComp++;
+                if (!seg && !cd.completion) dictWord = true;
             } else skipped.add(cd);
         }
         for (int i = 0; i < skipped.size() && out.size() < cap; i++) out.add(skipped.get(i));
         Collections.sort(out, (x, y) -> Double.compare(y.score, x.score));
+        addSoundSpellings(out, sound, cap, dictWord);
         // the first candidate is what a space commits: never a mere completion ("جزاك الله خيرا" for the typed "jazakallahu") when a full reading is about as likely
         if (!out.isEmpty() && out.get(0).completion) {
             for (int i = 1; i < out.size(); i++) {
@@ -563,6 +793,34 @@ public final class RomanTransliterator {
             }
         }
         return out;
+    }
+
+    /**
+     * The best sound spelling is always offered (last, unless it scores better). Without a whole dictionary word for the typed
+     * text (only glued pieces or completions) the sound spelling and its version with ٹ / ڈ ("hard" t and d, as English words are
+     * written) come right after the first candidate, so a new word can always be written.
+     */
+    private void addSoundSpellings(ArrayList<Candidate> out, List<Candidate> sound, int cap, boolean dictWord) {
+        if (sound.isEmpty()) return;
+        final Candidate best = sound.get(0);
+        boolean present = false;
+        for (Candidate c : out) if (c.text.equals(best.text)) { present = true; break; }
+        if (!dictWord) {
+            // move / insert the sound spellings to the front area
+            final ArrayList<Candidate> front = new ArrayList<>();
+            front.add(best);
+            final String hard = best.text.replace('ت', 'ٹ').replace('د', 'ڈ');
+            if (!hard.equals(best.text)) front.add(new Candidate(hard, best.score - 0.5, false, true));
+            if (sound.size() > 1 && front.size() < 2) front.add(sound.get(1));
+            for (Candidate f : front) for (int i = out.size() - 1; i >= 0; i--) if (out.get(i).text.equals(f.text)) out.remove(i);
+            final int at = out.isEmpty() || out.get(0).score < best.score ? 0 : 1;
+            out.addAll(at, front);
+            while (out.size() > cap) out.remove(out.size() - 1);
+            return;
+        }
+        if (present || cap < 3) return;   // a short list keeps its dictionary words
+        if (out.size() >= cap) out.remove(out.size() - 1);
+        out.add(best);
     }
 
     /** what the owner's typing taught the keyboard; null = nothing learned / learning off. Set from another thread. */
@@ -595,6 +853,13 @@ public final class RomanTransliterator {
             scored.add(new double[]{top - 2.5 + pm.bonus(pw, w, rn)});
             texts.add(w);
             comps.add(false);
+        }
+        // what the owner chose for exactly this spelling comes first (owner: "user taught words should always be higher priority")
+        final String pref = pm.preferred(rn);
+        if (pref != null) {
+            double max = Double.NEGATIVE_INFINITY;
+            for (double[] d : scored) max = Math.max(max, d[0]);
+            for (int i = 0; i < texts.size(); i++) if (texts.get(i).equals(pref)) scored.get(i)[0] = max + 0.5;
         }
     }
 
