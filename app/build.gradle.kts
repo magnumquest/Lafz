@@ -23,8 +23,8 @@ android {
         applicationId = "app.lafz.keyboard"
         minSdk = 21
         targetSdk = 37
-        versionCode = 7000
-        versionName = "0.7.0"
+        versionCode = 7001
+        versionName = "0.7.1"
         ndk {
             abiFilters.clear()
             abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64"))

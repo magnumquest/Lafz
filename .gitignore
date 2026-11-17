@@ -29,3 +29,4 @@ screenshots/
 
 # Local source copies; downloadable voice model packs are release attachments.
 /Lafz_voice_files/
+__pycache__/

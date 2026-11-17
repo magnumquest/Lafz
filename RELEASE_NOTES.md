@@ -1,5 +1,13 @@
 # Release notes
 
+## 0.7.1
+- **Live words while speaking.** Your words appear as you talk and are finalized when you stop. Final results also arrive faster. Turn it off in Settings → Voice typing.
+- **New words spelled by sound.** Roman Urdu words the keyboard does not know are now spelled in Urdu by how they sound, so names and new words still get Urdu suggestions.
+- **Teach a word.** Long-press a suggestion to make it the first choice for what you typed. On the English keyboard this adds the word to your personal dictionary.
+- **Fix letters inside Urdu words.** Type a Roman letter inside an Urdu word and pick the exact Urdu letter you want (for example ت ٹ ط for t).
+- **Cleaner suggestions.** Names stay names; honorifics appear when you start typing them after a name. Learned words and extra terms no longer crowd out common words.
+- More chat and app words in Roman Urdu (such as whatsapp).
+
 ## 0.7.0
 - **Hold to talk.** Dictate in Urdu, English or Arabic by holding the microphone key. Release it to finish and insert your words.
 - **Hands-free recording.** Slide up while holding the microphone to lock recording for longer text. Tap the microphone again to finish.
