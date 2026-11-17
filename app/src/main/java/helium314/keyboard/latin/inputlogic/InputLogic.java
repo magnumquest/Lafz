@@ -432,6 +432,10 @@ public final class InputLogic {
             return expectCursorMove;
         }
 
+        // Live dictation: the field reports our own updates of the tentative text. Treating them as cursor moves would resume
+        // suggestions on the word at the cursor and shrink the composing region to that word (the next update then duplicated text).
+        if (mVoiceComposing && newSelStart == newSelEnd) return expectCursorMove;
+
         // if all text is gone, we treat it like onStartInput
         if (GestureDataGatheringKt.useBackgroundGathering && newSelStart == 0 && newSelEnd == 0 && !mConnection.hasTextAfterCursor())
             BackgroundGatheringCache.saveOrClear(mLatinIME);
@@ -1887,6 +1891,34 @@ public final class InputLogic {
         final int timeStampInSeconds = (int)TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
         mDictionaryFacilitator.addToUserHistory(word, wasAutoCapitalized, ngramContext,
                 timeStampInSeconds, settingsValues.mBlockPotentiallyOffensive);
+    }
+
+    // ---- live dictation: tentative words shown as composing text, replaced as recognition firms up
+    private boolean mVoiceComposing;
+    private String mVoicePrefix = "";
+
+    /** shows [text] as the tentative dictation (underlined, not committed); "" removes it */
+    public void setVoiceComposing(final String text) {
+        if (text.isEmpty()) {
+            if (!mVoiceComposing) return;
+            mConnection.beginBatchEdit();
+            mConnection.setComposingText("", 1);
+            mConnection.finishComposingText();
+            mConnection.endBatchEdit();
+            mVoiceComposing = false;
+            return;
+        }
+        mConnection.beginBatchEdit();
+        if (!mVoiceComposing) {
+            // a word being typed stays as it is; the dictation starts after it
+            if (mWordComposer.isComposingWord())
+                resetEntireInputState(mConnection.getExpectedSelectionStart(), mConnection.getExpectedSelectionEnd(), true);
+            final int before = mConnection.getCodePointBeforeCursor();
+            mVoicePrefix = helium314.keyboard.latin.voice.VoiceText.INSTANCE.withLeadingSpace("x", before).startsWith(" ") ? " " : "";
+            mVoiceComposing = true;
+        }
+        mConnection.setComposingText(mVoicePrefix + text, 1);
+        mConnection.endBatchEdit();
     }
 
     /** debug tooling ({@link helium314.keyboard.latin.utils.SuggestionEval}): runs work on the suggestion thread */

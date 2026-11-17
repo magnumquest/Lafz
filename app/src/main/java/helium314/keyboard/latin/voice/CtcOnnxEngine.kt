@@ -34,7 +34,7 @@ class CtcOnnxEngine(private val info: VoiceModelInfo, dir: File, threads: Int) :
     }
 
     /** [samples]: mono audio at the model's sample rate, values in -1..1. Long audio is processed in 30 s pieces. */
-    override fun transcribe(samples: FloatArray, cancellation: SpeechCancellation): String {
+    override fun transcribe(samples: FloatArray, cancellation: SpeechCancellation, partial: Boolean): String {
         val piece = 30 * info.sampleRate
         val parts = ArrayList<String>()
         var start = 0

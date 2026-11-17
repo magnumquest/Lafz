@@ -1325,7 +1325,11 @@ public class LatinIME extends InputMethodService implements
                 }
             }
             @Override public void onVoiceText(@NonNull String text) {
+                mInputLogic.setVoiceComposing(""); // the final text replaces the live words
                 onTextInput(VoiceText.INSTANCE.withLeadingSpace(text, mInputLogic.mConnection.getCodePointBeforeCursor()));
+            }
+            @Override public void onVoiceComposing(@NonNull String text) {
+                mInputLogic.setVoiceComposing(text);
             }
             @Override public void onVoiceNotice(@NonNull String message) {
                 android.widget.Toast.makeText(LatinIME.this, message, android.widget.Toast.LENGTH_LONG).show();

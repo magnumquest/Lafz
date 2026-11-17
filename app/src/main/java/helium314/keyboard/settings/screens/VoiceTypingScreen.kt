@@ -89,6 +89,8 @@ fun VoiceTypingScreen(onClickBack: () -> Unit) {
                     if (on && ctx.checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) != android.content.pm.PackageManager.PERMISSION_GRANTED)
                         micLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
                 })
+            SwitchPreference(name = stringResource(R.string.voice_live_title), key = Settings.PREF_VOICE_LIVE, default = Defaults.PREF_VOICE_LIVE,
+                description = stringResource(R.string.voice_live_summary))
             PreferenceCategory(stringResource(R.string.voice_models_category))
             Preference(name = stringResource(R.string.voice_choose_folder_title), description = stringResource(R.string.voice_choose_folder_summary), onClick = {
                 if (!busy) folderPicker.launch(Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).addFlags(

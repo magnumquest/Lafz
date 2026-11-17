@@ -54,9 +54,10 @@ Java_app_lafz_whisper_WhisperLib_freeContext(JNIEnv *, jobject, jlong ptr) {
     whisper_free((whisper_context *) ptr);
 }
 
-/** beamSize 1 = greedy. Returns the text of all segments, or null if whisper failed. */
+/** beamSize 1 = greedy. audioCtx > 0: encoder window in 20 ms frames (whisper pads to 30 s = 1500 otherwise), used for fast
+ *  partial results while the user is still speaking. Returns the text of all segments, or null if whisper failed. */
 JNIEXPORT jstring JNICALL
-Java_app_lafz_whisper_WhisperLib_runWhisper(JNIEnv *env, jobject, jlong ptr, jint threads, jint beamSize, jstring language, jfloatArray audio, jlong cancellation) {
+Java_app_lafz_whisper_WhisperLib_runWhisper(JNIEnv *env, jobject, jlong ptr, jint threads, jint beamSize, jstring language, jfloatArray audio, jlong cancellation, jint audioCtx, jboolean partial) {
     auto *ctx = (whisper_context *) ptr;
     auto *cancel = reinterpret_cast<std::atomic_bool *>(cancellation);
     if (should_abort(cancel)) return nullptr;
@@ -80,6 +81,14 @@ Java_app_lafz_whisper_WhisperLib_runWhisper(JNIEnv *env, jobject, jlong ptr, jin
     params.abort_callback_user_data = cancel;
     params.encoder_begin_callback = [](whisper_context *, whisper_state *, void *data) { return !should_abort(data); };
     params.encoder_begin_callback_user_data = cancel;
+    if (audioCtx > 0) params.audio_ctx = audioCtx;
+    if (partial) {
+        // live result while the user speaks: one quick pass. No temperature fallback (it re-decodes up to 5 times on unsure
+        // audio, which a phrase cut mid-word often is) and at most ~8 tokens per second of audio (no repetition loops).
+        params.single_segment = true;
+        params.temperature_inc = 0.0f;
+        params.max_tokens = 8 + (int) (count / 16000.0f * 8);
+    }
 
     int rc = whisper_full(ctx, params, samples, count);
     env->ReleaseFloatArrayElements(audio, samples, JNI_ABORT);

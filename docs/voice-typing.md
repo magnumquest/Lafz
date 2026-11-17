@@ -10,6 +10,27 @@ Slide upward at least 48 dp while holding to lock recording. A haptic pulse and 
 
 Recognition still runs in the background at phrase pauses (about 650 ms), keeping release-to-insert latency low for phrases already decoded. The final unfinished phrase is submitted on release. Text that is still being decoded appears when the model finishes; release does not eliminate inference time. Toolbar/accessibility activation without a held touch uses locked recording.
 
+## Live words (2026-11-17)
+
+Setting **Live words while speaking** (default on). While a phrase is being spoken the service re-decodes the audio heard so far
+about every 0.6 s of new speech and sends it as `MSG_PARTIAL`; the keyboard shows it as underlined composing text that the next
+update replaces (Gboard-like: words may change). The end of a phrase (pause) still runs a full decode (`MSG_PHRASE`), which
+replaces the live words. Only one live decode runs at a time and only when no finished phrase is waiting, so a slow phone shows
+fewer updates instead of falling behind; a phrase ending cancels a running live decode.
+
+Whisper pads every input to 30 s (1500 encoder frames). Live decodes use a window just over the audio (at least 256 frames),
+greedy, no temperature fallback and at most ~8 tokens per second of audio (one live decode without these limits ran 6.5 s on
+audio cut mid-word). Final decodes now use audio + 2 s, at least 768 frames (the 2026-11-12 screening below: English error rate
+unchanged, Urdu total 9.1 -> 8.5 % CER, a few single clips slightly worse).
+
+Hold-to-talk shows held phrases plus live words as tentative text and commits them on release; locked recording commits each
+finished phrase. Cancel removes the tentative text; errors keep it. While tentative text is shown, the keyboard ignores the
+field's selection reports for it (otherwise it resumed suggestions on the last word and the next update duplicated text).
+
+Emulator (x86_64, 4 threads, injected real-time audio): English base.en live updates every ~1 s (0.4-1.7 s per decode),
+final 1.3-2.4 s for 4.9-7.5 s phrases (was 3.4 s); Urdu small first words after ~2 s, live decodes 1.7-3.4 s, finals
+7.4-8.0 s for 7.5-7.9 s phrases. Real phone not measured.
+
 ## Implementation
 
 - `VoiceSegmenter` consumes 20 ms PCM frames at 16 kHz. It keeps 200 ms of pre-roll, retains trailing silence, rejects isolated clicks, and bounds a phrase to 20 seconds. After 12 seconds it can use a shorter 240 ms pause to avoid cutting continuous speech at the hard limit.

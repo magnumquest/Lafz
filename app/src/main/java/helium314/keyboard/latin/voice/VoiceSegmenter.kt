@@ -50,6 +50,12 @@ class VoiceSegmenter(private val sampleRate: Int = VoiceProtocol.SAMPLE_RATE) {
         return null
     }
 
+    /** audio of the phrase being spoken (null until speech started): what a partial result is decoded from */
+    fun current(): ShortArray? = if (speech >= sampleRate * 3 / 10) buffer.copyOf(size) else null
+
+    /** samples in the phrase being spoken (0 before speech started) */
+    val currentSize get() = if (speech == 0) 0 else size
+
     fun finish(): ShortArray? {
         val result = if (speech >= sampleRate * 12 / 100 || (continuation && speech > 0)) buffer.copyOf(size) else null
         size = 0; speech = 0; quiet = 0; continuation = false

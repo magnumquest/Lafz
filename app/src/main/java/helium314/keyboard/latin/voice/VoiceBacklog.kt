@@ -9,5 +9,6 @@ class VoiceBacklog {
     private var samples = 0L
     @Synchronized fun add(count: Int) { phrases++; samples += count }
     @Synchronized fun remove(count: Int) { phrases--; samples -= count }
+    @get:Synchronized val isEmpty get() = phrases == 0
     @get:Synchronized val isFull get() = phrases >= 6 || samples >= VoiceProtocol.SAMPLE_RATE * 40L
 }

@@ -23,6 +23,8 @@ object VoiceProtocol {
     const val MSG_LISTENING = 7
     /** A completed phrase; the microphone continues listening. arg1 identifies the session on every message. */
     const val MSG_PHRASE = 10
+    /** Tentative text of the phrase being spoken (words may still change); replaced by the next [MSG_PARTIAL] or by [MSG_PHRASE]. */
+    const val MSG_PARTIAL = 11
 
     const val KEY_STOP_REASON = "stop_reason"
     const val STOP_REQUESTED = 0

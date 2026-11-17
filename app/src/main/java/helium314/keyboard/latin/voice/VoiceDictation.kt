@@ -28,6 +28,8 @@ class VoiceDictation(private val context: Context, private val listener: Listene
     interface Listener {
         fun onVoiceStateChanged(state: State)
         fun onVoiceText(text: String)
+        /** tentative text (may change, not committed): replaces the previous tentative text; "" removes it */
+        fun onVoiceComposing(text: String) {}
         /** [message] is shown to the user */
         fun onVoiceError(message: String)
         fun onVoiceNotice(message: String) {}
@@ -39,6 +41,21 @@ class VoiceDictation(private val context: Context, private val listener: Listene
         private set
 
     private val heldPhrases = ArrayList<String>()
+    /** live words of the phrase being spoken (MSG_PARTIAL) */
+    private var partial = ""
+
+    /** on errors the live words of the unfinished phrase are kept as text (like held phrases) */
+    private fun recoverPartial() {
+        if (partial.isNotEmpty()) heldPhrases.add(partial)
+        partial = ""
+        listener.onVoiceComposing("")
+    }
+
+    /** shows held phrases (hold-to-talk) and the live words as one tentative text */
+    private fun showComposing() {
+        val held = if (state == State.LISTENING) heldPhrases.joinToString(" ") else ""
+        listener.onVoiceComposing(listOf(held, partial).filter { it.isNotEmpty() }.joinToString(" "))
+    }
     private var sessionId = 0
     private var service: Messenger? = null
     private var bound = false
@@ -60,7 +77,7 @@ class VoiceDictation(private val context: Context, private val listener: Listene
         }
         override fun onServiceDisconnected(name: ComponentName) { // the :voice process died (probably out of memory)
             service = null
-            if (state != State.IDLE) { flushHeldPhrases(); setState(State.IDLE); listener.onVoiceError(context.getString(R.string.voice_dictation_failed)) }
+            if (state != State.IDLE) { recoverPartial(); flushHeldPhrases(); setState(State.IDLE); listener.onVoiceError(context.getString(R.string.voice_dictation_failed)) }
         }
     }
 
@@ -99,11 +116,15 @@ class VoiceDictation(private val context: Context, private val listener: Listene
         val text = heldPhrases.joinToString(" ")
         heldPhrases.clear()
         if (text.isNotEmpty()) listener.onVoiceText(text)
+        // live words of an unfinished phrase stay visible until its final text arrives
+        if (partial.isNotEmpty()) listener.onVoiceComposing(partial)
     }
 
     fun cancel() {
         if (state == State.IDLE) return
         heldPhrases.clear() // deliberate cancellation must never recover text, even if the binder fails
+        partial = ""
+        listener.onVoiceComposing("")
         send(VoiceProtocol.MSG_CANCEL)
         pendingStart = null
         setState(State.IDLE)
@@ -147,6 +168,7 @@ class VoiceDictation(private val context: Context, private val listener: Listene
             return
         }
         heldPhrases.clear()
+        partial = ""
         wantedModel = model.dirName
         sessionId++
         setState(State.LISTENING)
@@ -179,7 +201,13 @@ class VoiceDictation(private val context: Context, private val listener: Listene
         if (msg.arg1 != sessionId || state == State.IDLE) return
         when (msg.what) {
             VoiceProtocol.MSG_PHRASE -> msg.data.getString(VoiceProtocol.KEY_TEXT)?.takeIf { it.isNotEmpty() }?.let {
-                if (state == State.LISTENING) heldPhrases.add(it) else listener.onVoiceText(it)
+                partial = ""
+                if (state == State.LISTENING) { heldPhrases.add(it); showComposing() }
+                else { listener.onVoiceComposing(""); listener.onVoiceText(it) }
+            }
+            VoiceProtocol.MSG_PARTIAL -> msg.data.getString(VoiceProtocol.KEY_TEXT)?.let {
+                partial = it
+                showComposing()
             }
             VoiceProtocol.MSG_LISTENING -> {} // never unlock a gesture when microphone startup completes
             VoiceProtocol.MSG_LIMIT -> {
@@ -189,11 +217,14 @@ class VoiceDictation(private val context: Context, private val listener: Listene
                     listener.onVoiceNotice(context.getString(R.string.voice_backlog_stopped))
             }
             VoiceProtocol.MSG_RESULT -> {
+                partial = ""
+                listener.onVoiceComposing("")
                 flushHeldPhrases()
                 setState(State.IDLE)
                 msg.data.getString(VoiceProtocol.KEY_TEXT)?.takeIf { it.isNotEmpty() }?.let { listener.onVoiceText(it) }
             }
             VoiceProtocol.MSG_ERROR -> {
+                recoverPartial()
                 flushHeldPhrases()
                 setState(State.IDLE)
                 listener.onVoiceError(msg.data.getString(VoiceProtocol.KEY_ERROR) ?: context.getString(R.string.voice_dictation_failed))
@@ -217,6 +248,9 @@ class VoiceDictation(private val context: Context, private val listener: Listene
         private const val TAG = "VoiceDictation"
 
         /** the Settings switch; the mic key then dictates instead of handing over to another voice keyboard */
+        /** live (partial) words while speaking; read by the voice service when recording starts */
+        fun liveResults(context: Context) = context.prefs().getBoolean(Settings.PREF_VOICE_LIVE, Defaults.PREF_VOICE_LIVE)
+
         fun isEnabled(context: Context) =
             VoiceModels.isSupported && context.prefs().getBoolean(Settings.PREF_VOICE_DICTATION, Defaults.PREF_VOICE_DICTATION)
     }

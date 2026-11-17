@@ -29,6 +29,7 @@ class VoiceDictationTest {
     private val text = mutableListOf<String>()
     private val notices = mutableListOf<String>()
     private val errors = mutableListOf<String>()
+    private val composing = mutableListOf<String>()
     private lateinit var connection: ServiceConnection
     private lateinit var dictation: VoiceDictation
     private lateinit var context: Context
@@ -53,6 +54,7 @@ class VoiceDictationTest {
             override fun onVoiceText(value: String) { text.add(value) }
             override fun onVoiceError(message: String) { errors.add(message) }
             override fun onVoiceNotice(message: String) { notices.add(message) }
+            override fun onVoiceComposing(text: String) { composing.add(text) }
         })
     }
 
@@ -88,6 +90,50 @@ class VoiceDictationTest {
         reply(start, VoiceProtocol.MSG_RESULT)
         assertEquals(VoiceDictation.State.IDLE, dictation.state)
         assertEquals(listOf("First sentence.", "Second sentence."), text)
+    }
+
+    @Test fun liveWordsAreTentativeUntilThePhraseIsFinal() {
+        dictation.toggle(Locale.US)
+        connect()
+        val start = requests.last()
+        reply(start, VoiceProtocol.MSG_PARTIAL, "Today the")
+        reply(start, VoiceProtocol.MSG_PARTIAL, "Today the only insects")
+        assertEquals(listOf("Today the", "Today the only insects"), composing)
+        assertEquals(emptyList(), text)
+        reply(start, VoiceProtocol.MSG_PHRASE, "Today, the only insects.")
+        assertEquals("", composing.last())            // the final text replaces the live words
+        assertEquals(listOf("Today, the only insects."), text)
+    }
+
+    @Test fun holdShowsHeldPhrasesAndLiveWordsTogether() {
+        dictation.press(Locale.US)
+        connect()
+        val start = requests.last()
+        reply(start, VoiceProtocol.MSG_PHRASE, "First sentence.")
+        reply(start, VoiceProtocol.MSG_PARTIAL, "Second")
+        assertEquals("First sentence. Second", composing.last())
+        assertEquals(emptyList(), text)
+        dictation.release()
+        shadowOf(Looper.getMainLooper()).idle()
+        assertEquals(listOf("First sentence."), text)
+        assertEquals("Second", composing.last())         // still being decoded
+        reply(start, VoiceProtocol.MSG_PHRASE, "Second sentence.")
+        assertEquals(listOf("First sentence.", "Second sentence."), text)
+    }
+
+    @Test fun cancelRemovesLiveWordsAndErrorKeepsThem() {
+        dictation.toggle(Locale.US)
+        connect()
+        reply(requests.last(), VoiceProtocol.MSG_PARTIAL, "Drop me")
+        dictation.cancel()
+        assertEquals("", composing.last())
+        assertEquals(emptyList(), text)
+        dictation.toggle(Locale.US)
+        shadowOf(Looper.getMainLooper()).idle()
+        val second = requests.last()
+        reply(second, VoiceProtocol.MSG_PARTIAL, "Keep me")
+        reply(second, VoiceProtocol.MSG_ERROR)
+        assertEquals(listOf("Keep me"), text)
     }
 
     @Test fun cancelledSessionCannotWriteIntoRestartedSession() {

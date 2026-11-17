@@ -186,6 +186,7 @@ object Defaults {
     const val PREF_HONORIFIC_SUGGESTIONS = true
     const val PREF_ROMAN_URDU_ON_ENGLISH = true
     const val PREF_VOICE_DICTATION = false
+    const val PREF_VOICE_LIVE = true
     const val PREF_LEARN_ROMAN_TYPING = true
     const val PREF_SOUND_SPELLING = true
     const val PREF_LETTER_EDIT = true

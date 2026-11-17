@@ -45,9 +45,10 @@ object WhisperLib {
         init { require(ptr != 0L) { "could not load ${path.name}" } }
 
         /** [samples]: mono 16 kHz audio in -1..1. [beamSize] 1 is greedy and fastest. Audio longer than 30 s is split by whisper itself. */
-        fun transcribe(samples: FloatArray, language: String, threads: Int, beamSize: Int = 5, cancellation: Cancellation? = null): String {
+        /** [audioCtx] > 0 limits the encoder window (20 ms frames) for fast partial results; 0 = whisper's full 30 s window */
+        fun transcribe(samples: FloatArray, language: String, threads: Int, beamSize: Int = 5, cancellation: Cancellation? = null, audioCtx: Int = 0, partial: Boolean = false): String {
             check(ptr != 0L) { "closed" }
-            return runWhisper(ptr, threads, beamSize, language, samples, cancellation?.ptr ?: 0L)?.trim() ?: throw IllegalStateException("whisper failed")
+            return runWhisper(ptr, threads, beamSize, language, samples, cancellation?.ptr ?: 0L, audioCtx, partial)?.trim() ?: throw IllegalStateException("whisper failed")
         }
 
         override fun close() { if (ptr != 0L) { freeContext(ptr); ptr = 0L } }
@@ -56,7 +57,7 @@ object WhisperLib {
     @JvmStatic private external fun loadBackends(dir: String)
     @JvmStatic private external fun initContext(modelPath: String): Long
     @JvmStatic private external fun freeContext(ptr: Long)
-    @JvmStatic private external fun runWhisper(ptr: Long, threads: Int, beamSize: Int, language: String, audio: FloatArray, cancellation: Long): String?
+    @JvmStatic private external fun runWhisper(ptr: Long, threads: Int, beamSize: Int, language: String, audio: FloatArray, cancellation: Long, audioCtx: Int, partial: Boolean): String?
     @JvmStatic private external fun createCancellation(): Long
     @JvmStatic private external fun cancelRun(ptr: Long)
     @JvmStatic private external fun freeCancellation(ptr: Long)

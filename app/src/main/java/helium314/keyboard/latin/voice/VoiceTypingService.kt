@@ -35,6 +35,11 @@ class VoiceTypingService : Service() {
         var capture: Thread? = null
         val backlog = VoiceBacklog()
         val cancellation = SpeechCancellation()
+        // partial (live) results: at most one in flight; a finished phrase cancels it, the phrase counter drops stale ones
+        val partialBusy = java.util.concurrent.atomic.AtomicBoolean()
+        @Volatile var partialToken: SpeechCancellation? = null
+        @Volatile var phrase = 0
+        var partialAt = 0
         @Volatile var failure: String? = null
         val terminalSent = java.util.concurrent.atomic.AtomicBoolean()
     }
@@ -115,7 +120,7 @@ class VoiceTypingService : Service() {
     }
 
     private fun abortInference(s: Session) {
-        try { s.cancellation.cancel() }
+        try { s.partialToken?.cancel(); s.cancellation.cancel() }
         catch (t: Exception) { Log.w(TAG, "could not interrupt inference", t) }
     }
 
@@ -144,6 +149,7 @@ class VoiceTypingService : Service() {
                 }
                 reply(s, VoiceProtocol.MSG_LISTENING)
                 val segmenter = VoiceSegmenter()
+                val live = VoiceDictation.liveResults(this)
                 val frame = ShortArray(VoiceProtocol.SAMPLE_RATE / 50)
                 var offset = 0
                 var stopReason = VoiceProtocol.STOP_REQUESTED
@@ -157,10 +163,20 @@ class VoiceTypingService : Service() {
                         count
                     } else rec!!.read(frame, 0, frame.size)
                     check(n > 0) { "microphone read failed ($n)" }
-                    segmenter.add(frame, n)?.let { enqueue(s, it) }
+                    val done = segmenter.add(frame, n)
+                    if (done != null) {
+                        s.phrase++
+                        s.partialToken?.cancel() // the full decode of the phrase replaces any live result
+                        s.partialAt = 0
+                        enqueue(s, done)
+                    } else if (live) maybePartial(s, segmenter)
                     if (s.backlog.isFull) { stopReason = VoiceProtocol.STOP_BACKLOG; break }
                 }
-                if (s.failure == null && !s.cancelled) segmenter.finish()?.let { enqueue(s, it) }
+                if (s.failure == null && !s.cancelled) segmenter.finish()?.let {
+                    s.phrase++
+                    s.partialToken?.cancel()
+                    enqueue(s, it)
+                }
                 if (!s.cancelled && s.failure == null) {
                     val ended = Message.obtain(null, VoiceProtocol.MSG_LIMIT).apply {
                         arg1 = s.id
@@ -178,6 +194,33 @@ class VoiceTypingService : Service() {
         }, "lafz-voice-record")
         s.capture = capture
         capture.start()
+    }
+
+    /**
+     * Live words: re-decodes the phrase heard so far every [PARTIAL_STEP] of new audio, but only when the model is idle (no full
+     * phrase queued, no partial running), so a slow phone simply shows fewer updates and finished phrases are never delayed.
+     */
+    private fun maybePartial(s: Session, segmenter: VoiceSegmenter) {
+        val size = segmenter.currentSize
+        if (size < s.partialAt + PARTIAL_STEP) return
+        if (!s.backlog.isEmpty || !s.partialBusy.compareAndSet(false, true)) return
+        val pcm = segmenter.current()
+        if (pcm == null) { s.partialBusy.set(false); return }
+        s.partialAt = size
+        val phrase = s.phrase
+        val token = SpeechCancellation()
+        s.partialToken = token
+        inference.execute {
+            try {
+                if (s.cancelled || s.failure != null || s.phrase != phrase || VoiceText.isSilent(pcm)) return@execute
+                val started = android.os.SystemClock.elapsedRealtime()
+                val text = VoiceText.clean(checkNotNull(engine).transcribe(VoiceText.toFloat(pcm), token, partial = true))
+                Log.i(TAG, "partial ${pcm.size * 1000L / VoiceProtocol.SAMPLE_RATE} ms audio, ${android.os.SystemClock.elapsedRealtime() - started} ms")
+                if (s.phrase == phrase && text.isNotEmpty() && !token.isCancelled) reply(s, VoiceProtocol.MSG_PARTIAL, VoiceProtocol.KEY_TEXT, text)
+            } catch (t: Throwable) {
+                if (!token.isCancelled && !s.cancelled) Log.w(TAG, "partial failed: ${t.message}") // a live result is optional
+            } finally { s.partialBusy.set(false) }
+        }
     }
 
     private fun enqueue(s: Session, pcm: ShortArray) {
@@ -235,6 +278,8 @@ class VoiceTypingService : Service() {
 
     companion object {
         private const val TAG = "VoiceTypingService"
+        /** new audio (samples) before the next live result: 0.6 s */
+        private const val PARTIAL_STEP = VoiceProtocol.SAMPLE_RATE * 6 / 10
         fun intent(context: Context) = Intent(context, VoiceTypingService::class.java)
     }
 }

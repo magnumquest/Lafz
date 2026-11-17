@@ -43,5 +43,6 @@ Emulator-verified: whatsapp/tiktok/faargiv, t inside فائنل -> ت with ٹ ط
 normal `mein kal aonga` unchanged. Not verified: real phone, Arabic letter editing, English long-press teach.
 
 ### Task 4: Real-time voice
-- [ ] Research a streaming approach that fits the existing models and phone speed
-- [ ] Tentative words shown while speaking, replaced as decoding firms up
+- [x] Research a streaming approach that fits the existing models and phone speed (adaptive re-decoding of the current phrase;
+      no streaming Urdu model exists; a streaming English model (sherpa-onnx zipformer) is a possible later upgrade)
+- [x] Tentative words shown while speaking, replaced as decoding firms up (`MSG_PARTIAL`, setting `PREF_VOICE_LIVE`, see docs/voice-typing.md)

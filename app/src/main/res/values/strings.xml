@@ -215,6 +215,8 @@
     <string name="voice_dictation_no_model">No %s voice model imported (Settings > Voice typing)</string>
     <string name="voice_working">Working…</string>
     <string name="learn_roman_typing_title">Learn from my typing</string>
+    <string name="voice_live_title">Live words while speaking</string>
+    <string name="voice_live_summary">Words appear as you speak and may still change until you pause. Uses more battery; off: text appears after each pause</string>
     <string name="taught_word">Learned: %s</string>
     <string name="sound_spelling_title">Spell new words by sound</string>
     <string name="sound_spelling_summary">In Roman Urdu, words the dictionary does not know (names, new English words) are written by how they sound, with ٹ / ڈ versions offered</string>
